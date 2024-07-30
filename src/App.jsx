@@ -7,7 +7,7 @@ import { generateTasks } from './services/openai';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import SignIn from './SignIn';
-import { auth, db, signOutUser, onAuthStateChanged, collection, getDocs, setDoc, doc } from './firebase';
+import { auth, db, signOutUser, onAuthStateChanged, collection, getDocs, setDoc, doc, deleteDoc } from './firebase';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -44,8 +44,14 @@ function App() {
       listsSnapshot.forEach((doc) => {
         loadedLists[doc.id] = doc.data().tasks || [];
       });
+      if (Object.keys(loadedLists).length === 0) {
+        // No lists exist, create the default list
+        loadedLists['Today'] = [];
+        await saveTasks(userId, loadedLists);
+      }
       console.log('Loaded lists:', loadedLists);
       setLists(loadedLists);
+      setCurrentList(Object.keys(loadedLists)[0]); // Set the current list to the first available list
       setTasksLoaded(true);
     } catch (error) {
       console.error('Error loading tasks:', error);
@@ -61,10 +67,21 @@ function App() {
       for (const listName in lists) {
         await setDoc(doc(listsCollection, listName), { tasks: lists[listName] });
       }
-      console.log('Tasks saved');
+      console.log('Tasks and lists saved');
     } catch (error) {
-      console.error('Error saving tasks:', error);
-      setError('Failed to save tasks. Please try again.');
+      console.error('Error saving tasks and lists:', error);
+      setError('Failed to save tasks and lists. Please try again.');
+    }
+  };
+
+  const deleteListFromDatabase = async (userId, listName) => {
+    try {
+      const listDoc = doc(db, 'users', userId, 'lists', listName);
+      await deleteDoc(listDoc);
+      console.log(`List "${listName}" deleted from database`);
+    } catch (error) {
+      console.error('Error deleting list:', error);
+      setError('Failed to delete list. Please try again.');
     }
   };
 
@@ -86,10 +103,16 @@ function App() {
         text: task,
         completed: false
       }));
-      setLists(prevLists => ({
-        ...prevLists,
-        [currentList]: [...newTasks, ...prevLists[currentList]]
-      }));
+      setLists(prevLists => {
+        const updatedLists = { ...prevLists };
+        if (!updatedLists[currentList]) {
+          updatedLists[currentList] = [];
+        }
+        return {
+          ...updatedLists,
+          [currentList]: [...newTasks, ...updatedLists[currentList]]
+        };
+      });
     } catch (error) {
       console.error('Error generating tasks:', error);
       setError('Failed to generate tasks. Please try again.');
@@ -104,10 +127,16 @@ function App() {
       text: newTaskText,
       completed: false
     };
-    setLists(prevLists => ({
-      ...prevLists,
-      [currentList]: [newTask, ...prevLists[currentList]]
-    }));
+    setLists(prevLists => {
+      const updatedLists = { ...prevLists };
+      if (!updatedLists[currentList]) {
+        updatedLists[currentList] = [];
+      }
+      return {
+        ...updatedLists,
+        [currentList]: [newTask, ...updatedLists[currentList]]
+      };
+    });
   };
 
   const handleTextChange = (text) => {
@@ -159,12 +188,13 @@ function App() {
     if (window.confirm(`Are you sure you want to delete the "${listName}" list?`)) {
       setLists(prevLists => {
         const { [listName]: deletedList, ...restLists } = prevLists;
+        if (user) {
+          deleteListFromDatabase(user.uid, listName);
+        }
+        const newCurrentList = currentList === listName ? Object.keys(restLists)[0] || 'Today' : currentList;
+        setCurrentList(newCurrentList);
         return restLists;
       });
-      if (currentList === listName) {
-        const newCurrentList = Object.keys(restLists)[0] || 'Today';
-        setCurrentList(newCurrentList);
-      }
     }
   };
 
@@ -232,6 +262,11 @@ function App() {
             onTextChange={handleTextChange}
             language="en-US" 
           />
+          <div className="user-info">
+            {user && (
+              <p className="user-email">{user.email}</p>
+            )}
+          </div>
         </header>
 
         <div className="prompt-display">
