@@ -40,10 +40,17 @@ To install Voik, follow these steps:
    ```
 2. Open the `.env` file and fill in your API keys:
    ```
-   VITE_OPENAI_API_KEY=your_openai_api_key_here
-   VITE_GOOGLE_CLIENT_ID=your_google_client_id_here
-   VITE_GOOGLE_API_KEY=your_google_api_key_here
-   VITE_GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+   VITE_FIREBASE_API_KEY=your-firebase-api-key
+   VITE_FIREBASE_AUTH_DOMAIN=your-firebase-auth-domain
+   VITE_FIREBASE_PROJECT_ID=your-firebase-project-id
+   VITE_FIREBASE_STORAGE_BUCKET=your-firebase-storage-bucket
+   VITE_FIREBASE_MESSAGING_SENDER_ID=your-firebase-messaging-sender-id
+   VITE_FIREBASE_APP_ID=your-firebase-app-id
+   VITE_FIREBASE_MEASUREMENTID=your-firebase-measurement-id
+   VITE_OPENAI_API_KEY=your-openai-api-key
+   VITE_GOOGLE_CLIENT_ID=your-google-client-id
+   VITE_GOOGLE_API_KEY=your-google-api-key
+   VITE_GOOGLE_CLIENT_SECRET=your-google-client-secret
    ```
 
 ## Using Voik

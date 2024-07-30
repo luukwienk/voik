@@ -35,17 +35,6 @@ const TaskList = ({ tasks, onToggleCompletion, onDeleteTask, onUpdateTask, onCre
     loadGoogleApi();
   }, []);
 
-  useEffect(() => {
-    const checkGoogleApiReady = setInterval(() => {
-      if (gapi.auth2 && gapi.auth2.getAuthInstance()) {
-        setIsGoogleApiReady(true);
-        clearInterval(checkGoogleApiReady);
-      }
-    }, 1000);
-  
-    return () => clearInterval(checkGoogleApiReady);
-  }, []);
-
   const handleAddTask = (e) => {
     e.preventDefault();
     if (newTaskText.trim()) {
@@ -53,7 +42,7 @@ const TaskList = ({ tasks, onToggleCompletion, onDeleteTask, onUpdateTask, onCre
       setNewTaskText('');
     }
   };
-  
+
   const copyTasksToClipboard = () => {
     const taskText = tasks.map(task => `${task.completed ? '✓' : '☐'} ${task.text}`).join('\n');
     navigator.clipboard.writeText(taskText).then(() => {
@@ -111,15 +100,15 @@ const TaskList = ({ tasks, onToggleCompletion, onDeleteTask, onUpdateTask, onCre
     }
 
     const event = {
-      'summary': agendaItem.title,
-      'description': agendaItem.description,
-      'start': {
-        'dateTime': `${agendaItem.date}T${agendaItem.time}:00`,
-        'timeZone': Intl.DateTimeFormat().resolvedOptions().timeZone
+      summary: agendaItem.title,
+      description: agendaItem.description,
+      start: {
+        dateTime: `${agendaItem.date}T${agendaItem.time}:00`,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
       },
-      'end': {
-        'dateTime': calculateEndTime(agendaItem.date, agendaItem.time, agendaItem.duration),
-        'timeZone': Intl.DateTimeFormat().resolvedOptions().timeZone
+      end: {
+        dateTime: calculateEndTime(agendaItem.date, agendaItem.time, agendaItem.duration),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
       }
     };
 
@@ -129,8 +118,8 @@ const TaskList = ({ tasks, onToggleCompletion, onDeleteTask, onUpdateTask, onCre
       console.log('Successfully signed in, creating calendar event...');
       
       const response = await gapi.client.calendar.events.insert({
-        'calendarId': 'primary',
-        'resource': event
+        calendarId: 'primary',
+        resource: event
       });
       
       console.log('Event created: %s', response.result.htmlLink);
@@ -145,8 +134,6 @@ const TaskList = ({ tasks, onToggleCompletion, onDeleteTask, onUpdateTask, onCre
       }
     }
   };
-
-  
 
   if (tasks.length === 0) {
     return <p>No tasks yet. Press Start, speak. Take your time. Press Stop when ready.</p>;

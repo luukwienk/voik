@@ -6,35 +6,73 @@ import TaskList from './components/TaskList';
 import { generateTasks } from './services/openai';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
-
+import SignIn from './SignIn';
+import { auth, db, signOutUser, onAuthStateChanged, collection, getDocs, setDoc, doc } from './firebase';
 
 function App() {
-  const [lists, setLists] = useState(() => {
-    const storedLists = localStorage.getItem('taskLists');
-    return storedLists ? JSON.parse(storedLists) : { 'Today': [] };
-  });
-
-
-  const [currentList, setCurrentList] = useState(() => {
-    const storedCurrentList = localStorage.getItem('currentList');
-    return storedCurrentList || 'Today';
-  });
-
-
+  const [user, setUser] = useState(null);
+  const [lists, setLists] = useState({ 'Today': [] });
+  const [currentList, setCurrentList] = useState('Today');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [recognizedText, setRecognizedText] = useState('');
-
-
-  useEffect(() => {
-    localStorage.setItem('taskLists', JSON.stringify(lists));
-  }, [lists]);
-
+  const [tasksLoaded, setTasksLoaded] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('currentList', currentList);
-  }, [currentList]);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log('User signed in:', user);
+        setUser(user);
+        loadTasks(user.uid);
+      } else {
+        console.log('User signed out');
+        setUser(null);
+        setLists({ 'Today': [] });
+        setCurrentList('Today');
+        setTasksLoaded(false);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
+  const loadTasks = async (userId) => {
+    try {
+      console.log('Loading tasks for user:', userId);
+      const listsCollection = collection(db, 'users', userId, 'lists');
+      const listsSnapshot = await getDocs(listsCollection);
+      const loadedLists = {};
+      listsSnapshot.forEach((doc) => {
+        loadedLists[doc.id] = doc.data().tasks || [];
+      });
+      console.log('Loaded lists:', loadedLists);
+      setLists(loadedLists);
+      setTasksLoaded(true);
+    } catch (error) {
+      console.error('Error loading tasks:', error);
+      setError('Failed to load tasks. Please try again.');
+    }
+  };
+
+  const saveTasks = async (userId, lists) => {
+    if (!tasksLoaded) return;  // Check if tasks have been loaded
+    try {
+      console.log('Saving tasks for user:', userId);
+      const listsCollection = collection(db, 'users', userId, 'lists');
+      for (const listName in lists) {
+        await setDoc(doc(listsCollection, listName), { tasks: lists[listName] });
+      }
+      console.log('Tasks saved');
+    } catch (error) {
+      console.error('Error saving tasks:', error);
+      setError('Failed to save tasks. Please try again.');
+    }
+  };
+
+  useEffect(() => {
+    if (user && tasksLoaded) { // Only save tasks if they have been loaded
+      saveTasks(user.uid, lists);
+    }
+  }, [lists, user, tasksLoaded]);
 
   const handleVoiceInput = async (text) => {
     console.log('Recognized text:', text);
@@ -50,7 +88,7 @@ function App() {
       }));
       setLists(prevLists => ({
         ...prevLists,
-        [currentList]: [...newTasks,...prevLists[currentList] ]
+        [currentList]: [...newTasks, ...prevLists[currentList]]
       }));
     } catch (error) {
       console.error('Error generating tasks:', error);
@@ -72,11 +110,9 @@ function App() {
     }));
   };
 
-
   const handleTextChange = (text) => {
     setRecognizedText(text);
   };
-
 
   const toggleTaskCompletion = (taskId) => {
     setLists(prevLists => ({
@@ -87,14 +123,12 @@ function App() {
     }));
   };
 
-
   const deleteTask = (taskId) => {
     setLists(prevLists => ({
       ...prevLists,
       [currentList]: prevLists[currentList].filter(task => task.id !== taskId)
     }));
   };
-
 
   const handleListChange = (e) => {
     if (e.target.value === 'new') {
@@ -103,7 +137,6 @@ function App() {
       setCurrentList(e.target.value);
     }
   };
-
 
   const addNewList = () => {
     const listName = prompt('Enter the name for your new list:');
@@ -117,7 +150,6 @@ function App() {
       alert('A list with this name already exists.');
     }
   };
-
 
   const deleteList = (listName) => {
     if (listName === 'Today') {
@@ -136,7 +168,6 @@ function App() {
     }
   };
 
-
   const updateTask = (taskId, newText) => {
     setLists(prevLists => ({
       ...prevLists,
@@ -145,7 +176,6 @@ function App() {
       )
     }));
   };
-
 
   const reorderTasks = (startIndex, endIndex) => {
     setLists(prevLists => {
@@ -158,7 +188,6 @@ function App() {
       };
     });
   };
-
 
   const onDragEnd = (result) => {
     if (!result.destination) {
@@ -178,24 +207,25 @@ function App() {
     setAgendaItems(prevItems => [...prevItems, newAgendaItem]);
   };
 
+  if (!user) {
+    return <SignIn />;
+  }
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="App">
         <header className="app-header">
           <div className="list-selector">
-            <select 
-  value={currentList} 
-  onChange={handleListChange}
->
-  {Object.keys(lists).map(listName => (
-    <option key={listName} value={listName}>{listName}</option>
-  ))}
-  <option value="new">+ New List</option>
-</select>
+            <select value={currentList} onChange={handleListChange}>
+              {Object.keys(lists).map(listName => (
+                <option key={listName} value={listName}>{listName}</option>
+              ))}
+              <option value="new">+ New List</option>
+            </select>
             <button className="remove-list-btn" onClick={() => deleteList(currentList)}>
               <FontAwesomeIcon icon={faTrash} />
             </button>
+            <button onClick={signOutUser}>Sign out</button>
           </div>
           <VoiceInput 
             onInputComplete={handleVoiceInput} 
@@ -203,14 +233,14 @@ function App() {
             language="en-US" 
           />
         </header>
-        
+
         <div className="prompt-display">
           {recognizedText && <p>{recognizedText}</p>}
         </div>
-  
+
         {isLoading && <p className="loading">Generating tasks...</p>}
         {error && <p className="error">{error}</p>}
-        
+
         <main>
           {lists[currentList] && (
             <TaskList 
@@ -227,6 +257,5 @@ function App() {
     </DragDropContext>
   );
 }
-
 
 export default App;
