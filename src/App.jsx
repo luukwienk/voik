@@ -8,6 +8,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import SignIn from './SignIn';
 import { auth, db, signOutUser, onAuthStateChanged, collection, getDocs, setDoc, doc, deleteDoc } from './firebase';
+import { initClient } from './services/googleCalendar';
+
+  
 
 function App() {
   const [user, setUser] = useState(null);
@@ -17,6 +20,11 @@ function App() {
   const [error, setError] = useState(null);
   const [recognizedText, setRecognizedText] = useState('');
   const [tasksLoaded, setTasksLoaded] = useState(false);
+  const [aiResponse, setAiResponse] = useState('');
+
+  useEffect(() => {
+    initClient().catch(error => console.error("Failed to initialize Google API client:", error));
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -91,35 +99,50 @@ function App() {
     }
   }, [lists, user, tasksLoaded]);
 
-  const handleVoiceInput = async (text) => {
-    console.log('Recognized text:', text);
+  const handleVoiceInput = async (result) => {
+    console.log('AI response:', result);
     setIsLoading(true);
     setError(null);
     try {
-      const generatedTasks = await generateTasks(text);
-      console.log('Generated tasks:', generatedTasks);
-      const newTasks = generatedTasks.map(task => ({
-        id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        text: task,
-        completed: false
-      }));
-      setLists(prevLists => {
-        const updatedLists = { ...prevLists };
-        if (!updatedLists[currentList]) {
-          updatedLists[currentList] = [];
+      switch (result.type) {
+        case 'tasks':
+          const newTasks = result.data.map(task => ({
+            id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            text: task,
+            completed: false
+          }));
+          setLists(prevLists => {
+            const updatedLists = { ...prevLists };
+            if (!updatedLists[currentList]) {
+              updatedLists[currentList] = [];
+            }
+            return {
+              ...updatedLists,
+              [currentList]: [...newTasks, ...updatedLists[currentList]]
+            };
+          });
+          setAiResponse('New tasks have been added to your list.');
+          break;
+        case 'action':
+          setAiResponse(result.data);
+          break;
+        case 'text':
+          setAiResponse(result.data);
+          break;
+          case 'error':
+            setError(result.data);
+            break;
+          default:
+            console.error('Unknown result type:', result.type);
+            setError('Received an unknown response type from AI.');
         }
-        return {
-          ...updatedLists,
-          [currentList]: [...newTasks, ...updatedLists[currentList]]
-        };
-      });
-    } catch (error) {
-      console.error('Error generating tasks:', error);
-      setError('Failed to generate tasks. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      } catch (error) {
+        console.error('Error processing AI response:', error);
+        setError('Failed to process AI response. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
   const handleAddTask = (newTaskText) => {
     const newTask = {
@@ -258,10 +281,12 @@ function App() {
             <button onClick={signOutUser}>Sign out</button>
           </div>
           <VoiceInput 
-            onInputComplete={handleVoiceInput} 
-            onTextChange={handleTextChange}
-            language="en-US" 
-          />
+  currentTasks={lists[currentList]}
+  onInputComplete={handleVoiceInput} 
+  onTextChange={handleTextChange}
+  language="en-US" 
+/>
+
           <div className="user-info">
             {user && (
               <p className="user-email">{user.email}</p>
@@ -270,7 +295,8 @@ function App() {
         </header>
 
         <div className="prompt-display">
-          {recognizedText && <p>{recognizedText}</p>}
+          {recognizedText && <p>You said: {recognizedText}</p>}
+          {aiResponse && <p>AI response: {aiResponse}</p>}
         </div>
 
         {isLoading && <p className="loading">Generating tasks...</p>}

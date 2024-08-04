@@ -1,27 +1,45 @@
-import React from 'react';
-import useSpeechRecognition from '../hooks/useSpeechRecognition';
+import React, { useEffect, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMicrophone, faMicrophoneSlash } from '@fortawesome/free-solid-svg-icons';
+import useSpeechRecognition from '../hooks/useSpeechRecognition';
+import { handleAICommand } from '../services/openai';
 
-const VoiceInput = ({ onInputComplete, onTextChange, language = 'en-US' }) => {
+const VoiceInput = ({ currentTasks, onInputComplete, onTextChange, language = 'en-US' }) => {
   const { isListening, recognizedText, error, startListening, stopListening } = useSpeechRecognition(language);
+  const processedRef = useRef(false);
 
   const handleToggleListening = () => {
     if (isListening) {
       stopListening();
-      if (onInputComplete) {
-        onInputComplete(recognizedText);
-      }
     } else {
       startListening();
+      processedRef.current = false; // Reset the processed flag when starting to listen
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
+    if (!isListening && recognizedText && !processedRef.current) {
+      // When recognition stops and we have text, handle the AI command
+      const processInput = async () => {
+        try {
+          console.log('Processing input:', recognizedText);
+          const result = await handleAICommand(recognizedText, currentTasks);
+          processedRef.current = true; // Mark as processed
+          
+          if (onInputComplete) {
+            onInputComplete(result);
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
+      processInput();
+    }
     if (onTextChange) {
       onTextChange(recognizedText);
     }
-  }, [recognizedText, onTextChange]);
+  }, [recognizedText, isListening, currentTasks, onTextChange, onInputComplete]);
 
   return (
     <div className="voice-input">

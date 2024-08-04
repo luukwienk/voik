@@ -1,16 +1,126 @@
+import { readTasksAloud } from './textToSpeech';
+import { addEventToCalendar } from './googleCalendar';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true // Note: This is not recommended for production
+  assistantId: 'asst_Zty5VY4aPP94Y5ubNEyLW7kd',
+  dangerouslyAllowBrowser: true,
 });
+
+const functions = [
+  {
+    name: 'generateTasks',
+    description: 'Generate tasks from input text',
+    parameters: {
+      type: 'object',
+      properties: {
+        input: { type: 'string' },
+      },
+      required: ['input'],
+    },
+  },
+  {
+    name: 'readTasksAloud',
+    description: 'Read tasks aloud using TTS',
+    parameters: {
+      type: 'object',
+      properties: {
+        tasks: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              text: { type: 'string' },
+              completed: { type: 'boolean' },
+            },
+            required: ['id', 'text', 'completed'],
+          },
+        },
+      },
+      required: ['tasks'],
+    },
+  },
+  {
+    name: 'planTaskInCalendar',
+    description: 'Schedule a task in the Google Calendar',
+    parameters: {
+      type: 'object',
+      properties: {
+        taskDescription: { type: 'string' },
+      },
+      required: ['taskDescription'],
+    },
+  },
+];
+
+export async function handleAICommand(input, currentTasks) {
+  console.log('User input:', input);
+
+  const messages = [
+    {
+      role: 'system',
+      content: 'I am an AI that can generate tasks, read them aloud, and schedule tasks in a calendar. Based on the user input, decide the appropriate action.'
+    },
+    { role: 'user', content: input },
+  ];
+
+  // Always include current tasks in the message
+  messages.push({
+    role: 'user',
+    content: JSON.stringify({ currentTasks: currentTasks })
+  });
+
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o-mini',
+    messages: messages,
+    functions,
+    temperature: 0.5,
+  });
+
+  console.log('Completion response:', completion);
+
+  const aiMessage = completion.choices[0].message;
+  
+  if (aiMessage.function_call) {
+    const { name, arguments: args } = aiMessage.function_call;
+    const parsedArgs = JSON.parse(args);
+    console.log('Function name:', name);
+    console.log('Function arguments:', parsedArgs);
+
+    switch (name) {
+      case 'generateTasks':
+        const newTasks = await generateTasks(parsedArgs.input);
+        return { type: 'tasks', data: newTasks };
+      case 'readTasksAloud':
+        await readTasksAloud(parsedArgs.tasks);
+        return { type: 'action', data: 'Tasks read aloud' };
+        case 'planTaskInCalendar':
+          try {
+            const result = await planTaskInCalendar(parsedArgs.taskDescription);
+            return { type: 'action', data: result };
+          } catch (error) {
+            console.error('Error scheduling task in calendar:', error);
+            return { type: 'error', data: error.message };
+          }
+        // ... other cases ...
+      }
+  } else {
+    // If no function call was determined, return the AI's text response
+    return { type: 'text', data: aiMessage.content };
+  }
+}
 
 export async function generateTasks(prompt) {
   try {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You are a helpful assistant that generates task lists. Interpret the input you receive as the output from someone who is trying to convey a list of tasks. If the input is unclear, distill the tasks from it the best you can. Provide your response as a JSON array of task strings. When the input is a single word or only a few words, add it as a task. When you are in doubt what tasks to extract from the input provide a short funny response, indicating that you want the user to try the input again" },
+        {
+          role: "system",
+          content: "You are a helpful assistant that generates task lists. Interpret the input you receive as the output from someone who is trying to convey a list of tasks. If the input is unclear, distill the tasks from it the best you can. Provide your response as a JSON array of task strings. When the input is a single word or only a few words, add it as a task. When you are in doubt what tasks to extract from the input provide a short funny response, indicating that you want the user to try the input again"
+        },
         { role: "user", content: prompt }
       ],
       temperature: 0.7,
@@ -43,98 +153,26 @@ export async function generateTasks(prompt) {
   }
 }
 
-export async function updateTasks(currentTasks, updatePrompt) {
+async function planTaskInCalendar(taskDescription) {
+  console.log('Planning task in calendar:', taskDescription);
+  const event = {
+    summary: taskDescription,
+    start: {
+      dateTime: new Date().toISOString(),
+      timeZone: 'America/Los_Angeles',
+    },
+    end: {
+      dateTime: new Date(new Date().getTime() + 60 * 60 * 1000).toISOString(),
+      timeZone: 'America/Los_Angeles',
+    },
+  };
+
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "You are a helpful assistant that updates task lists. Provide your response as a JSON array of task strings." },
-        { role: "user", content: `Current tasks: ${JSON.stringify(currentTasks)}. Update request: ${updatePrompt}` }
-      ],
-      temperature: 0.7,
-    });
-
-    const tasksString = completion.choices[0].message.content;
-    let tasks;
-    try {
-      tasks = JSON.parse(tasksString);
-      if (!Array.isArray(tasks)) {
-        throw new Error('Response is not an array');
-      }
-    } catch (parseError) {
-      console.error('Error parsing tasks:', parseError);
-      // If parsing fails, split the string by newlines as a fallback
-      tasks = tasksString.split('\n').filter(task => task.trim() !== '');
-    }
-
-    return tasks;
+    await addEventToCalendar(event);
+    console.log("Event added successfully");
+    return "Task scheduled in calendar successfully";
   } catch (error) {
-    console.error('Error updating tasks:', error);
-    throw new Error('Failed to update tasks. Please try again.');
-  }
-}
-
-export async function generateAgendaDetails(taskText, schedulingInfo) {
-  try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { 
-          role: "system", 
-          content: "You are an AI assistant that generates detailed agenda items based on tasks and scheduling information."
-        },
-        { 
-          role: "user", 
-          content: `Generate an agenda item for the following task: "${taskText}". The user provided this scheduling information: "${schedulingInfo}"`
-        }
-      ],
-      tools: [{
-        type: "function",
-        function: {
-          name: "create_calendar_event",
-          description: "Create a calendar event based on the task and scheduling information",
-          parameters: {
-            type: "object",
-            properties: {
-              title: {
-                type: "string",
-                description: "The title of the event"
-              },
-              description: {
-                type: "string",
-                description: "A description of the event"
-              },
-              date: {
-                type: "string",
-                description: "The date of the event in YYYY-MM-DD format"
-              },
-              time: {
-                type: "string",
-                description: "The time of the event in HH:MM format"
-              },
-              duration: {
-                type: "string",
-                description: "The duration of the event (e.g., '1 hour', '30 minutes')"
-              }
-            },
-            required: ["title", "description", "date", "time", "duration"]
-          }
-        }
-      }],
-      tool_choice: "auto"
-    });
-
-    const responseMessage = completion.choices[0].message;
-    
-    if (responseMessage.tool_calls) {
-      const functionCall = responseMessage.tool_calls[0].function;
-      const functionArgs = JSON.parse(functionCall.arguments);
-      return functionArgs;
-    } else {
-      throw new Error('No function call in the response');
-    }
-  } catch (error) {
-    console.error('Error generating agenda details:', error);
-    throw new Error('Failed to generate agenda details. Please try again.');
+    console.error("Failed to add event:", error);
+    throw new Error("Failed to schedule task in calendar. Please try again.");
   }
 }
