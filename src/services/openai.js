@@ -68,9 +68,10 @@ const functions = [
   },
 ];
 
-export async function handleAICommand(input, currentTasks) {
+export async function handleAICommand(input, currentTasks, currentNotes) {
   console.log('User input:', input);
   console.log('Current tasks:', currentTasks);
+  console.log('Current notes:', currentNotes);
 
   const messages = [
     {
@@ -80,10 +81,10 @@ export async function handleAICommand(input, currentTasks) {
     { role: 'user', content: input },
   ];
 
-  // Always include current tasks in the message
+  // Include current tasks and notes in the message
   messages.push({
     role: 'user',
-    content: JSON.stringify({ currentTasks: currentTasks })
+    content: JSON.stringify({ currentTasks, currentNotes })
   });
 
   const completion = await openai.chat.completions.create({

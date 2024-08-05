@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import TaskList from './TaskList';
 import NoteList from './NoteList';
 import VoiceInputSection from './VoiceInputSection';
@@ -6,20 +6,36 @@ import ListSelector from './ListSelector';
 
 function MainContent({ 
   currentTab, 
-  lists, 
-  currentList, 
-  updateList, 
+  tasks,
+  notes,
+  currentTaskList,
+  currentNoteList,
+  setCurrentTaskList,
+  setCurrentNoteList,
+  updateTaskList,
+  updateNoteList,
   recognizedText, 
   aiResponse, 
   isLoading, 
   error, 
   handleVoiceInput, 
   setRecognizedText, 
-  setCurrentList, 
-  addList,
-  deleteList
+  addTaskList,
+  addNoteList,
+  deleteTaskList,
+  deleteNoteList
 }) {
-  const currentTasks = lists[currentList]?.type === 'task' ? lists[currentList].items : [];
+  useEffect(() => {
+    console.log('Current tab:', currentTab);
+    console.log('Current tasks:', tasks);
+    console.log('Current task list:', currentTaskList);
+    console.log('Current notes:', notes);
+    console.log('Current note list:', currentNoteList);
+  }, [currentTab, tasks, currentTaskList, notes, currentNoteList]);
+
+  const currentItems = currentTab === 'tasks' 
+    ? tasks[currentTaskList]?.items || []
+    : notes[currentNoteList]?.items || [];
 
   return (
     <main>
@@ -28,50 +44,31 @@ function MainContent({
         setRecognizedText={setRecognizedText}
         recognizedText={recognizedText}
         aiResponse={aiResponse}
-        currentTasks={currentTasks}
+        currentItems={currentItems}
       />
-      <div className="task-controls">
+      <div className="list-controls">
         <ListSelector 
-          lists={lists}
-          currentList={currentList}
-          setCurrentList={setCurrentList}  // Ensure setCurrentList is passed
-          addList={addList}
-          deleteList={deleteList}
+          lists={currentTab === 'tasks' ? tasks : notes}
+          currentList={currentTab === 'tasks' ? currentTaskList : currentNoteList}
+          setCurrentList={currentTab === 'tasks' ? setCurrentTaskList : setCurrentNoteList}
+          addList={currentTab === 'tasks' ? addTaskList : addNoteList}
+          deleteList={currentTab === 'tasks' ? deleteTaskList : deleteNoteList}
           currentTab={currentTab}
         />
-        </div>
+      </div>
       {isLoading && <p className="loading">Processing...</p>}
       {error && <p className="error">{error}</p>}
-      {lists[currentList]?.type === 'task' && currentTab === 0 && (
+      {currentTab === 'tasks' ? (
         <TaskList
-          tasks={lists[currentList].items}
-          updateList={updateList}
-          currentList={currentList}
+          tasks={tasks[currentTaskList]?.items || []}
+          updateList={(newItems) => updateTaskList(currentTaskList, { items: newItems })}
+          currentList={currentTaskList}
         />
-      )}
-      {lists[currentList]?.type === 'note' && currentTab === 1 && (
+      ) : (
         <NoteList
-          notes={lists[currentList].items}
-          onAddNote={(newNoteText) => {
-            const newNote = {
-              id: `note-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              text: newNoteText,
-            };
-            updateList(currentList, {
-              ...lists[currentList],
-              items: [newNote, ...lists[currentList].items]
-            });
-          }}
-          onUpdateNote={(id, text) => {
-            const updatedNotes = lists[currentList].items.map(note =>
-              note.id === id ? { ...note, text } : note
-            );
-            updateList(currentList, { ...lists[currentList], items: updatedNotes });
-          }}
-          onDeleteNote={(id) => {
-            const updatedNotes = lists[currentList].items.filter(note => note.id !== id);
-            updateList(currentList, { ...lists[currentList], items: updatedNotes });
-          }}
+          notes={notes[currentNoteList]?.items || []}
+          updateList={(newItems) => updateNoteList(currentNoteList, { items: newItems })}
+          currentList={currentNoteList}
         />
       )}
     </main>

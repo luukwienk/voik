@@ -1,66 +1,74 @@
 import React, { useState, useEffect } from 'react';
-import { DragDropContext } from 'react-beautiful-dnd';
 import './App.css';
 import Header from './components/Header';
 import MainContent from './components/MainContent';
 import { useAuth } from './hooks/useAuth';
-import { useLists } from './hooks/useLists';
+import { useTasks } from './hooks/useTasks';
+import { useNotes } from './hooks/useNotes';
 import { useVoiceInput } from './hooks/useVoiceInput';
 import SignIn from './SignIn';
 import { initClient } from './services/googleCalendar';
 
 function App() {
   const { user, signOut } = useAuth();
-  const { lists, currentList, setCurrentList, addList, deleteList, updateList } = useLists(user);
-  const { recognizedText, aiResponse, isLoading, error, handleVoiceInput, setRecognizedText } = useVoiceInput(lists, currentList, updateList);
-  const [currentTab, setCurrentTab] = useState('tasks'); // Changed to a string to match section names
-  const [selectedList, setSelectedList] = useState(currentList); // Manage selected list state
+  const { tasks, currentTaskList, setCurrentTaskList, addTaskList, deleteTaskList, updateTaskList } = useTasks(user);
+  const { notes, currentNoteList, setCurrentNoteList, addNoteList, deleteNoteList, updateNoteList } = useNotes(user);
+  const { recognizedText, aiResponse, isLoading, error, handleVoiceInput, setRecognizedText } = useVoiceInput(tasks, notes, currentTaskList, currentNoteList, updateTaskList, updateNoteList);
+  const [currentTab, setCurrentTab] = useState('tasks');
 
   useEffect(() => {
     initClient().catch(error => console.error("Failed to initialize Google API client:", error));
   }, []);
 
   useEffect(() => {
-    setSelectedList(currentList);
-  }, [currentList]);
-
-  const onDragEnd = (result) => {
-    // Handle drag end logic
-  };
+    console.log('Tasks:', tasks);
+    console.log('Current Task List:', currentTaskList);
+    console.log('Notes:', notes);
+    console.log('Current Note List:', currentNoteList);
+  }, [tasks, currentTaskList, notes, currentNoteList]);
 
   if (!user) return <SignIn user={user} />;
 
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <div className="App">
-        <Header
-          user={user}
-          signOut={signOut}
-          currentTab={currentTab}
-          setCurrentTab={setCurrentTab}
-          lists={lists}
-          currentList={currentList}
-          setCurrentList={setCurrentList}
-          addList={addList}
-          deleteList={deleteList}
-        />
-        <MainContent
-          currentTab={currentTab}
-          lists={lists}
-          currentList={currentList}
-          setCurrentList={setCurrentList}
-          updateList={updateList}
-          recognizedText={recognizedText}
-          aiResponse={aiResponse}
-          isLoading={isLoading}
-          error={error}
-          handleVoiceInput={handleVoiceInput}
-          setRecognizedText={setRecognizedText}
-          addList={addList}
-          deleteList={deleteList}
-        />
-      </div>
-    </DragDropContext>
+    <div className="App">
+      <Header
+        user={user}
+        signOut={signOut}
+        currentTab={currentTab}
+        setCurrentTab={setCurrentTab}
+        tasks={tasks}
+        notes={notes}
+        currentTaskList={currentTaskList}
+        currentNoteList={currentNoteList}
+        setCurrentTaskList={setCurrentTaskList}
+        setCurrentNoteList={setCurrentNoteList}
+        addTaskList={addTaskList}
+        addNoteList={addNoteList}
+        deleteTaskList={deleteTaskList}
+        deleteNoteList={deleteNoteList}
+      />
+      <MainContent
+        currentTab={currentTab}
+        tasks={tasks}
+        notes={notes}
+        currentTaskList={currentTaskList}
+        currentNoteList={currentNoteList}
+        setCurrentTaskList={setCurrentTaskList}
+        setCurrentNoteList={setCurrentNoteList}
+        updateTaskList={updateTaskList}
+        updateNoteList={updateNoteList}
+        recognizedText={recognizedText}
+        aiResponse={aiResponse}
+        isLoading={isLoading}
+        error={error}
+        handleVoiceInput={handleVoiceInput}
+        setRecognizedText={setRecognizedText}
+        addTaskList={addTaskList}
+        addNoteList={addNoteList}
+        deleteTaskList={deleteTaskList}
+        deleteNoteList={deleteNoteList}
+      />
+    </div>
   );
 }
 

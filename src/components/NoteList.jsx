@@ -1,90 +1,112 @@
-// NoteList.jsx
 import React, { useState } from 'react';
-import { Droppable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCopy } from '@fortawesome/free-solid-svg-icons';
 import NoteCard from './NoteCard';
 
-const NoteList = ({ notes, onAddNote, onUpdateNote, onDeleteNote }) => {
+const NoteList = ({ notes, updateList, currentList }) => {
   const [newNoteText, setNewNoteText] = useState('');
   const [editingNoteId, setEditingNoteId] = useState(null);
 
   const handleAddNote = (e) => {
     e.preventDefault();
     if (newNoteText.trim()) {
-      onAddNote(newNoteText);
+      const newNote = {
+        id: `note-${Date.now()}`,
+        text: newNoteText,
+      };
+      updateList([newNote, ...notes]);
       setNewNoteText('');
     }
   };
 
-  return (
-    <div className="note-list">
-      <form onSubmit={handleAddNote} className="add-note-form">
-        <input
-          type="text"
-          value={newNoteText}
-          onChange={(e) => setNewNoteText(e.target.value)}
-          placeholder="Add a new note"
-        />
-        <button type="submit">+</button>
-      </form>
-      <div className="note-list-header">
-        <h3>Dit zijn mijn notities:</h3>
-        <button className="copy-list-btn" title="Copy list">
-          <FontAwesomeIcon icon={faCopy} />
-        </button>
-      </div>
-      <Droppable droppableId="droppable-notes">
-        {(provided) => (
-          <div
-            {...provided.droppableProps}
-            ref={provided.innerRef}
-            className="note-card-container"
-          >
-            {notes.map((note, index) => (
-              <NoteCard
-                key={note.id.toString()}
-                note={note}
-                index={index}
-                onEdit={(id) => setEditingNoteId(id)}
-                onDelete={onDeleteNote}
-              />
-            ))}
-            {provided.placeholder}
-          </div>
-        )}
-      </Droppable>
-      {editingNoteId !== null && (
-        <EditNote
-          note={notes.find((note) => note.id === editingNoteId)}
-          onSave={(updatedText) => {
-            onUpdateNote(editingNoteId, updatedText);
-            setEditingNoteId(null);
-          }}
-          onCancel={() => setEditingNoteId(null)}
-        />
-      )}
-    </div>
-  );
-};
+  const handleUpdateNote = (id, updatedText) => {
+    const updatedNotes = notes.map(note =>
+      note.id === id ? { ...note, text: updatedText } : note
+    );
+    updateList(updatedNotes);
+  };
 
-const EditNote = ({ note, onSave, onCancel }) => {
-  const [updatedText, setUpdatedText] = useState(note.text);
+  const handleDeleteNote = (id) => {
+    const updatedNotes = notes.filter(note => note.id !== id);
+    updateList(updatedNotes);
+  };
 
-  const handleSave = () => {
-    onSave(updatedText);
+  const copyNotesToClipboard = () => {
+    const noteText = notes.map(note => note.text).join('\n\n');
+    navigator.clipboard.writeText(noteText).then(() => {
+      alert('Copied notes!');
+    }, (err) => {
+      console.error('Could not copy notes: ', err);
+    });
+  };
+
+  const onDragEnd = (result) => {
+    const { source, destination } = result;
+
+    if (!destination) {
+      return;
+    }
+
+    const reorderedNotes = Array.from(notes);
+    const [removed] = reorderedNotes.splice(source.index, 1);
+    reorderedNotes.splice(destination.index, 0, removed);
+
+    updateList(reorderedNotes);
+    console.log('Reordered notes:', reorderedNotes);
   };
 
   return (
-    <div className="edit-note">
-      <input
-        type="text"
-        value={updatedText}
-        onChange={(e) => setUpdatedText(e.target.value)}
-      />
-      <button onClick={handleSave}>Save</button>
-      <button onClick={onCancel}>Cancel</button>
-    </div>
+    <DragDropContext onDragEnd={onDragEnd}>
+      <div className="note-list">
+        <form onSubmit={handleAddNote} className="add-note-form">
+          <input
+            type="text"
+            value={newNoteText}
+            onChange={(e) => setNewNoteText(e.target.value)}
+            placeholder="Add a new note"
+          />
+          <button type="submit">+</button>
+        </form>
+        <div className="note-list-header">
+          <h3>{currentList} Notes:</h3>
+          <button onClick={copyNotesToClipboard} className="copy-list-btn" title="Copy list">
+            <FontAwesomeIcon icon={faCopy} />
+          </button>
+        </div>
+        <Droppable droppableId={`notes-${currentList}`}>
+          {(provided) => (
+            <div
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              className="note-card-container"
+            >
+              {notes.map((note, index) => (
+                <Draggable key={note.id} draggableId={note.id} index={index}>
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                      className={`note-item ${snapshot.isDragging ? 'dragging' : ''}`}
+                    >
+                      <NoteCard
+                        note={note}
+                        index={index}
+                        onEdit={(id) => setEditingNoteId(id)}
+                        onDelete={handleDeleteNote}
+                        onSave={handleUpdateNote}
+                      />
+                    </div>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </div>
+    </DragDropContext>
   );
 };
 
