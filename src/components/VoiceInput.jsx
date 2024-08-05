@@ -4,7 +4,7 @@ import { faMicrophone, faMicrophoneSlash } from '@fortawesome/free-solid-svg-ico
 import useSpeechRecognition from '../hooks/useSpeechRecognition';
 import { handleAICommand } from '../services/openai';
 
-const VoiceInput = ({ currentTasks, onInputComplete, onTextChange, language = 'en-US' }) => {
+const VoiceInput = ({ currentTasks, onInputComplete, setRecognizedText, language = 'en-US' }) => {
   const { isListening, recognizedText, error, startListening, stopListening } = useSpeechRecognition(language);
   const processedRef = useRef(false);
 
@@ -13,21 +13,21 @@ const VoiceInput = ({ currentTasks, onInputComplete, onTextChange, language = 'e
       stopListening();
     } else {
       startListening();
-      processedRef.current = false; // Reset the processed flag when starting to listen
+      processedRef.current = false;
     }
   };
 
   useEffect(() => {
+    setRecognizedText(recognizedText);  // Update recognized text in parent component
     if (!isListening && recognizedText && !processedRef.current) {
-      // When recognition stops and we have text, handle the AI command
       const processInput = async () => {
         try {
           console.log('Processing input:', recognizedText);
           const result = await handleAICommand(recognizedText, currentTasks);
-          processedRef.current = true; // Mark as processed
+          processedRef.current = true;
           
           if (onInputComplete) {
-            onInputComplete(result);
+            onInputComplete({ ...result, recognizedText });
           }
         } catch (error) {
           console.error(error);
@@ -36,10 +36,7 @@ const VoiceInput = ({ currentTasks, onInputComplete, onTextChange, language = 'e
 
       processInput();
     }
-    if (onTextChange) {
-      onTextChange(recognizedText);
-    }
-  }, [recognizedText, isListening, currentTasks, onTextChange, onInputComplete]);
+  }, [recognizedText, isListening, currentTasks, onInputComplete, setRecognizedText]);
 
   return (
     <div className="voice-input">

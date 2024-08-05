@@ -10,19 +10,21 @@ const EditTask = ({ task, onSave, onCancel }) => {
   };
 
   return (
-    <div>
-      <input
-        className="edit-task-input"
-        type="text"
+    <div className="edit-task-container">
+      <textarea
+        className="edit-task-textarea"
         value={newText}
         onChange={(e) => setNewText(e.target.value)}
+        rows={3}
       />
-      <button onClick={handleSave}>
-        <FontAwesomeIcon icon={faCheck} />
-      </button>
-      <button onClick={onCancel}>
-        <FontAwesomeIcon icon={faTimes} />
-      </button>
+      <div className="edit-task-buttons">
+        <button onClick={handleSave} className="save-task-btn">
+          <FontAwesomeIcon icon={faCheck} />
+        </button>
+        <button onClick={onCancel} className="cancel-task-btn">
+          <FontAwesomeIcon icon={faTimes} />
+        </button>
+      </div>
     </div>
   );
 };

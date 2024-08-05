@@ -2,7 +2,7 @@ import React from 'react';
 import { signInWithGoogle } from './firebase';
 import { getAuth, signOut } from 'firebase/auth';
 
-const SignIn = () => {
+const SignIn = ({ user }) => {
   const handleSignIn = async () => {
     try {
       await signInWithGoogle();
@@ -24,8 +24,14 @@ const SignIn = () => {
 
   return (
     <div>
-      <button onClick={handleSignIn}>Sign in with Google</button>
-      <button onClick={handleSignOut}>Sign out</button>
+      {user ? (
+        <>
+          <span>{user.email}</span>
+          <button onClick={handleSignOut}>Sign out</button>
+        </>
+      ) : (
+        <button onClick={handleSignIn}>Sign in with Google</button>
+      )}
     </div>
   );
 };

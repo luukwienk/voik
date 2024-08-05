@@ -7,12 +7,8 @@ const SCOPES = "https://www.googleapis.com/auth/calendar.events";
 
 let isInitialized = false;
 
-const updateSigninStatus = (isSignedIn) => {
-  if (isSignedIn) {
-    console.log("User is signed in to Google");
-  } else {
-    console.log("User is not signed in to Google");
-  }
+export const isGoogleClientReady = () => {
+  return isInitialized && gapi.auth2 && gapi.auth2.getAuthInstance() && gapi.auth2.getAuthInstance().isSignedIn.get();
 };
 
 export const initClient = () => {
@@ -24,8 +20,6 @@ export const initClient = () => {
         discoveryDocs: DISCOVERY_DOCS,
         scope: SCOPES
       }).then(() => {
-        gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
-        updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
         isInitialized = true;
         resolve();
       }).catch(error => {
@@ -36,31 +30,23 @@ export const initClient = () => {
   });
 };
 
-export const handleAuthClick = () => {
+export const handleGoogleCalendarAuth = async () => {
   if (!isInitialized) {
-    console.error("Google API client not initialized. Call initClient first.");
-    return;
+    await initClient();
   }
-  const GoogleAuth = gapi.auth2.getAuthInstance();
-  if (!GoogleAuth.isSignedIn.get()) {
-    GoogleAuth.signIn().catch(error => {
-      console.error("Error signing in:", error);
-    });
-  } else {
-    GoogleAuth.signOut().catch(error => {
-      console.error("Error signing out:", error);
-    });
+  if (!gapi.auth2.getAuthInstance().isSignedIn.get()) {
+    try {
+      await gapi.auth2.getAuthInstance().signIn();
+    } catch (error) {
+      console.error("Error signing in to Google:", error);
+      throw error;
+    }
   }
 };
 
 export const addEventToCalendar = async (event) => {
-  if (!isInitialized) {
-    throw new Error('Google API client not initialized. Call initClient first.');
-  }
-
-  const GoogleAuth = gapi.auth2.getAuthInstance();
-  if (!GoogleAuth.isSignedIn.get()) {
-    throw new Error('User not signed in to Google. Call handleAuthClick first.');
+  if (!isGoogleClientReady()) {
+    await handleGoogleCalendarAuth();
   }
 
   try {
@@ -72,7 +58,6 @@ export const addEventToCalendar = async (event) => {
     return response;
   } catch (error) {
     console.error("Error adding event to calendar:", error);
-    console.error("Error details:", error.result.error);
     throw error;
   }
 };

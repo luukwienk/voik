@@ -49,19 +49,33 @@ const functions = [
       type: 'object',
       properties: {
         taskDescription: { type: 'string' },
+        startDateTime: { type: 'string', format: 'date-time' },
+        endDateTime: { type: 'string', format: 'date-time' }
       },
-      required: ['taskDescription'],
+      required: ['taskDescription', 'startDateTime', 'endDateTime']
+    }
+  },
+  {
+    name: 'generateNotes',
+    description: 'Generate notes from input text',
+    parameters: {
+      type: 'object',
+      properties: {
+        input: { type: 'string' },
+      },
+      required: ['input'],
     },
   },
 ];
 
 export async function handleAICommand(input, currentTasks) {
   console.log('User input:', input);
+  console.log('Current tasks:', currentTasks);
 
   const messages = [
     {
       role: 'system',
-      content: 'I am an AI that can generate tasks, read them aloud, and schedule tasks in a calendar. Based on the user input, decide the appropriate action.'
+      content: 'I am an AI that can generate tasks, read them aloud, schedule tasks in a calendar, and generate notes. Based on the user input, decide the appropriate action.'
     },
     { role: 'user', content: input },
   ];
@@ -82,7 +96,7 @@ export async function handleAICommand(input, currentTasks) {
   console.log('Completion response:', completion);
 
   const aiMessage = completion.choices[0].message;
-  
+
   if (aiMessage.function_call) {
     const { name, arguments: args } = aiMessage.function_call;
     const parsedArgs = JSON.parse(args);
@@ -96,21 +110,29 @@ export async function handleAICommand(input, currentTasks) {
       case 'readTasksAloud':
         await readTasksAloud(parsedArgs.tasks);
         return { type: 'action', data: 'Tasks read aloud' };
-        case 'planTaskInCalendar':
-          try {
-            const result = await planTaskInCalendar(parsedArgs.taskDescription);
-            return { type: 'action', data: result };
-          } catch (error) {
-            console.error('Error scheduling task in calendar:', error);
-            return { type: 'error', data: error.message };
-          }
-        // ... other cases ...
-      }
-  } else {
-    // If no function call was determined, return the AI's text response
+      case 'planTaskInCalendar':
+        try {
+          const result = await planTaskInCalendar(parsedArgs.taskDescription, parsedArgs.startDateTime, parsedArgs.endDateTime);
+          return { type: 'action', data: result };
+        } catch (error) {
+          console.error('Error scheduling task in calendar:', error);
+          return { type: 'error', data: error.message };
+        }
+      case 'generateNotes':
+        const newNotes = await generateNotes(parsedArgs.input);
+        return { type: 'notes', data: newNotes };
+      default:
+        console.error('Unknown function call:', name);
+        return { type: 'error', data: `Received an unknown function call: ${name}` };
+    }
+  } else if (aiMessage.content) {
     return { type: 'text', data: aiMessage.content };
+  } else {
+    console.error('Unknown response structure:', aiMessage);
+    return { type: 'error', data: 'Received an unknown response type from AI.' };
   }
 }
+
 
 export async function generateTasks(prompt) {
   try {
@@ -153,26 +175,91 @@ export async function generateTasks(prompt) {
   }
 }
 
-async function planTaskInCalendar(taskDescription) {
+export async function generateNotes(prompt) {
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: "You are a helpful assistant that generates notes. Interpret the input you receive as the output from someone who is trying to convey a list of notes. If the input is unclear, distill the notes from it the best you can. Provide your response as a JSON array of note strings. When the input is a single word or only a few words, add it as a note. When you are in doubt what notes to extract from the input provide a short funny response, indicating that you want the user to try the input again"
+        },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.7,
+    });
+
+    const content = completion.choices[0].message.content;
+    let notes;
+
+    // Remove Markdown code block syntax if present
+    const jsonString = content.replace(/^```json\n|\n```$/g, '').trim();
+
+    try {
+      notes = JSON.parse(jsonString);
+      if (!Array.isArray(notes)) {
+        notes = [notes];
+      }
+    } catch (parseError) {
+      console.error('Error parsing notes:', parseError);
+      // If parsing fails, split by commas and remove quotes
+      notes = jsonString.split(',').map(note => note.replace(/^["'\s]+|["'\s]+$/g, ''));
+    }
+
+    // Ensure each note is a string and non-empty
+    notes = notes.map(note => note.toString().trim()).filter(note => note !== '');
+
+    return notes;
+  } catch (error) {
+    console.error('Error generating notes:', error);
+    throw new Error('Failed to generate notes. Please try again.');
+  }
+}
+
+async function planTaskInCalendar(taskDescription, startDateTime, endDateTime) {
   console.log('Planning task in calendar:', taskDescription);
-  const event = {
-    summary: taskDescription,
-    start: {
-      dateTime: new Date().toISOString(),
-      timeZone: 'America/Los_Angeles',
-    },
-    end: {
-      dateTime: new Date(new Date().getTime() + 60 * 60 * 1000).toISOString(),
-      timeZone: 'America/Los_Angeles',
-    },
-  };
+  console.log('Received Start DateTime:', startDateTime);
+  console.log('Received End DateTime:', endDateTime);
+
+  // Validate the date-time values
+  const start = new Date(startDateTime);
+  const end = new Date(endDateTime);
+
+  console.log('Parsed Start DateTime:', start);
+  console.log('Parsed End DateTime:', end);
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    const errorMsg = 'Invalid date-time values provided.';
+    console.error(errorMsg);
+    console.error('Invalid Start DateTime:', startDateTime);
+    console.error('Invalid End DateTime:', endDateTime);
+    return `Failed to schedule task in calendar: ${errorMsg}`;
+  }
 
   try {
+    const event = {
+      summary: taskDescription,
+      start: {
+        dateTime: start.toISOString(),  // Ensure it's in ISO 8601 format
+        timeZone: 'Europe/Amsterdam',  // You can change 'UTC' to your desired time zone
+      },
+      end: {
+        dateTime: end.toISOString(),  // Ensure it's in ISO 8601 format
+        timeZone: 'Europe/Amsterdam',  // You can change 'UTC' to your desired time zone
+      },
+    };
+
+    console.log('Event to be added:', event);
+
     await addEventToCalendar(event);
     console.log("Event added successfully");
     return "Task scheduled in calendar successfully";
   } catch (error) {
-    console.error("Failed to add event:", error);
-    throw new Error("Failed to schedule task in calendar. Please try again.");
+    console.error("Failed to schedule task in calendar:", error);
+    return `Failed to schedule task in calendar: ${error.message}. Please ensure you're signed in to Google Calendar and try again.`;
   }
 }
+
+
+
+

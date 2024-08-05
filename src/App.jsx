@@ -1,319 +1,64 @@
 import React, { useState, useEffect } from 'react';
 import { DragDropContext } from 'react-beautiful-dnd';
 import './App.css';
-import VoiceInput from './components/VoiceInput';
-import TaskList from './components/TaskList';
-import { generateTasks } from './services/openai';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash } from '@fortawesome/free-solid-svg-icons';
+import Header from './components/Header';
+import MainContent from './components/MainContent';
+import { useAuth } from './hooks/useAuth';
+import { useLists } from './hooks/useLists';
+import { useVoiceInput } from './hooks/useVoiceInput';
 import SignIn from './SignIn';
-import { auth, db, signOutUser, onAuthStateChanged, collection, getDocs, setDoc, doc, deleteDoc } from './firebase';
 import { initClient } from './services/googleCalendar';
 
-  
-
 function App() {
-  const [user, setUser] = useState(null);
-  const [lists, setLists] = useState({ 'Today': [] });
-  const [currentList, setCurrentList] = useState('Today');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [recognizedText, setRecognizedText] = useState('');
-  const [tasksLoaded, setTasksLoaded] = useState(false);
-  const [aiResponse, setAiResponse] = useState('');
+  const { user, signOut } = useAuth();
+  const { lists, currentList, setCurrentList, addList, deleteList, updateList } = useLists(user);
+  const { recognizedText, aiResponse, isLoading, error, handleVoiceInput, setRecognizedText } = useVoiceInput(lists, currentList, updateList);
+  const [currentTab, setCurrentTab] = useState('tasks'); // Changed to a string to match section names
+  const [selectedList, setSelectedList] = useState(currentList); // Manage selected list state
 
   useEffect(() => {
     initClient().catch(error => console.error("Failed to initialize Google API client:", error));
   }, []);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        console.log('User signed in:', user);
-        setUser(user);
-        loadTasks(user.uid);
-      } else {
-        console.log('User signed out');
-        setUser(null);
-        setLists({ 'Today': [] });
-        setCurrentList('Today');
-        setTasksLoaded(false);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const loadTasks = async (userId) => {
-    try {
-      console.log('Loading tasks for user:', userId);
-      const listsCollection = collection(db, 'users', userId, 'lists');
-      const listsSnapshot = await getDocs(listsCollection);
-      const loadedLists = {};
-      listsSnapshot.forEach((doc) => {
-        loadedLists[doc.id] = doc.data().tasks || [];
-      });
-      if (Object.keys(loadedLists).length === 0) {
-        // No lists exist, create the default list
-        loadedLists['Today'] = [];
-        await saveTasks(userId, loadedLists);
-      }
-      console.log('Loaded lists:', loadedLists);
-      setLists(loadedLists);
-      setCurrentList(Object.keys(loadedLists)[0]); // Set the current list to the first available list
-      setTasksLoaded(true);
-    } catch (error) {
-      console.error('Error loading tasks:', error);
-      setError('Failed to load tasks. Please try again.');
-    }
-  };
-
-  const saveTasks = async (userId, lists) => {
-    if (!tasksLoaded) return;  // Check if tasks have been loaded
-    try {
-      console.log('Saving tasks for user:', userId);
-      const listsCollection = collection(db, 'users', userId, 'lists');
-      for (const listName in lists) {
-        await setDoc(doc(listsCollection, listName), { tasks: lists[listName] });
-      }
-      console.log('Tasks and lists saved');
-    } catch (error) {
-      console.error('Error saving tasks and lists:', error);
-      setError('Failed to save tasks and lists. Please try again.');
-    }
-  };
-
-  const deleteListFromDatabase = async (userId, listName) => {
-    try {
-      const listDoc = doc(db, 'users', userId, 'lists', listName);
-      await deleteDoc(listDoc);
-      console.log(`List "${listName}" deleted from database`);
-    } catch (error) {
-      console.error('Error deleting list:', error);
-      setError('Failed to delete list. Please try again.');
-    }
-  };
-
-  useEffect(() => {
-    if (user && tasksLoaded) { // Only save tasks if they have been loaded
-      saveTasks(user.uid, lists);
-    }
-  }, [lists, user, tasksLoaded]);
-
-  const handleVoiceInput = async (result) => {
-    console.log('AI response:', result);
-    setIsLoading(true);
-    setError(null);
-    try {
-      switch (result.type) {
-        case 'tasks':
-          const newTasks = result.data.map(task => ({
-            id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            text: task,
-            completed: false
-          }));
-          setLists(prevLists => {
-            const updatedLists = { ...prevLists };
-            if (!updatedLists[currentList]) {
-              updatedLists[currentList] = [];
-            }
-            return {
-              ...updatedLists,
-              [currentList]: [...newTasks, ...updatedLists[currentList]]
-            };
-          });
-          setAiResponse('New tasks have been added to your list.');
-          break;
-        case 'action':
-          setAiResponse(result.data);
-          break;
-        case 'text':
-          setAiResponse(result.data);
-          break;
-          case 'error':
-            setError(result.data);
-            break;
-          default:
-            console.error('Unknown result type:', result.type);
-            setError('Received an unknown response type from AI.');
-        }
-      } catch (error) {
-        console.error('Error processing AI response:', error);
-        setError('Failed to process AI response. Please try again.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-  const handleAddTask = (newTaskText) => {
-    const newTask = {
-      id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      text: newTaskText,
-      completed: false
-    };
-    setLists(prevLists => {
-      const updatedLists = { ...prevLists };
-      if (!updatedLists[currentList]) {
-        updatedLists[currentList] = [];
-      }
-      return {
-        ...updatedLists,
-        [currentList]: [newTask, ...updatedLists[currentList]]
-      };
-    });
-  };
-
-  const handleTextChange = (text) => {
-    setRecognizedText(text);
-  };
-
-  const toggleTaskCompletion = (taskId) => {
-    setLists(prevLists => ({
-      ...prevLists,
-      [currentList]: prevLists[currentList].map(task =>
-        task.id === taskId ? { ...task, completed: !task.completed } : task
-      )
-    }));
-  };
-
-  const deleteTask = (taskId) => {
-    setLists(prevLists => ({
-      ...prevLists,
-      [currentList]: prevLists[currentList].filter(task => task.id !== taskId)
-    }));
-  };
-
-  const handleListChange = (e) => {
-    if (e.target.value === 'new') {
-      addNewList();
-    } else {
-      setCurrentList(e.target.value);
-    }
-  };
-
-  const addNewList = () => {
-    const listName = prompt('Enter the name for your new list:');
-    if (listName && !lists[listName]) {
-      setLists(prevLists => ({
-        ...prevLists,
-        [listName]: []
-      }));
-      setCurrentList(listName);
-    } else if (lists[listName]) {
-      alert('A list with this name already exists.');
-    }
-  };
-
-  const deleteList = (listName) => {
-    if (listName === 'Today') {
-      alert('The default list cannot be removed.');
-      return;
-    }
-    if (window.confirm(`Are you sure you want to delete the "${listName}" list?`)) {
-      setLists(prevLists => {
-        const { [listName]: deletedList, ...restLists } = prevLists;
-        if (user) {
-          deleteListFromDatabase(user.uid, listName);
-        }
-        const newCurrentList = currentList === listName ? Object.keys(restLists)[0] || 'Today' : currentList;
-        setCurrentList(newCurrentList);
-        return restLists;
-      });
-    }
-  };
-
-  const updateTask = (taskId, newText) => {
-    setLists(prevLists => ({
-      ...prevLists,
-      [currentList]: prevLists[currentList].map(task =>
-        task.id === taskId ? { ...task, text: newText } : task
-      )
-    }));
-  };
-
-  const reorderTasks = (startIndex, endIndex) => {
-    setLists(prevLists => {
-      const currentTasks = [...prevLists[currentList]];
-      const [reorderedItem] = currentTasks.splice(startIndex, 1);
-      currentTasks.splice(endIndex, 0, reorderedItem);
-      return {
-        ...prevLists,
-        [currentList]: currentTasks
-      };
-    });
-  };
+    setSelectedList(currentList);
+  }, [currentList]);
 
   const onDragEnd = (result) => {
-    if (!result.destination) {
-      return;
-    }
-    reorderTasks(result.source.index, result.destination.index);
+    // Handle drag end logic
   };
 
-  const [agendaItems, setAgendaItems] = useState([]);
-
-  const handleCreateAgendaItem = (task, agendaDetails) => {
-    const newAgendaItem = {
-      id: `agenda-${Date.now()}`,
-      taskId: task.id,
-      ...agendaDetails
-    };
-    setAgendaItems(prevItems => [...prevItems, newAgendaItem]);
-  };
-
-  if (!user) {
-    return <SignIn />;
-  }
+  if (!user) return <SignIn user={user} />;
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="App">
-        <header className="app-header">
-          <div className="list-selector">
-            <select value={currentList} onChange={handleListChange}>
-              {Object.keys(lists).map(listName => (
-                <option key={listName} value={listName}>{listName}</option>
-              ))}
-              <option value="new">+ New List</option>
-            </select>
-            <button className="remove-list-btn" onClick={() => deleteList(currentList)}>
-              <FontAwesomeIcon icon={faTrash} />
-            </button>
-            <button onClick={signOutUser}>Sign out</button>
-          </div>
-          <VoiceInput 
-  currentTasks={lists[currentList]}
-  onInputComplete={handleVoiceInput} 
-  onTextChange={handleTextChange}
-  language="en-US" 
-/>
-
-          <div className="user-info">
-            {user && (
-              <p className="user-email">{user.email}</p>
-            )}
-          </div>
-        </header>
-
-        <div className="prompt-display">
-          {recognizedText && <p>You said: {recognizedText}</p>}
-          {aiResponse && <p>AI response: {aiResponse}</p>}
-        </div>
-
-        {isLoading && <p className="loading">Generating tasks...</p>}
-        {error && <p className="error">{error}</p>}
-
-        <main>
-          {lists[currentList] && (
-            <TaskList 
-              tasks={lists[currentList]} 
-              onToggleCompletion={toggleTaskCompletion}
-              onDeleteTask={deleteTask}
-              onUpdateTask={updateTask}
-              onCreateAgendaItem={handleCreateAgendaItem}
-              onAddTask={handleAddTask}
-            />
-          )}
-        </main>
+        <Header
+          user={user}
+          signOut={signOut}
+          currentTab={currentTab}
+          setCurrentTab={setCurrentTab}
+          lists={lists}
+          currentList={currentList}
+          setCurrentList={setCurrentList}
+          addList={addList}
+          deleteList={deleteList}
+        />
+        <MainContent
+          currentTab={currentTab}
+          lists={lists}
+          currentList={currentList}
+          setCurrentList={setCurrentList}
+          updateList={updateList}
+          recognizedText={recognizedText}
+          aiResponse={aiResponse}
+          isLoading={isLoading}
+          error={error}
+          handleVoiceInput={handleVoiceInput}
+          setRecognizedText={setRecognizedText}
+          addList={addList}
+          deleteList={deleteList}
+        />
       </div>
     </DragDropContext>
   );
