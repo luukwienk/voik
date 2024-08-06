@@ -1,3 +1,4 @@
+// App.jsx
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import Header from './components/Header';
@@ -14,7 +15,7 @@ function App() {
   const { tasks, currentTaskList, setCurrentTaskList, addTaskList, deleteTaskList, updateTaskList } = useTasks(user);
   const { notes, currentNoteList, setCurrentNoteList, addNoteList, deleteNoteList, updateNoteList } = useNotes(user);
   const { recognizedText, aiResponse, isLoading, error, handleVoiceInput, setRecognizedText } = useVoiceInput(tasks, notes, currentTaskList, currentNoteList, updateTaskList, updateNoteList);
-  const [currentTab, setCurrentTab] = useState('tasks');
+  const [currentTab, setCurrentTab] = useState(0); // Changed to 0 for 'tasks'
 
   useEffect(() => {
     initClient().catch(error => console.error("Failed to initialize Google API client:", error));
@@ -28,21 +29,23 @@ function App() {
   }, [tasks, currentTaskList, notes, currentNoteList]);
 
   useEffect(() => {
-    if (currentTab === 'tasks') {
+    if (currentTab === 0) { // 0 for 'tasks'
       console.log('App: Switching to tasks, setting currentTaskList to "Today"');
-      setCurrentTaskList('Today'); // Assuming 'Today' is a valid default for tasks
-    } else {
+      setCurrentTaskList('Today');
+    } else if (currentTab === 1) { // 1 for 'notes'
       console.log('App: Switching to notes, setting currentNoteList to "My Notes"');
-      setCurrentNoteList('My Notes'); // Assuming 'My Notes' is a valid default for notes
+      setCurrentNoteList('My Notes');
     }
   }, [currentTab, setCurrentTaskList, setCurrentNoteList]);
 
   const handleTabChange = (tab) => {
-    setCurrentTab(tab);
-    if (tab === 'tasks') {
-      setCurrentTaskList('Today');
-    } else {
-      setCurrentNoteList('My Notes');
+    if (tab !== currentTab) {
+      setCurrentTab(tab);
+      if (tab === 0) { // 0 for 'tasks'
+        setCurrentTaskList('Today');
+      } else if (tab === 1) { // 1 for 'notes'
+        setCurrentNoteList('My Notes');
+      }
     }
   };
 
