@@ -11,7 +11,7 @@ const TabsNavigation = ({ onTabChange }) => {
   };
 
   return (
-    <Box sx={{ bgcolor: 'white' }}> // Removed border properties
+    <Box sx={{ bgcolor: 'white' }}> 
       <Tabs
         value={value}
         onChange={handleChange}
