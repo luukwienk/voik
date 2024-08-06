@@ -27,6 +27,25 @@ function App() {
     console.log('Current Note List:', currentNoteList);
   }, [tasks, currentTaskList, notes, currentNoteList]);
 
+  useEffect(() => {
+    if (currentTab === 'tasks') {
+      console.log('App: Switching to tasks, setting currentTaskList to "Today"');
+      setCurrentTaskList('Today'); // Assuming 'Today' is a valid default for tasks
+    } else {
+      console.log('App: Switching to notes, setting currentNoteList to "My Notes"');
+      setCurrentNoteList('My Notes'); // Assuming 'My Notes' is a valid default for notes
+    }
+  }, [currentTab, setCurrentTaskList, setCurrentNoteList]);
+
+  const handleTabChange = (tab) => {
+    setCurrentTab(tab);
+    if (tab === 'tasks') {
+      setCurrentTaskList('Today');
+    } else {
+      setCurrentNoteList('My Notes');
+    }
+  };
+
   if (!user) return <SignIn user={user} />;
 
   return (
@@ -35,7 +54,7 @@ function App() {
         user={user}
         signOut={signOut}
         currentTab={currentTab}
-        setCurrentTab={setCurrentTab}
+        setCurrentTab={handleTabChange}
         tasks={tasks}
         notes={notes}
         currentTaskList={currentTaskList}

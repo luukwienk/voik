@@ -1,4 +1,6 @@
 import React from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
 
 const ListSelector = ({ lists, currentList, setCurrentList, addList, deleteList, currentTab }) => {
   const listNames = Object.keys(lists);
@@ -14,13 +16,11 @@ const ListSelector = ({ lists, currentList, setCurrentList, addList, deleteList,
             {listName}
           </option>
         ))}
+        <option value="add-new-list">+ Add New List</option>
       </select>
-      <button onClick={() => addList(prompt('Enter new list name'))}>
-        + New {currentTab === 'tasks' ? 'Task' : 'Note'} List
-      </button>
       {currentList !== 'Today' && (
         <button onClick={() => deleteList(currentList)}>
-          Delete List
+          <FontAwesomeIcon icon={faTrash} />
         </button>
       )}
     </div>

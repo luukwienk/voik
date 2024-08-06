@@ -77,7 +77,7 @@ const TaskList = ({ tasks, updateList, currentList }) => {
           <button type="submit">+</button>
         </form>
         <div className="task-list-header">
-          <h3>{currentList} Tasks:</h3>
+          <h3>{currentList} :</h3>
           <button onClick={copyTasksToClipboard} className="copy-list-btn" title="Copy list">
             <FontAwesomeIcon icon={faCopy} />
           </button>

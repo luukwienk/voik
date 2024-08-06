@@ -26,6 +26,16 @@ function MainContent({
   deleteNoteList
 }) {
   useEffect(() => {
+    if (currentTab === 'tasks') {
+      console.log('MainContent: Switching to tasks, setting currentTaskList to "Today"');
+      setCurrentTaskList('Today'); // Assuming 'Today' is a valid default for tasks
+    } else {
+      console.log('MainContent: Switching to notes, setting currentNoteList to "My Notes"');
+      setCurrentNoteList('My Notes'); // Assuming 'My Notes' is a valid default for notes
+    }
+  }, [currentTab, setCurrentTaskList, setCurrentNoteList]);
+
+  useEffect(() => {
     console.log('Current tab:', currentTab);
     console.log('Current tasks:', tasks);
     console.log('Current task list:', currentTaskList);
