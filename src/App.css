@@ -372,7 +372,26 @@ select:hover, button:hover {
   padding: 10px;
 }
 
+.MuiBox-root {
+  background-color: white;
+  box-shadow: none;
+}
 
+.MuiTabs-root {
+  border-bottom: none;
+}
+
+.MuiTab-root {
+  color: #000;
+}
+
+.MuiTab-root.Mui-selected {
+  color: #1976d2; /* This is the default primary color for Material-UI */
+}
+
+.MuiTabs-indicator {
+  background-color: #1976d2;
+}
 
 
 /* Dark mode styles */
@@ -566,8 +585,23 @@ select:hover, button:hover {
   .note-card button:hover {
     background-color: #555;
   }
+
+
+  .MuiBox-root {
+    background-color: #121212;
+  }
+
+  .MuiTab-root {
+    color: #fff;
+  }
+
+  .MuiTab-root.Mui-selected {
+    color: #90caf9; /* A lighter blue for better contrast in dark mode */
+  }
+
+  .MuiTabs-indicator {
+    background-color: #90caf9;
+  }
 }
-
-
 
 

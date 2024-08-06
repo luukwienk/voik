@@ -3,10 +3,10 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCopy } from '@fortawesome/free-solid-svg-icons';
 import NoteCard from './NoteCard';
+import { TextField, Button, Box, Typography } from '@mui/material';
 
 const NoteList = ({ notes, updateList, currentList }) => {
   const [newNoteText, setNewNoteText] = useState('');
-  const [editingNoteId, setEditingNoteId] = useState(null);
 
   const handleAddNote = (e) => {
     e.preventDefault();
@@ -53,27 +53,28 @@ const NoteList = ({ notes, updateList, currentList }) => {
     reorderedNotes.splice(destination.index, 0, removed);
 
     updateList(reorderedNotes);
-    console.log('Reordered notes:', reorderedNotes);
   };
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="note-list">
+      <Box className="note-list">
         <form onSubmit={handleAddNote} className="add-note-form">
-          <input
-            type="text"
+          <TextField
+            fullWidth
             value={newNoteText}
             onChange={(e) => setNewNoteText(e.target.value)}
             placeholder="Add a new note"
+            variant="outlined"
+            size="small"
           />
-          <button type="submit">+</button>
+          <Button type="submit" variant="contained" color="primary">+</Button>
         </form>
-        <div className="note-list-header">
-          <h3>{currentList} Notes:</h3>
-          <button onClick={copyNotesToClipboard} className="copy-list-btn" title="Copy list">
-            <FontAwesomeIcon icon={faCopy} />
-          </button>
-        </div>
+        <Box className="note-list-header" display="flex" justifyContent="space-between" alignItems="center" mt={2} mb={2}>
+          <Typography variant="h6">{currentList} Notes:</Typography>
+          <Button onClick={copyNotesToClipboard} startIcon={<FontAwesomeIcon icon={faCopy} />} variant="outlined">
+            Copy list
+          </Button>
+        </Box>
         <Droppable droppableId={`notes-${currentList}`}>
           {(provided) => (
             <div
@@ -87,15 +88,14 @@ const NoteList = ({ notes, updateList, currentList }) => {
                     <div
                       ref={provided.innerRef}
                       {...provided.draggableProps}
-                      {...provided.dragHandleProps}
                       className={`note-item ${snapshot.isDragging ? 'dragging' : ''}`}
                     >
                       <NoteCard
                         note={note}
-                        index={index}
-                        onEdit={(id) => setEditingNoteId(id)}
+                        onEdit={() => {}} // This is now handled within the NoteCard
                         onDelete={handleDeleteNote}
                         onSave={handleUpdateNote}
+                        dragHandleProps={provided.dragHandleProps}
                       />
                     </div>
                   )}
@@ -105,7 +105,7 @@ const NoteList = ({ notes, updateList, currentList }) => {
             </div>
           )}
         </Droppable>
-      </div>
+      </Box>
     </DragDropContext>
   );
 };

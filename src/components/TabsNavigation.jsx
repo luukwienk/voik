@@ -11,21 +11,21 @@ const TabsNavigation = ({ onTabChange }) => {
   };
 
   return (
-    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+    <Box sx={{ bgcolor: 'white' }}> // Removed border properties
       <Tabs
         value={value}
         onChange={handleChange}
         aria-label="tabs navigation"
-        textColor="inherit"
+        textColor="primary"
         indicatorColor="primary"
         sx={{
           '& .MuiTabs-indicator': {
-            backgroundColor: theme.palette.mode === 'dark' ? '#fff' : '#000',
+            backgroundColor: theme.palette.primary.main,
           },
           '& .MuiTab-root': {
-            color: theme.palette.mode === 'dark' ? '#fff' : '#000',
+            color: theme.palette.text.primary,
             '&.Mui-selected': {
-              color: theme.palette.mode === 'dark' ? '#fff' : '#000',
+              color: theme.palette.primary.main,
             },
           },
         }}

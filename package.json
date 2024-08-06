@@ -15,6 +15,7 @@
     "@fortawesome/fontawesome-svg-core": "^6.6.0",
     "@fortawesome/free-solid-svg-icons": "^6.6.0",
     "@fortawesome/react-fontawesome": "^0.2.2",
+    "@mui/icons-material": "^5.16.6",
     "@mui/material": "^5.16.6",
     "@react-oauth/google": "^0.12.1",
     "firebase": "^10.12.4",
@@ -23,7 +24,8 @@
     "openai": "^4.53.0",
     "react": "^18.3.1",
     "react-beautiful-dnd": "^13.1.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-quill": "^2.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",
