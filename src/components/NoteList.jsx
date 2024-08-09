@@ -63,17 +63,19 @@ const NoteList = ({ notes, updateList, currentList }) => {
             fullWidth
             value={newNoteText}
             onChange={(e) => setNewNoteText(e.target.value)}
-            placeholder="Add a new note"
+            placeholder="Add a new note.."
             variant="outlined"
             size="small"
           />
-          <Button type="submit" variant="contained" color="primary">+</Button>
+          <Button type="submit" variant="contained" color="primary" sx={{ 
+                  minWidth: '30px', 
+                  height: '30px', 
+                  p: 1
+                }}>+</Button>
         </form>
         <Box className="note-list-header" display="flex" justifyContent="space-between" alignItems="center" mt={2} mb={2}>
           <Typography variant="h6">{currentList} Notes:</Typography>
-          <Button onClick={copyNotesToClipboard} startIcon={<FontAwesomeIcon icon={faCopy} />} variant="outlined">
-            Copy list
-          </Button>
+          <Button onClick={copyNotesToClipboard} startIcon={<FontAwesomeIcon icon={faCopy} />} variant="outlined"></Button>
         </Box>
         <Droppable droppableId={`notes-${currentList}`}>
           {(provided) => (

@@ -3,6 +3,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import EditTask from './EditTask';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faTrash, faCopy } from '@fortawesome/free-solid-svg-icons';
+import { TextField, Button, Box, Typography } from '@mui/material';
 
 const TaskList = ({ tasks, updateList, currentList }) => {
   const [editingTaskId, setEditingTaskId] = useState(null);
@@ -65,23 +66,37 @@ const TaskList = ({ tasks, updateList, currentList }) => {
   };
 
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <div className="task-list">
-        <form onSubmit={handleAddTask} className="add-task-form">
-          <input
-            type="text"
-            value={newTaskText}
-            onChange={(e) => setNewTaskText(e.target.value)}
-            placeholder="Add a new task"
-          />
-          <button type="submit">+</button>
-        </form>
-        <div className="task-list-header">
-          <h3>{currentList} :</h3>
-          <button onClick={copyTasksToClipboard} className="copy-list-btn" title="Copy list">
-            <FontAwesomeIcon icon={faCopy} />
-          </button>
-        </div>
+      <DragDropContext onDragEnd={onDragEnd}>
+        <Box className="task-list">
+          <form onSubmit={handleAddTask} className="add-task-form">
+            <Box display="flex" alignItems="center" mb={2}>
+              <TextField
+                fullWidth
+                value={newTaskText}
+                onChange={(e) => setNewTaskText(e.target.value)}
+                placeholder="Add a new task.."
+                variant="outlined"
+                size="small"
+                sx={{ mr: 1 }}
+              />
+              <Button 
+                type="submit" 
+                variant="contained" 
+                color="primary" 
+                sx={{ 
+                  minWidth: '30px', 
+                  height: '30px', 
+                  p: 0
+                }}
+              >
+                +
+              </Button>
+            </Box>
+          </form>
+          <Box className="task-list-header" display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Typography variant="h">{currentList} :</Typography>
+            <Button onClick={copyTasksToClipboard} startIcon={<FontAwesomeIcon icon={faCopy} />} variant="outlined"></Button>
+          </Box>
         <Droppable droppableId={`tasks-${currentList}`}>
           {(provided) => (
             <ul {...provided.droppableProps} ref={provided.innerRef}>
@@ -128,7 +143,7 @@ const TaskList = ({ tasks, updateList, currentList }) => {
             </ul>
           )}
         </Droppable>
-      </div>
+      </Box>
     </DragDropContext>
   );
 };
