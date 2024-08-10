@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Card, CardContent, Typography, IconButton, Box, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
-import { Edit, Delete, Save, DragIndicator } from '@mui/icons-material';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEdit, faTrash, faSave } from '@fortawesome/free-solid-svg-icons';
 
-const NoteCard = ({ note, onEdit, onDelete, onSave, dragHandleProps }) => {
+const NoteCard = ({ note, onDelete, onSave, dragHandleProps }) => {
   const [editMode, setEditMode] = useState(false);
   const [text, setText] = useState(note.text);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -37,19 +37,25 @@ const NoteCard = ({ note, onEdit, onDelete, onSave, dragHandleProps }) => {
 
   return (
     <>
-      <Card 
+      <div 
         className="note-card" 
-        sx={{ 
-          mb: 2, 
-          transition: 'all 0.3s ease', 
-          '&:hover': { boxShadow: 3 },
-          cursor: editMode ? 'text' : 'pointer',
-          minHeight: '100px',
-          position: 'relative'
+        style={{ 
+          height: '100%',
+          minHeight: '120px',
+          transition: 'all 0.3s ease',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          cursor: editMode ? 'text' : 'grab',
+          position: 'relative',
+          backgroundColor: '#fff',
+          borderRadius: '4px',
+          padding: '16px',
+          display: 'flex',
+          flexDirection: 'column',
         }}
         onClick={handleCardClick}
+        {...dragHandleProps}
       >
-        <CardContent sx={{ height: '100%', p: '16px !important' }}>
+        <div style={{ flexGrow: 1, wordBreak: 'break-word', marginBottom: '24px' }}>
           {editMode ? (
             <textarea
               ref={textAreaRef}
@@ -65,20 +71,17 @@ const NoteCard = ({ note, onEdit, onDelete, onSave, dragHandleProps }) => {
                 backgroundColor: 'transparent',
                 padding: 0,
                 margin: 0,
-                minHeight: '80px'
               }}
             />
           ) : (
-            <Typography variant="body1" sx={{ wordBreak: 'break-word' }}>
-              {note.text}
-            </Typography>
+            <div>{note.text}</div>
           )}
-        </CardContent>
-        <Box 
-          sx={{ 
+        </div>
+        <div 
+          style={{ 
             position: 'absolute', 
-            top: 8, 
-            right: 8, 
+            bottom: '8px', 
+            right: '8px', 
             display: 'flex',
             backgroundColor: 'rgba(255, 255, 255, 0.8)',
             borderRadius: '4px',
@@ -86,45 +89,37 @@ const NoteCard = ({ note, onEdit, onDelete, onSave, dragHandleProps }) => {
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <IconButton {...dragHandleProps} size="small">
-            <DragIndicator fontSize="small" />
-          </IconButton>
           {editMode ? (
-            <IconButton onClick={handleSave} size="small">
-              <Save fontSize="small" />
-            </IconButton>
+            <button onClick={handleSave} style={{ border: 'none', backgroundColor: 'transparent', cursor: 'pointer', padding: '4px' }}>
+              <FontAwesomeIcon icon={faSave} size="xs" />
+            </button>
           ) : (
             <>
-              <IconButton onClick={() => setEditMode(true)} size="small">
-                <Edit fontSize="small" />
-              </IconButton>
-              <IconButton onClick={handleDeleteClick} size="small">
-                <Delete fontSize="small" />
-              </IconButton>
+              <button onClick={() => setEditMode(true)} style={{ border: 'none', backgroundColor: 'transparent', cursor: 'pointer', padding: '4px' }}>
+                <FontAwesomeIcon icon={faEdit} size="xs" />
+              </button>
+              <button onClick={handleDeleteClick} style={{ border: 'none', backgroundColor: 'transparent', cursor: 'pointer', padding: '4px' }}>
+                <FontAwesomeIcon icon={faTrash} size="xs" />
+              </button>
             </>
           )}
-        </Box>
-      </Card>
+        </div>
+      </div>
 
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle id="alert-dialog-title">{"Delete Note"}</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            Are you sure you want to delete this note? This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleDeleteConfirm} autoFocus>
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {deleteDialogOpen && (
+        <div className="delete-dialog" style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)', zIndex: 1000 }}>
+          <h4 style={{ margin: '0 0 16px 0' }}>Delete Note</h4>
+          <p>Are you sure you want to delete this note? This action cannot be undone.</p>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+            <button onClick={() => setDeleteDialogOpen(false)} style={{ marginRight: '8px', padding: '8px 12px', border: 'none', backgroundColor: '#ccc', borderRadius: '4px', cursor: 'pointer' }}>
+              Cancel
+            </button>
+            <button onClick={handleDeleteConfirm} style={{ padding: '8px 12px', border: 'none', backgroundColor: '#d9534f', color: '#fff', borderRadius: '4px', cursor: 'pointer' }}>
+              Delete
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 };

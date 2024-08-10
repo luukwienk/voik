@@ -57,7 +57,7 @@ const NoteList = ({ notes, updateList, currentList }) => {
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="note-list">
-        <form onSubmit={handleAddNote} className="add-note-form" style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+        <form onSubmit={handleAddNote} className="add-note-form" style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
           <input
             type="text"
             value={newNoteText}
@@ -72,20 +72,19 @@ const NoteList = ({ notes, updateList, currentList }) => {
               color: 'white',
               border: 'none',
               borderRadius: '4px',
-              padding: '6px 10px',  // Adjusted padding for size
+              padding: '8px 12px',
               cursor: 'pointer',
-              fontSize: '16px',  // Adjusted font size
+              fontSize: '16px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              height: '100%',  // Align with input height
             }}
           >
             <FontAwesomeIcon icon={faPlus} />
           </button>
         </form>
         <div className="note-list-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h6 style={{ margin: 0 }}>{currentList} Notes:</h6>
+          <h6 style={{ margin: 0, fontSize: '18px' }}>{currentList} :</h6>
           <button 
             onClick={copyNotesToClipboard} 
             style={{ backgroundColor: 'transparent', border: '1px solid #ccc', borderRadius: '4px', padding: '6px 12px', cursor: 'pointer' }}
@@ -99,7 +98,12 @@ const NoteList = ({ notes, updateList, currentList }) => {
               {...provided.droppableProps}
               ref={provided.innerRef}
               className="note-card-container"
-              style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '20px',
+                alignItems: 'start',
+              }}
             >
               {notes.map((note, index) => (
                 <Draggable key={note.id} draggableId={note.id} index={index}>
@@ -109,17 +113,11 @@ const NoteList = ({ notes, updateList, currentList }) => {
                       {...provided.draggableProps}
                       className={`note-item ${snapshot.isDragging ? 'dragging' : ''}`}
                       style={{
-                        backgroundColor: '#fff',
-                        border: '1px solid #ccc',
-                        borderRadius: '4px',
-                        padding: '10px',
-                        boxShadow: snapshot.isDragging ? '0 2px 8px rgba(0, 0, 0, 0.2)' : 'none',
                         ...provided.draggableProps.style,
                       }}
                     >
                       <NoteCard
                         note={note}
-                        onEdit={() => {}} // This is now handled within the NoteCard
                         onDelete={handleDeleteNote}
                         onSave={handleUpdateNote}
                         dragHandleProps={provided.dragHandleProps}
