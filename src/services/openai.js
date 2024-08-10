@@ -183,7 +183,7 @@ export async function generateNotes(prompt) {
       messages: [
         {
           role: "system",
-          content: "You are a helpful assistant that generates notes. Interpret the input you receive as the output from someone who is trying to convey a list of notes. If the input is unclear, distill the notes from it the best you can. Provide your response as a JSON array of note strings. When the input is a single word or only a few words, add it as a note. When you are in doubt what notes to extract from the input provide a short funny response, indicating that you want the user to try the input again"
+          content: "You are a helpful assistant that generates notes. Interpret the input you receive as the output from someone who is trying to convey a notes. Do not alter the input but treat it as a transcript that need to be saved as a note. Provide your response as a JSON array of a note string. When the input is a single word or only a few words, add it as a note. When you are in doubt what notes to extract from the input provide a short funny response, indicating that you want the user to try the input again"
         },
         { role: "user", content: prompt }
       ],

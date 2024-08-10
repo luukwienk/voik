@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import EditTask from './EditTask';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faTrash, faCopy } from '@fortawesome/free-solid-svg-icons';
-import { TextField, Button, Box, Typography } from '@mui/material';
+import { faEdit, faTrash, faCopy, faPlus } from '@fortawesome/free-solid-svg-icons';
 
 const TaskList = ({ tasks, updateList, currentList }) => {
   const [editingTaskId, setEditingTaskId] = useState(null);
@@ -62,44 +61,54 @@ const TaskList = ({ tasks, updateList, currentList }) => {
     reorderedTasks.splice(destination.index, 0, removed);
 
     updateList(reorderedTasks);
-    console.log('Reordered tasks:', reorderedTasks);
   };
 
   return (
-      <DragDropContext onDragEnd={onDragEnd}>
-        <Box className="task-list">
-          <form onSubmit={handleAddTask} className="add-task-form">
-            <Box display="flex" alignItems="center" mb={2}>
-              <TextField
-                fullWidth
-                value={newTaskText}
-                onChange={(e) => setNewTaskText(e.target.value)}
-                placeholder="Add a new task.."
-                variant="outlined"
-                size="small"
-                sx={{ mr: 1 }}
-              />
-              <Button 
-                type="submit" 
-                variant="contained" 
-                color="primary" 
-                sx={{ 
-                  minWidth: '30px', 
-                  height: '30px', 
-                  p: 0
-                }}
-              >
-                +
-              </Button>
-            </Box>
-          </form>
-          <Box className="task-list-header" display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-            <Typography variant="h">{currentList} :</Typography>
-            <Button onClick={copyTasksToClipboard} startIcon={<FontAwesomeIcon icon={faCopy} />} variant="outlined"></Button>
-          </Box>
+    <DragDropContext onDragEnd={onDragEnd}>
+      <div className="task-list" style={{ padding: '10px', backgroundColor: '#f9f9f9', borderRadius: '5px' }}>
+        <form onSubmit={handleAddTask} className="add-task-form" style={{ display: 'flex', marginBottom: '20px', alignItems: 'center' }}>
+          <input
+            type="text"
+            value={newTaskText}
+            onChange={(e) => setNewTaskText(e.target.value)}
+            placeholder="Add a new task.."
+            style={{ flexGrow: 1, padding: '8px', marginRight: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
+          />
+          <button 
+            type="submit"
+            style={{
+              backgroundColor: '#333',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              padding: '6px 10px', // Reduced padding
+              cursor: 'pointer',
+              fontSize: '16px', // Adjust font size
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%', // Align with input height
+            }}
+          >
+            <FontAwesomeIcon icon={faPlus} />
+          </button>
+        </form>
+        <div className="task-list-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h6 style={{ margin: 0 }}>{currentList} :</h6>
+          <button 
+            onClick={copyTasksToClipboard} 
+            style={{ backgroundColor: 'transparent', border: '1px solid #ccc', borderRadius: '4px', padding: '6px 12px', cursor: 'pointer' }}
+          >
+            <FontAwesomeIcon icon={faCopy} />
+          </button>
+        </div>
         <Droppable droppableId={`tasks-${currentList}`}>
           {(provided) => (
-            <ul {...provided.droppableProps} ref={provided.innerRef}>
+            <ul 
+              {...provided.droppableProps} 
+              ref={provided.innerRef} 
+              style={{ listStyleType: 'none', padding: 0 }}
+            >
               {tasks.map((task, index) => (
                 <Draggable key={task.id} draggableId={`task-${task.id}`} index={index}>
                   {(provided, snapshot) => (
@@ -108,33 +117,39 @@ const TaskList = ({ tasks, updateList, currentList }) => {
                       {...provided.draggableProps}
                       {...provided.dragHandleProps}
                       className={`task-item ${snapshot.isDragging ? 'dragging' : ''}`}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        backgroundColor: '#fff',
+                        border: '1px solid #ccc',
+                        borderRadius: '4px',
+                        padding: '10px',
+                        marginBottom: '10px',
+                        boxShadow: snapshot.isDragging ? '0 2px 8px rgba(0, 0, 0, 0.2)' : 'none',
+                        ...provided.draggableProps.style,
+                      }}
                     >
-                      <span className="drag-handle">☰</span>
-                      {editingTaskId === task.id ? (
-                        <EditTask
-                          task={task}
-                          onSave={(updatedText) => {
-                            handleUpdateTask(task.id, updatedText);
-                            setEditingTaskId(null);
-                          }}
-                          onCancel={() => setEditingTaskId(null)}
-                        />
-                      ) : (
-                        <>
-                          <input
-                            type="checkbox"
-                            checked={task.completed}
-                            onChange={() => handleToggleCompletion(task.id)}
-                          />
-                          <span className={`task-text ${task.completed ? 'completed' : ''}`}>{task.text}</span>
-                          <button onClick={() => setEditingTaskId(task.id)} className="edit-task-btn">
-                            <FontAwesomeIcon icon={faEdit} />
-                          </button>
-                          <button onClick={() => handleDeleteTask(task.id)} className="delete-task-btn">
-                            <FontAwesomeIcon icon={faTrash} />
-                          </button>
-                        </>
-                      )}
+                      <input
+                        type="checkbox"
+                        checked={task.completed}
+                        onChange={() => handleToggleCompletion(task.id)}
+                        style={{ marginRight: '10px' }}
+                      />
+                      <span className={`task-text ${task.completed ? 'completed' : ''}`} style={{ flexGrow: 1 }}>
+                        {task.text}
+                      </span>
+                      <button 
+                        onClick={() => setEditingTaskId(task.id)} 
+                        style={{ backgroundColor: 'transparent', border: 'none', cursor: 'pointer', marginRight: '10px' }}
+                      >
+                        <FontAwesomeIcon icon={faEdit} />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteTask(task.id)} 
+                        style={{ backgroundColor: 'transparent', border: 'none', cursor: 'pointer' }}
+                      >
+                        <FontAwesomeIcon icon={faTrash} />
+                      </button>
                     </li>
                   )}
                 </Draggable>
@@ -143,7 +158,7 @@ const TaskList = ({ tasks, updateList, currentList }) => {
             </ul>
           )}
         </Droppable>
-      </Box>
+      </div>
     </DragDropContext>
   );
 };

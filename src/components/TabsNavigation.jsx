@@ -1,39 +1,48 @@
 import React, { useState } from 'react';
-import { Tabs, Tab, Box, useTheme } from '@mui/material';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTasks, faStickyNote } from '@fortawesome/free-solid-svg-icons';
 
 const TabsNavigation = ({ onTabChange }) => {
   const [value, setValue] = useState(0);
-  const theme = useTheme();
 
-  const handleChange = (event, newValue) => {
+  const handleChange = (newValue) => {
     setValue(newValue);
     onTabChange(newValue);
   };
 
   return (
-    <Box sx={{ bgcolor: 'white' }}> 
-      <Tabs
-        value={value}
-        onChange={handleChange}
-        aria-label="tabs navigation"
-        textColor="primary"
-        indicatorColor="primary"
-        sx={{
-          '& .MuiTabs-indicator': {
-            backgroundColor: theme.palette.primary.main,
-          },
-          '& .MuiTab-root': {
-            color: theme.palette.text.primary,
-            '&.Mui-selected': {
-              color: theme.palette.primary.main,
-            },
-          },
-        }}
-      >
-        <Tab label="Tasks" />
-        <Tab label="Notes" />
-      </Tabs>
-    </Box>
+    <div style={{ backgroundColor: 'white', padding: '10px' }}>
+      <div style={{ display: 'flex' }}>
+        <div
+          style={{
+            padding: '10px 20px',
+            cursor: 'pointer',
+            borderBottom: value === 0 ? '2px solid #333' : 'none',
+            color: value === 0 ? '#333' : '#555',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+          onClick={() => handleChange(0)}
+        >
+          <FontAwesomeIcon icon={faTasks} />
+          
+        </div>
+        <div
+          style={{
+            padding: '10px 20px',
+            cursor: 'pointer',
+            borderBottom: value === 1 ? '2px solid #333' : 'none',
+            color: value === 1 ? '#333' : '#555',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+          onClick={() => handleChange(1)}
+        >
+          <FontAwesomeIcon icon={faStickyNote} />
+          
+        </div>
+      </div>
+    </div>
   );
 };
 

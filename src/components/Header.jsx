@@ -9,7 +9,7 @@ function Header({ user, signOut, currentTab, setCurrentTab }) {
       <div className="header-top">
         {user && <span className="user-email">{user.email}</span>}
         <button onClick={signOut} className="sign-out-btn">
-          <FontAwesomeIcon icon={faSignOutAlt} /> Sign out
+          <FontAwesomeIcon icon={faSignOutAlt} /> 
         </button>
       </div>
       <TabsNavigation currentTab={currentTab} onTabChange={setCurrentTab} />
