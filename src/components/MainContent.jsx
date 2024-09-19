@@ -1,9 +1,9 @@
-// MainContent.jsx
 import React, { useEffect } from 'react';
 import TaskList from './TaskList';
 import NoteList from './NoteList';
 import VoiceInputSection from './VoiceInputSection';
 import ListSelector from './ListSelector';
+import Timer from './Timer';  // Import the new Timer component
 
 function MainContent({ 
   currentTab, 
@@ -27,10 +27,10 @@ function MainContent({
   deleteNoteList
 }) {
   useEffect(() => {
-    if (currentTab === 0) { // 0 for 'tasks'
+    if (currentTab === 0) {
       console.log('MainContent: Switching to tasks, setting currentTaskList to "Today"');
       setCurrentTaskList('Today');
-    } else if (currentTab === 1) { // 1 for 'notes'
+    } else if (currentTab === 1) {
       console.log('MainContent: Switching to notes, setting currentNoteList to "My Notes"');
       setCurrentNoteList('My Notes');
     }
@@ -44,7 +44,7 @@ function MainContent({
     console.log('Current note list:', currentNoteList);
   }, [currentTab, tasks, currentTaskList, notes, currentNoteList]);
 
-  const currentItems = currentTab === 0 // 0 for 'tasks'
+  const currentItems = currentTab === 0
     ? tasks[currentTaskList]?.items || []
     : notes[currentNoteList]?.items || [];
 
@@ -57,30 +57,36 @@ function MainContent({
         aiResponse={aiResponse}
         currentItems={currentItems}
       />
-      <div className="list-controls">
-        <ListSelector 
-          lists={currentTab === 0 ? tasks : notes} // 0 for 'tasks'
-          currentList={currentTab === 0 ? currentTaskList : currentNoteList} // 0 for 'tasks'
-          setCurrentList={currentTab === 0 ? setCurrentTaskList : setCurrentNoteList} // 0 for 'tasks'
-          addList={currentTab === 0 ? addTaskList : addNoteList} // 0 for 'tasks'
-          deleteList={currentTab === 0 ? deleteTaskList : deleteNoteList} // 0 for 'tasks'
-          currentTab={currentTab}
-        />
-      </div>
-      {isLoading && <p className="loading">Processing...</p>}
-      {error && <p className="error">{error}</p>}
-      {currentTab === 0 ? ( // 0 for 'tasks'
-        <TaskList
-          tasks={tasks[currentTaskList]?.items || []}
-          updateList={(newItems) => updateTaskList(currentTaskList, { items: newItems })}
-          currentList={currentTaskList}
-        />
+      {currentTab === 2 ? (
+        <Timer />
       ) : (
-        <NoteList
-          notes={notes[currentNoteList]?.items || []}
-          updateList={(newItems) => updateNoteList(currentNoteList, { items: newItems })}
-          currentList={currentNoteList}
-        />
+        <>
+          <div className="list-controls">
+            <ListSelector 
+              lists={currentTab === 0 ? tasks : notes}
+              currentList={currentTab === 0 ? currentTaskList : currentNoteList}
+              setCurrentList={currentTab === 0 ? setCurrentTaskList : setCurrentNoteList}
+              addList={currentTab === 0 ? addTaskList : addNoteList}
+              deleteList={currentTab === 0 ? deleteTaskList : deleteNoteList}
+              currentTab={currentTab}
+            />
+          </div>
+          {isLoading && <p className="loading">Processing...</p>}
+          {error && <p className="error">{error}</p>}
+          {currentTab === 0 ? (
+            <TaskList
+              tasks={tasks[currentTaskList]?.items || []}
+              updateList={(newItems) => updateTaskList(currentTaskList, { items: newItems })}
+              currentList={currentTaskList}
+            />
+          ) : (
+            <NoteList
+              notes={notes[currentNoteList]?.items || []}
+              updateList={(newItems) => updateNoteList(currentNoteList, { items: newItems })}
+              currentList={currentNoteList}
+            />
+          )}
+        </>
       )}
     </main>
   );
