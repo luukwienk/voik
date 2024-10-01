@@ -1,6 +1,6 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faTrash } from '@fortawesome/free-solid-svg-icons';
 
 const ListSelector = ({ lists, currentList, setCurrentList, addList, deleteList, currentTab }) => {
   const listNames = Object.keys(lists);
@@ -29,7 +29,7 @@ const ListSelector = ({ lists, currentList, setCurrentList, addList, deleteList,
         <option value="add-new-list">+ Add New List</option>
       </select>
       {currentList !== 'Today' && currentList !== 'My Notes' && (
-        <button onClick={() => deleteList(currentList)}>
+        <button className="remove-list-btn" onClick={() => deleteList(currentList)}>
           <FontAwesomeIcon icon={faTrash} />
         </button>
       )}

@@ -4,7 +4,7 @@ import { faMicrophone, faMicrophoneSlash } from '@fortawesome/free-solid-svg-ico
 import useSpeechRecognition from '../hooks/useSpeechRecognition';
 import { handleAICommand } from '../services/openai';
 
-const VoiceInput = ({ currentTasks, onInputComplete, setRecognizedText, language = 'en-US' }) => {
+const VoiceInput = ({ currentTasks, onInputComplete, setRecognizedText, language = 'nl-NL' }) => {
   const { isListening, recognizedText, error, startListening, stopListening } = useSpeechRecognition(language);
   const processedRef = useRef(false);
 

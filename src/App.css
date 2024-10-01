@@ -1,14 +1,29 @@
-#root {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
-
-.App {
+/* Base styles */
+body, html, #root, .App {
+  height: 100%;
+  margin: 0;
+  padding: 0;
   font-family: Arial, sans-serif;
 }
 
+#root {
+  display: flex;
+  flex-direction: column;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Header styles */
 .app-header {
   display: flex;
   flex-direction: column;
@@ -23,19 +38,23 @@
   margin-bottom: 10px;
 }
 
+.user-email {
+  margin: 0;
+  font-weight: bold;
+}
+
 .list-selector {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
 }
 
 .list-selector select {
+  width: auto; /* or a specific width like 200px */
   padding: 8px;
   font-size: 16px;
   border: 1px solid #ccc;
   border-radius: 4px;
-  margin-right: 10px;
   background-color: white;
   color: #000;
 }
@@ -47,6 +66,7 @@
   cursor: pointer;
   font-size: 0.9rem;
   padding: 5px;
+  margin-left: 10px;
   transition: color 0.2s ease;
 }
 
@@ -54,6 +74,7 @@
   color: #555;
 }
 
+/* Voice input section styles */
 .voice-input-section {
   margin: 20px 0;
   padding: 15px;
@@ -95,6 +116,7 @@
   color: #333;
 }
 
+/* Loading and error styles */
 .loading, .error {
   text-align: center;
   padding: 10px;
@@ -112,6 +134,7 @@
   color: #c62828;
 }
 
+/* Task and Note list styles */
 .task-list-header, .note-list-header {
   display: flex;
   justify-content: space-between;
@@ -194,9 +217,13 @@ input[type="checkbox"] {
   margin-right: 10px;
 }
 
+/* Form styles */
+select, button, input[type="text"], textarea {
+  font-size: 16px;
+}
+
 select, button {
-  margin: 10px;
-  padding: 5px 10px;
+  padding: 8px 12px;
   border: 1px solid #888;
   border-radius: 3px;
   background-color: white;
@@ -210,41 +237,19 @@ select:hover, button:hover {
   color: white;
 }
 
+.add-task-form, .add-note-form {
+  display: flex;
+  margin-bottom: 10px;
+}
+
 .add-task-form input, .add-note-form input {
-  width: 300px;
-  height: 20px;
+  flex-grow: 1;
   padding: 8px;
+  margin-right: 10px;
 }
 
-.edit-task-input, .edit-note-input {
-  width: 50%;
-  height: 20px;
-  padding: 8px;
-}
-
-.task-text, .note-text, .edit-task-input, .edit-note-input {
-  font-size: 16px;
-}
-
-.recognized-text {
-  margin: 10px 0;
-  padding: 10px;
-  background-color: #f0f0f0;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-}
-
-.user-info {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  font-size: 0.9em;
-  color: #333;
-}
-
-.user-email {
-  margin: 0;
-  font-weight: bold;
+.add-task-form button, .add-note-form button {
+  padding: 8px 12px;
 }
 
 .edit-task-container, .edit-note-container {
@@ -255,14 +260,13 @@ select:hover, button:hover {
 }
 
 .edit-task-textarea, .edit-note-textarea {
-  width: calc(100% - 40px);
+  width: 100%;
   font-size: 1em;
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
   resize: vertical;
   box-sizing: border-box;
-  overflow-wrap: break-word;
   margin-bottom: 8px;
 }
 
@@ -289,53 +293,11 @@ select:hover, button:hover {
   background-color: #f44336;
 }
 
-.task-controls {
-  display: flex;
-  align-items: center;
-  margin-top: 10px;
-}
-
-.task-controls select {
-  margin-right: 10px;
-}
-
-.task-controls button {
-  margin-right: 10px;
-}
-
-.task-controls input {
-  flex-grow: 1;
-}
-
-.note-list {
-  padding: 20px;
-}
-
-.add-note-form {
-  display: flex;
-  margin-bottom: 20px;
-}
-
-.add-note-form input {
-  flex: 1;
-  padding: 10px;
-  margin-right: 10px;
-}
-
-.add-note-form button {
-  padding: 10px;
-}
-
-.note-list-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
+/* Note card styles */
 .note-card-container {
   display: flex;
   flex-wrap: wrap;
+  gap: 10px;
 }
 
 .note-card {
@@ -343,9 +305,10 @@ select:hover, button:hover {
   border: 1px solid #ddd;
   border-radius: 5px;
   padding: 20px;
-  margin: 10px;
-  width: 200px;
+  margin-bottom: 10px;
+  width: calc(50% - 5px);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
 }
 
 .note-card-content {
@@ -357,42 +320,35 @@ select:hover, button:hover {
   justify-content: space-between;
 }
 
-.edit-note {
-  display: flex;
-  margin-top: 20px;
+/* Media queries for responsiveness */
+@media (max-width: 768px) {
+  #root {
+    padding: 0.5rem;
+  }
+  
+  .note-card {
+    width: 100%;
+  }
+  
+  .task-list li button, .note-list li button {
+    padding: 8px;
+  }
+  
+  select, button, input[type="text"], textarea {
+    font-size: 14px;
+  }
 }
 
-.edit-note input {
-  flex: 1;
-  padding: 10px;
-  margin-right: 10px;
+@media (max-width: 480px) {
+  .task-text, .note-text {
+    font-size: 14px;
+  }
+  
+  .task-list li button, .note-list li button {
+    padding: 6px;
+    font-size: 12px;
+  }
 }
-
-.edit-note button {
-  padding: 10px;
-}
-
-.MuiBox-root {
-  background-color: white;
-  box-shadow: none;
-}
-
-.MuiTabs-root {
-  border-bottom: none;
-}
-
-.MuiTab-root {
-  color: #000;
-}
-
-.MuiTab-root.Mui-selected {
-  color: #1976d2; /* This is the default primary color for Material-UI */
-}
-
-.MuiTabs-indicator {
-  background-color: #1976d2;
-}
-
 
 /* Dark mode styles */
 @media (prefers-color-scheme: dark) {
@@ -473,7 +429,6 @@ select:hover, button:hover {
     color: #fff;
     background-color: #333;
     border: 1px solid #555;
-    padding: 8px 16px;
   }
 
   .task-list li button:hover, .note-list li button:hover {
@@ -499,58 +454,22 @@ select:hover, button:hover {
     color: #e0e0e0;
   }
 
-  .recognized-text {
-    background-color: #2c2c2c;
-    border-color: #444;
-  }
-
-  .user-info {
-    color: #bbb;
-  }
-
   .edit-task-textarea, .edit-note-textarea {
-    background-color: #333; /* Dark background */
-    color: #fff; /* Light text color */
+    background-color: #333;
+    color: #fff;
     border-color: #555;
-    width: 100%;
-    padding: 10px;
-    border-radius: 5px;
-    box-sizing: border-box;
-  }
-
-  .note-item {
-    background-color: #1e1e1e; /* Ensure the note items have a dark background */
-    color: #fff; /* Ensure the note text is white */
-    border: 1px solid #444;
-    padding: 10px;
-    border-radius: 5px;
-  }
-
-  .note-item.dragging {
-    background-color: #555;
-    box-shadow: 0 2px 5px rgba(255, 255, 255, 0.2);
   }
 
   .note-card {
-    background-color: #333; /* Dark background for note card */
-    color: #fff; /* Light text color for note card */
+    background-color: #333;
+    color: #fff;
     border: 1px solid #555;
-    padding: 20px;
-    border-radius: 5px;
-    margin: 10px;
-    width: 200px;
     box-shadow: 0 2px 5px rgba(255, 255, 255, 0.2);
   }
 
   .save-note-btn, .edit-note-btn, .delete-note-btn {
     background-color: #4CAF50;
     color: white;
-    border: none;
-    padding: 8px 16px;
-    margin: 5px 0;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: background-color 0.2s;
   }
 
   .save-note-btn:hover, .edit-note-btn:hover, .delete-note-btn:hover {
@@ -560,48 +479,4 @@ select:hover, button:hover {
   .cancel-task-btn, .cancel-note-btn {
     background-color: #d32f2f;
   }
-
-  .note-card-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-
-  .note-item {
-    flex: 1 1 calc(33% - 10px);
-    box-sizing: border-box;
-  }
-
-  .note-text {
-    color: #fff;
-  }
-
-  .note-card button {
-    background-color: #444; /* Dark background */
-    color: #fff; /* Light text color */
-    border: 1px solid #555;
-  }
-
-  .note-card button:hover {
-    background-color: #555;
-  }
-
-
-  .MuiBox-root {
-    background-color: #121212;
-  }
-
-  .MuiTab-root {
-    color: #fff;
-  }
-
-  .MuiTab-root.Mui-selected {
-    color: #90caf9; /* A lighter blue for better contrast in dark mode */
-  }
-
-  .MuiTabs-indicator {
-    background-color: #90caf9;
-  }
 }
-
-

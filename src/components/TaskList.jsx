@@ -38,6 +38,7 @@ const TaskList = ({ tasks, updateList, currentList }) => {
       task.id === taskId ? { ...task, text: newText } : task
     );
     updateList(updatedTasks);
+    setEditingTaskId(null);  // Exit edit mode after saving
   };
 
   const copyTasksToClipboard = () => {
@@ -94,7 +95,7 @@ const TaskList = ({ tasks, updateList, currentList }) => {
           </button>
         </form>
         <div className="task-list-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h6 style={{ margin: 0 }}>{currentList} :</h6>
+          <h4 style={{ margin: 0 }}>{currentList} :</h4>
           <button 
             onClick={copyTasksToClipboard} 
             style={{ backgroundColor: 'transparent', border: '1px solid #ccc', borderRadius: '4px', padding: '6px 12px', cursor: 'pointer' }}
@@ -129,27 +130,37 @@ const TaskList = ({ tasks, updateList, currentList }) => {
                         ...provided.draggableProps.style,
                       }}
                     >
-                      <input
-                        type="checkbox"
-                        checked={task.completed}
-                        onChange={() => handleToggleCompletion(task.id)}
-                        style={{ marginRight: '10px' }}
-                      />
-                      <span className={`task-text ${task.completed ? 'completed' : ''}`} style={{ flexGrow: 1 }}>
-                        {task.text}
-                      </span>
-                      <button 
-                        onClick={() => setEditingTaskId(task.id)} 
-                        style={{ backgroundColor: 'transparent', border: 'none', cursor: 'pointer', marginRight: '10px' }}
-                      >
-                        <FontAwesomeIcon icon={faEdit} />
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteTask(task.id)} 
-                        style={{ backgroundColor: 'transparent', border: 'none', cursor: 'pointer' }}
-                      >
-                        <FontAwesomeIcon icon={faTrash} />
-                      </button>
+                      {editingTaskId === task.id ? (
+                        <EditTask
+                          task={task}
+                          onSave={(newText) => handleUpdateTask(task.id, newText)}
+                          onCancel={() => setEditingTaskId(null)}
+                        />
+                      ) : (
+                        <>
+                          <input
+                            type="checkbox"
+                            checked={task.completed}
+                            onChange={() => handleToggleCompletion(task.id)}
+                            style={{ marginRight: '10px' }}
+                          />
+                          <span className={`task-text ${task.completed ? 'completed' : ''}`} style={{ flexGrow: 1 }}>
+                            {task.text}
+                          </span>
+                          <button 
+                            onClick={() => setEditingTaskId(task.id)} 
+                            style={{ backgroundColor: 'transparent', border: 'none', cursor: 'pointer', marginRight: '10px' }}
+                          >
+                            <FontAwesomeIcon icon={faEdit} />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteTask(task.id)} 
+                            style={{ backgroundColor: 'transparent', border: 'none', cursor: 'pointer' }}
+                          >
+                            <FontAwesomeIcon icon={faTrash} />
+                          </button>
+                        </>
+                      )}
                     </li>
                   )}
                 </Draggable>
