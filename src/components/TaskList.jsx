@@ -111,60 +111,63 @@ const TaskList = ({ tasks, updateList, currentList }) => {
               style={{ listStyleType: 'none', padding: 0 }}
             >
               {tasks.map((task, index) => (
-                <Draggable key={task.id} draggableId={`task-${task.id}`} index={index}>
-                  {(provided, snapshot) => (
-                    <li
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                      className={`task-item ${snapshot.isDragging ? 'dragging' : ''}`}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        backgroundColor: '#fff',
-                        border: '1px solid #ccc',
-                        borderRadius: '4px',
-                        padding: '10px',
-                        marginBottom: '10px',
-                        boxShadow: snapshot.isDragging ? '0 2px 8px rgba(0, 0, 0, 0.2)' : 'none',
-                        ...provided.draggableProps.style,
-                      }}
-                    >
-                      {editingTaskId === task.id ? (
-                        <EditTask
-                          task={task}
-                          onSave={(newText) => handleUpdateTask(task.id, newText)}
-                          onCancel={() => setEditingTaskId(null)}
-                        />
-                      ) : (
-                        <>
-                          <input
-                            type="checkbox"
-                            checked={task.completed}
-                            onChange={() => handleToggleCompletion(task.id)}
-                            style={{ marginRight: '10px' }}
-                          />
-                          <span className={`task-text ${task.completed ? 'completed' : ''}`} style={{ flexGrow: 1 }}>
-                            {task.text}
-                          </span>
-                          <button 
-                            onClick={() => setEditingTaskId(task.id)} 
-                            style={{ backgroundColor: 'transparent', border: 'none', cursor: 'pointer', marginRight: '10px' }}
-                          >
-                            <FontAwesomeIcon icon={faEdit} />
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteTask(task.id)} 
-                            style={{ backgroundColor: 'transparent', border: 'none', cursor: 'pointer' }}
-                          >
-                            <FontAwesomeIcon icon={faTrash} />
-                          </button>
-                        </>
-                      )}
-                    </li>
-                  )}
-                </Draggable>
-              ))}
+  <Draggable key={task.id} draggableId={`task-${task.id}`} index={index}>
+    {(provided, snapshot) => (
+      <li
+        ref={provided.innerRef}
+        {...provided.draggableProps}
+        {...provided.dragHandleProps}
+        className={`task-item ${snapshot.isDragging ? 'dragging' : ''}`}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          backgroundColor: '#fff',
+          border: '1px solid #ccc',
+          borderRadius: '4px',
+          padding: '10px',
+          marginBottom: '10px',
+          boxShadow: snapshot.isDragging ? '0 2px 8px rgba(0, 0, 0, 0.2)' : 'none',
+          ...provided.draggableProps.style,
+        }}
+      >
+        {editingTaskId === task.id ? (
+          <EditTask
+            task={task}
+            onSave={(updatedText) => {
+              handleUpdateTask(task.id, updatedText);
+              setEditingTaskId(null);
+            }}
+            onCancel={() => setEditingTaskId(null)}
+          />
+        ) : (
+          <>
+            <input
+              type="checkbox"
+              checked={task.completed}
+              onChange={() => handleToggleCompletion(task.id)}
+              style={{ marginRight: '10px' }}
+            />
+            <span className={`task-text ${task.completed ? 'completed' : ''}`} style={{ flexGrow: 1 }}>
+              {task.text}
+            </span>
+            <button 
+              onClick={() => setEditingTaskId(task.id)} 
+              style={{ backgroundColor: 'transparent', border: 'none', cursor: 'pointer', marginRight: '10px' }}
+            >
+              <FontAwesomeIcon icon={faEdit} />
+            </button>
+            <button 
+              onClick={() => handleDeleteTask(task.id)} 
+              style={{ backgroundColor: 'transparent', border: 'none', cursor: 'pointer' }}
+            >
+              <FontAwesomeIcon icon={faTrash} />
+            </button>
+          </>
+        )}
+      </li>
+    )}
+  </Draggable>
+))}
               {provided.placeholder}
             </ul>
           )}

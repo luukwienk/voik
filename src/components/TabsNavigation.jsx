@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTasks, faStickyNote } from '@fortawesome/free-solid-svg-icons';
+import { faTasks, faStickyNote, faClock } from '@fortawesome/free-solid-svg-icons';
 
 const TabsNavigation = ({ onTabChange }) => {
   const [value, setValue] = useState(0);
@@ -39,6 +39,20 @@ const TabsNavigation = ({ onTabChange }) => {
           onClick={() => handleChange(1)}
         >
           <FontAwesomeIcon icon={faStickyNote} />
+          
+        </div>
+        <div
+          style={{
+            padding: '10px 20px',
+            cursor: 'pointer',
+            borderBottom: value === 2 ? '2px solid #333' : 'none',
+            color: value === 2 ? '#333' : '#555',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+          onClick={() => handleChange(2)}
+        >
+          <FontAwesomeIcon icon={faClock} />
           
         </div>
       </div>
