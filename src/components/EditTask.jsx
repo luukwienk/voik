@@ -21,7 +21,6 @@ import {
 import 'draft-js/dist/Draft.css';
 
 const EditTask = ({ task, onSave, onCancel }) => {
-  // Initialiseer editor state
   const [editorState, setEditorState] = useState(() => {
     try {
       const contentState = convertFromRaw(JSON.parse(task.text));
@@ -64,7 +63,6 @@ const EditTask = ({ task, onSave, onCancel }) => {
   const addLink = (e) => {
     e.preventDefault();
     
-    // Zorg voor een geldige URL
     let url = urlValue;
     if (!/^https?:\/\//i.test(url)) {
       url = `https://${url}`;
@@ -73,7 +71,6 @@ const EditTask = ({ task, onSave, onCancel }) => {
     const selection = editorState.getSelection();
     const contentState = editorState.getCurrentContent();
     
-    // Als er geen tekst is geselecteerd, gebruik de URL als link tekst
     if (selection.isCollapsed()) {
       const contentStateWithText = Modifier.insertText(
         contentState,
@@ -112,7 +109,6 @@ const EditTask = ({ task, onSave, onCancel }) => {
         )
       );
     } else {
-      // Als er wel tekst is geselecteerd, maak daar een link van
       const contentStateWithLink = contentState.createEntity(
         'LINK',
         'MUTABLE',
@@ -126,24 +122,25 @@ const EditTask = ({ task, onSave, onCancel }) => {
     setURLValue('');
   };
 
-  // Custom block styling
-  const blockStyleFn = (contentBlock) => {
-    const type = contentBlock.getType();
-    if (type === 'unordered-list-item') {
-      return 'custom-list-item';
-    }
-    return '';
-  };
-
   return (
-    <div className="edit-task-container" style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px' }}>
+    <div className="edit-task-container" style={{ padding: '10px', width: '100%' }}>
       <style>
         {`
+          .DraftEditor-root {
+            min-height: 120px;
+            cursor: text !important;
+          }
+          .DraftEditor-editorContainer {
+            min-height: 120px;
+            padding: 8px;
+          }
+          .public-DraftEditor-content {
+            min-height: 120px;
+          }
           .custom-list-item {
             margin-left: 20px;
           }
           .public-DraftStyleDefault-unorderedListItem {
-            list-style-type: disc;
             margin: 4px 0;
           }
           .public-DraftStyleDefault-unorderedListItem:before {
@@ -192,13 +189,13 @@ const EditTask = ({ task, onSave, onCancel }) => {
         borderRadius: '4px', 
         padding: '10px', 
         marginBottom: '10px',
-        minHeight: '100px'
+        backgroundColor: 'white',
+        minHeight: '120px'
       }}>
         <Editor
           editorState={editorState}
           onChange={setEditorState}
           handleKeyCommand={handleKeyCommand}
-          blockStyleFn={blockStyleFn}
         />
       </div>
 

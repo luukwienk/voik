@@ -18,29 +18,86 @@ const TaskList = ({ tasks = { items: [] }, updateList, currentList, lists, moveT
         text: newTaskText,
         completed: false
       };
+  
       const currentItems = tasks?.items || [];
-      updateList(currentList, { items: [newTask, ...currentItems] });
+      const updatedItems = [newTask, ...currentItems];
+  
+      // Log voor debugging
+      console.log('Adding task:', {
+        listName: currentList,
+        newListData: {
+          items: updatedItems
+        }
+      });
+  
+      // Compatibiliteit met beide update methodes
+      if (updateList.length === 1) {
+        // Voice input methode (1 parameter)
+        updateList({
+          items: updatedItems
+        });
+      } else {
+        // Handmatige methode (2 parameters)
+        updateList(currentList, {
+          items: updatedItems
+        });
+      }
+      
       setNewTaskText('');
     }
   };
+       
 
   const handleToggleCompletion = (taskId) => {
-    const updatedItems = (tasks?.items || []).map(task =>
+    const currentItems = tasks?.items || [];
+    const updatedItems = currentItems.map(task =>
       task.id === taskId ? { ...task, completed: !task.completed } : task
     );
-    updateList(currentList, { items: updatedItems });
+  
+    if (updateList.length === 1) {
+      updateList({
+        items: updatedItems
+      });
+    } else {
+      updateList(currentList, {
+        items: updatedItems
+      });
+    }
   };
 
   const handleDeleteTask = (taskId) => {
-    const updatedItems = (tasks?.items || []).filter(task => task.id !== taskId);
-    updateList(currentList, { items: updatedItems });
-  };
+    const currentItems = tasks?.items || [];
+    const updatedItems = currentItems.filter(task => task.id !== taskId);
   
+    if (updateList.length === 1) {
+      updateList({
+        items: updatedItems
+      });
+    } else {
+      updateList(currentList, {
+        items: updatedItems
+      });
+    }
+  };
+
+     
   const handleUpdateTask = (taskId, newText) => {
-    const updatedItems = (tasks?.items || []).map(task =>
-      task.id === taskId ? { ...task, text: newText } : task
+    const currentItems = tasks?.items || [];
+    const updatedItems = currentItems.map(task =>
+      task.id === taskId 
+        ? { ...task, text: newText }
+        : task
     );
-    updateList(currentList, { items: updatedItems });
+  
+    if (updateList.length === 1) {
+      updateList({
+        items: updatedItems
+      });
+    } else {
+      updateList(currentList, {
+        items: updatedItems
+      });
+    }
     setEditingTaskId(null);
   };
 
@@ -66,26 +123,42 @@ const TaskList = ({ tasks = { items: [] }, updateList, currentList, lists, moveT
 
   const onDragEnd = (result) => {
     const { source, destination } = result;
-
-    if (!destination) {
+  
+    if (!destination || !currentList || !tasks?.items) {
       return;
     }
-
-    const reorderedTasks = Array.from(tasks);
-    const [removed] = reorderedTasks.splice(source.index, 1);
-    reorderedTasks.splice(destination.index, 0, removed);
-
-    updateList(reorderedTasks);
+  
+    const currentItems = Array.from(tasks.items);
+    const [removed] = currentItems.splice(source.index, 1);
+    currentItems.splice(destination.index, 0, removed);
+  
+    console.log('Updating after drag with:', { items: currentItems });
+  
+    if (updateList.length === 1) {
+      updateList({ items: currentItems });
+    } else if (updateList.length === 2) {
+      updateList(currentList, { items: currentItems });
+    }
   };
+  
 
   const [movingTaskId, setMovingTaskId] = useState(null);
 
   const handleMoveTask = (taskId, destinationList) => {
-    // Find the task to move from the current list
-    const taskArray = Array.isArray(tasks) ? tasks : (tasks?.items || []);
+    if (!tasks?.items) {
+      console.error('No tasks available to move');
+      return;
+    }
+  
+    const taskArray = tasks.items;
     const taskToMove = taskArray.find(task => task.id === taskId);
+    
     if (taskToMove) {
+      console.log('Moving task:', taskToMove, 'from', currentList, 'to', destinationList);
       moveTask(taskToMove, currentList, destinationList);
+      setMovingTaskId(null);
+    } else {
+      console.error('Task not found:', taskId);
     }
   };
 

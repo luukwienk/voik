@@ -76,12 +76,12 @@ function MainContent({
           {error && <p className="error">{error}</p>}
           {currentTab === 0 ? (
             <TaskList
-              tasks={tasks[currentTaskList]}
-              currentList={currentTaskList}
-              lists={tasks}
-              moveTask={moveTask}
-              updateList={updateTaskList}
-            />
+            tasks={tasks[currentTaskList]}
+            currentList={currentTaskList}
+            lists={tasks}
+            moveTask={moveTask}
+            updateList={(newListData) => updateTaskList(currentTaskList, newListData)}
+          />
           ) : (
             <NoteList
               notes={notes[currentNoteList]?.items || []}

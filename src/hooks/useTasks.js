@@ -95,23 +95,63 @@ export function useTasks(user) {
     }
   };
 
-  const updateTaskList = (listName, newListData) => {
-    // Ensure we have the correct structure
-    const updatedList = {
-      items: Array.isArray(newListData) ? newListData : newListData.items || []
-    };
+  const updateTaskList = async (listName, newListData) => {
+    try {
+      // Voeg extra logging toe
+      console.log('UpdateTaskList called with:', {
+        listName,
+        newListData
+      });
   
-    setTasks(prevTasks => ({
-      ...prevTasks,
-      [listName]: updatedList
-    }));
+      // Controleer de basis structuur
+      if (!newListData || !listName) {
+        console.error('Missing required data:', { listName, newListData });
+        throw new Error('Missing required task list data');
+      }
   
-    if (user) {
-      const updatedTasks = {
-        ...tasks,
-        [listName]: updatedList
+      // Zorg ervoor dat we een items array hebben
+      if (!Array.isArray(newListData.items)) {
+        console.error('Invalid items structure:', newListData);
+        throw new Error('Invalid items structure');
+      }
+  
+      // Valideer elk item in de array
+      const validatedItems = newListData.items.map(item => {
+        if (!item || typeof item !== 'object') {
+          console.error('Invalid item:', item);
+          throw new Error('Invalid item in task list');
+        }
+  
+        return {
+          id: item.id || `task-${Date.now()}-${Math.random()}`,
+          text: item.text || '',
+          completed: Boolean(item.completed)
+        };
+      });
+  
+      const validatedData = {
+        items: validatedItems
       };
-      saveTasks(user.uid, updatedTasks);
+  
+      // Update local state
+      setTasks(prevTasks => ({
+        ...prevTasks,
+        [listName]: validatedData
+      }));
+  
+      // Update in Firebase
+      if (user) {
+        const taskDoc = doc(db, 'users', user.uid, 'tasks', listName);
+        console.log('Saving to Firebase:', {
+          listName,
+          validatedData
+        });
+        await setDoc(taskDoc, validatedData);
+      }
+  
+    } catch (error) {
+      console.error('Error in updateTaskList:', error);
+      throw error;
     }
   };
 

@@ -49,22 +49,38 @@ function App() {
     }
   };
 
-  const moveTask = (task, sourceList, destinationList) => {
-    // Create a copy of the tasks object
-    const updatedTasks = { ...tasks };
-    
-    // Ensure the arrays exist
-    updatedTasks[sourceList] = updatedTasks[sourceList] || { items: [] };
-    updatedTasks[destinationList] = updatedTasks[destinationList] || { items: [] };
-    
-    // Remove task from source list's items array
-    updatedTasks[sourceList].items = updatedTasks[sourceList].items.filter(t => t.id !== task.id);
-    
-    // Add task to destination list's items array
-    updatedTasks[destinationList].items = [task, ...updatedTasks[destinationList].items];
-    
-    // Update all tasks
-    updateTaskList(updatedTasks);
+  const moveTask = async (task, sourceList, destinationList) => {
+    console.log('Moving task:', { task, sourceList, destinationList });
+    console.log('Current tasks state:', tasks);
+  
+    try {
+      // Create a deep copy of the current tasks
+      const updatedTasks = JSON.parse(JSON.stringify(tasks));
+  
+      // Ensure both source and destination lists exist and have items arrays
+      if (!updatedTasks[sourceList]) updatedTasks[sourceList] = { items: [] };
+      if (!updatedTasks[destinationList]) updatedTasks[destinationList] = { items: [] };
+  
+      // Remove from source list
+      updatedTasks[sourceList].items = updatedTasks[sourceList].items.filter(
+        t => t.id !== task.id
+      );
+  
+      // Add to destination list
+      updatedTasks[destinationList].items = [
+        task,
+        ...(updatedTasks[destinationList].items || [])
+      ];
+  
+      console.log('Updated tasks state:', updatedTasks);
+  
+      // Update both lists using updateTaskList
+      await updateTaskList(sourceList, updatedTasks[sourceList]);
+      await updateTaskList(destinationList, updatedTasks[destinationList]);
+  
+    } catch (error) {
+      console.error('Error moving task:', error);
+    }
   };
 
   if (!user) return <SignIn user={user} />;
