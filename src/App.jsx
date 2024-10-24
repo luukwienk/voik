@@ -49,6 +49,24 @@ function App() {
     }
   };
 
+  const moveTask = (task, sourceList, destinationList) => {
+    // Create a copy of the tasks object
+    const updatedTasks = { ...tasks };
+    
+    // Ensure the arrays exist
+    updatedTasks[sourceList] = updatedTasks[sourceList] || { items: [] };
+    updatedTasks[destinationList] = updatedTasks[destinationList] || { items: [] };
+    
+    // Remove task from source list's items array
+    updatedTasks[sourceList].items = updatedTasks[sourceList].items.filter(t => t.id !== task.id);
+    
+    // Add task to destination list's items array
+    updatedTasks[destinationList].items = [task, ...updatedTasks[destinationList].items];
+    
+    // Update all tasks
+    updateTaskList(updatedTasks);
+  };
+
   if (!user) return <SignIn user={user} />;
 
   return (
@@ -89,6 +107,7 @@ function App() {
         addNoteList={addNoteList}
         deleteTaskList={deleteTaskList}
         deleteNoteList={deleteNoteList}
+        moveTask={moveTask} // Add this new prop
       />
     </div>
   );

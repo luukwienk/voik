@@ -3,7 +3,7 @@ import TaskList from './TaskList';
 import NoteList from './NoteList';
 import VoiceInputSection from './VoiceInputSection';
 import ListSelector from './ListSelector';
-import Timer from './Timer';  // Import the new Timer component
+import Timer from './Timer';
 
 function MainContent({ 
   currentTab, 
@@ -24,7 +24,8 @@ function MainContent({
   addTaskList,
   addNoteList,
   deleteTaskList,
-  deleteNoteList
+  deleteNoteList,
+  moveTask  // Add this new prop
 }) {
   useEffect(() => {
     if (currentTab === 0) {
@@ -75,9 +76,11 @@ function MainContent({
           {error && <p className="error">{error}</p>}
           {currentTab === 0 ? (
             <TaskList
-              tasks={tasks[currentTaskList]?.items || []}
-              updateList={(newItems) => updateTaskList(currentTaskList, { items: newItems })}
+              tasks={tasks[currentTaskList]}
               currentList={currentTaskList}
+              lists={tasks}
+              moveTask={moveTask}
+              updateList={updateTaskList}
             />
           ) : (
             <NoteList

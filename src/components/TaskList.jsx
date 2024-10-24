@@ -3,9 +3,10 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import EditTask from './EditTask';
 import RichTextViewer from './RichTextViewer';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faTrash, faCopy, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faTrash, faCopy, faPlus, faArrowRight } from '@fortawesome/free-solid-svg-icons';
+import MoveTaskModal from './MoveTaskModal';
 
-const TaskList = ({ tasks, updateList, currentList }) => {
+const TaskList = ({ tasks = { items: [] }, updateList, currentList, lists, moveTask }) => {
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [newTaskText, setNewTaskText] = useState('');
 
@@ -17,28 +18,29 @@ const TaskList = ({ tasks, updateList, currentList }) => {
         text: newTaskText,
         completed: false
       };
-      updateList([newTask, ...tasks]);
+      const currentItems = tasks?.items || [];
+      updateList(currentList, { items: [newTask, ...currentItems] });
       setNewTaskText('');
     }
   };
 
   const handleToggleCompletion = (taskId) => {
-    const updatedTasks = tasks.map(task =>
+    const updatedItems = (tasks?.items || []).map(task =>
       task.id === taskId ? { ...task, completed: !task.completed } : task
     );
-    updateList(updatedTasks);
+    updateList(currentList, { items: updatedItems });
   };
 
   const handleDeleteTask = (taskId) => {
-    const updatedTasks = tasks.filter(task => task.id !== taskId);
-    updateList(updatedTasks);
+    const updatedItems = (tasks?.items || []).filter(task => task.id !== taskId);
+    updateList(currentList, { items: updatedItems });
   };
-
+  
   const handleUpdateTask = (taskId, newText) => {
-    const updatedTasks = tasks.map(task =>
+    const updatedItems = (tasks?.items || []).map(task =>
       task.id === taskId ? { ...task, text: newText } : task
     );
-    updateList(updatedTasks);
+    updateList(currentList, { items: updatedItems });
     setEditingTaskId(null);
   };
 
@@ -74,6 +76,17 @@ const TaskList = ({ tasks, updateList, currentList }) => {
     reorderedTasks.splice(destination.index, 0, removed);
 
     updateList(reorderedTasks);
+  };
+
+  const [movingTaskId, setMovingTaskId] = useState(null);
+
+  const handleMoveTask = (taskId, destinationList) => {
+    // Find the task to move from the current list
+    const taskArray = Array.isArray(tasks) ? tasks : (tasks?.items || []);
+    const taskToMove = taskArray.find(task => task.id === taskId);
+    if (taskToMove) {
+      moveTask(taskToMove, currentList, destinationList);
+    }
   };
 
   return (
@@ -152,7 +165,7 @@ const TaskList = ({ tasks, updateList, currentList }) => {
               ref={provided.innerRef} 
               style={{ listStyleType: 'none', padding: 0 }}
             >
-              {tasks.map((task, index) => (
+              {(tasks?.items || []).map((task, index) => (
                 <Draggable key={task.id} draggableId={`task-${task.id}`} index={index}>
                   {(provided, snapshot) => (
                     <li
@@ -226,7 +239,7 @@ const TaskList = ({ tasks, updateList, currentList }) => {
                                 backgroundColor: 'transparent',
                                 border: 'none',
                                 cursor: 'pointer',
-                                color: '#dc3545',
+                                color: 'black',
                                 padding: '5px',
                                 borderRadius: '3px',
                                 transition: 'all 0.2s'
@@ -235,7 +248,21 @@ const TaskList = ({ tasks, updateList, currentList }) => {
                             >
                               <FontAwesomeIcon icon={faTrash} />
                             </button>
-                          </div>
+                            <button 
+    onClick={() => setMovingTaskId(task.id)}
+    style={{
+      backgroundColor: 'transparent',
+      border: 'none',
+      cursor: 'pointer',
+      color: '#666',
+      padding: '5px',
+      borderRadius: '3px'
+    }}
+    title="Move task to another list"
+  >
+    <FontAwesomeIcon icon={faArrowRight} />
+  </button>
+                          </div>                          
                         </>
                       )}
                     </li>
@@ -247,6 +274,14 @@ const TaskList = ({ tasks, updateList, currentList }) => {
           )}
         </Droppable>
       </div>
+      {movingTaskId && (
+        <MoveTaskModal
+          lists={lists}
+          currentList={currentList}
+          onMove={(destinationList) => handleMoveTask(movingTaskId, destinationList)}
+          onClose={() => setMovingTaskId(null)}
+        />
+      )}
     </DragDropContext>
   );
 };

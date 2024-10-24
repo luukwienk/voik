@@ -96,15 +96,22 @@ export function useTasks(user) {
   };
 
   const updateTaskList = (listName, newListData) => {
+    // Ensure we have the correct structure
+    const updatedList = {
+      items: Array.isArray(newListData) ? newListData : newListData.items || []
+    };
+  
     setTasks(prevTasks => ({
       ...prevTasks,
-      [listName]: newListData
+      [listName]: updatedList
     }));
+  
     if (user) {
-      saveTasks(user.uid, {
+      const updatedTasks = {
         ...tasks,
-        [listName]: newListData
-      });
+        [listName]: updatedList
+      };
+      saveTasks(user.uid, updatedTasks);
     }
   };
 

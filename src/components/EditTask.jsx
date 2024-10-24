@@ -250,7 +250,7 @@ const saveButtonStyle = {
 
 const cancelButtonStyle = {
   padding: '5px 10px',
-  background: '#f44336',
+  background: 'black',
   color: 'white',
   border: 'none',
   borderRadius: '4px',
