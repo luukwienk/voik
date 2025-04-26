@@ -6,9 +6,8 @@ import { faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 function Header({ user, signOut, currentTab, setCurrentTab }) {
   return (
     <header className="app-header">
-      <div className="header-top">
-        {user && <span className="user-email">{user.email}</span>}
-        <button onClick={signOut} className="sign-out-btn">
+      <div className="header-top" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <button onClick={signOut} className="sign-out-btn" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
           <FontAwesomeIcon icon={faSignOutAlt} /> 
         </button>
       </div>

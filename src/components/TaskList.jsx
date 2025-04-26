@@ -6,7 +6,14 @@ import MoveTaskModal from './MoveTaskModal';
 import TaskEditorModal from './TaskEditorModal';
 import ListSelector from './ListSelector';
 
-const TaskList = ({ tasks = { items: [] }, updateList, currentList, lists, moveTask }) => {
+const TaskList = ({ 
+  tasks = { items: [] }, 
+  updateList, 
+  currentList, 
+  lists, 
+  moveTask, 
+  hideTitleHeader = false // Nieuwe prop om titel te verbergen
+}) => {
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [newTaskText, setNewTaskText] = useState('');
   const [selectedTask, setSelectedTask] = useState(null);
@@ -183,8 +190,8 @@ const TaskList = ({ tasks = { items: [] }, updateList, currentList, lists, moveT
         backgroundColor: '#f9f9f9', 
         borderRadius: '8px',
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        maxWidth: '600px',
-        margin: '32px auto'
+        maxWidth: '100%',
+        width: '100%'
       }}>
         <form onSubmit={handleAddTask} className="add-task-form" style={{ 
           display: 'flex', 
@@ -233,35 +240,38 @@ const TaskList = ({ tasks = { items: [] }, updateList, currentList, lists, moveT
           </button>
         </form>
 
-        <div className="task-list-header" style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          marginBottom: '20px',
-          borderBottom: '1px solid #eee',
-          paddingBottom: '10px'
-        }}>
-          <h4 style={{ margin: 0, color: '#333', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentList}</h4>
-          <button 
-            onClick={copyTasksToClipboard} 
-            style={{ 
-              backgroundColor: 'transparent',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              padding: '8px 12px',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              minWidth: 40,
-              minHeight: 40,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-            title="Copy tasks to clipboard"
-          >
-            <FontAwesomeIcon icon={faCopy} style={{ color: '#222', fontSize: '18px', opacity: 1 }} />
-          </button>
-        </div>
+        {/* Header alleen tonen als hideTitleHeader false is */}
+        {!hideTitleHeader && (
+          <div className="task-list-header" style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            marginBottom: '20px',
+            borderBottom: '1px solid #eee',
+            paddingBottom: '10px'
+          }}>
+            <h4 style={{ margin: 0, color: '#333', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentList}</h4>
+            <button 
+              onClick={copyTasksToClipboard} 
+              style={{ 
+                backgroundColor: 'transparent',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                padding: '8px 12px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                minWidth: 40,
+                minHeight: 40,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title="Copy tasks to clipboard"
+            >
+              <FontAwesomeIcon icon={faCopy} style={{ color: '#222', fontSize: '18px', opacity: 1 }} />
+            </button>
+          </div>
+        )}
 
         <Droppable droppableId={`tasks-${currentList}`}>
           {(provided) => (

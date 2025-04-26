@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import Header from './components/Header';
-import MainContent from './components/MainContent';
+import MainContent from './components/MainContentWithCalendar'; // Use this for testing
 import { useAuth } from './hooks/useAuth';
 import { useTasks } from './hooks/useTasks';
 import { useNotes } from './hooks/useNotes';
@@ -51,33 +51,31 @@ function App() {
 
   const moveTask = async (task, sourceList, destinationList) => {
     console.log('Moving task:', { task, sourceList, destinationList });
-    console.log('Current tasks state:', tasks);
-  
+
     try {
       // Create a deep copy of the current tasks
       const updatedTasks = JSON.parse(JSON.stringify(tasks));
-  
-      // Ensure both source and destination lists exist and have items arrays
+
+      // Ensure both source and destination lists exist
       if (!updatedTasks[sourceList]) updatedTasks[sourceList] = { items: [] };
       if (!updatedTasks[destinationList]) updatedTasks[destinationList] = { items: [] };
-  
+
       // Remove from source list
       updatedTasks[sourceList].items = updatedTasks[sourceList].items.filter(
         t => t.id !== task.id
       );
-  
+
       // Add to destination list
       updatedTasks[destinationList].items = [
         task,
         ...(updatedTasks[destinationList].items || [])
       ];
-  
-      console.log('Updated tasks state:', updatedTasks);
-  
-      // Update both lists using updateTaskList
-      await updateTaskList(sourceList, updatedTasks[sourceList]);
-      await updateTaskList(destinationList, updatedTasks[destinationList]);
-  
+
+      // Update both lists
+      if (sourceList !== destinationList) {
+        await updateTaskList(sourceList, updatedTasks[sourceList]);
+        await updateTaskList(destinationList, updatedTasks[destinationList]);
+      }
     } catch (error) {
       console.error('Error moving task:', error);
     }

@@ -73,25 +73,39 @@ export async function handleAICommand(input, currentTasks, currentNotes) {
   console.log('Current tasks:', currentTasks);
   console.log('Current notes:', currentNotes);
 
+  // Verbeterde prompt voor meer conversatiecontext
   const messages = [
     {
       role: 'system',
-      content: 'I am an AI that can generate tasks, read them aloud, schedule tasks in a calendar, and generate notes. Based on the user input, decide the appropriate action.'
+      content: `Je bent een behulpzame assistent die kan helpen met taken en notities. 
+      Je kunt nieuwe taken genereren, bestaande taken voorlezen, taken in de agenda plannen en notities maken.
+      Reageer op een natuurlijke, conversationele manier. Als je een actie uitvoert, leg dan ook uit wat je gedaan hebt.
+      Als de gebruiker een vraag stelt of een gesprek wil voeren, reageer dan als een behulpzame assistent zonder 
+      noodzakelijkerwijs een functie aan te roepen.`
     },
     { role: 'user', content: input },
   ];
 
   // Include current tasks and notes in the message
-  messages.push({
-    role: 'user',
-    content: JSON.stringify({ currentTasks, currentNotes })
-  });
+  if (currentTasks && currentTasks.length > 0) {
+    messages.push({
+      role: 'system',
+      content: `Huidige taken: ${JSON.stringify(currentTasks)}`
+    });
+  }
+  
+  if (currentNotes && currentNotes.length > 0) {
+    messages.push({
+      role: 'system',
+      content: `Huidige notities: ${JSON.stringify(currentNotes)}`
+    });
+  }
 
   const completion = await openai.chat.completions.create({
     model: 'gpt-4o-mini',
     messages: messages,
     functions,
-    temperature: 0.5,
+    temperature: 0.7, // Iets hogere temperature voor meer gevarieerde antwoorden
   });
 
   console.log('Completion response:', completion);
@@ -107,33 +121,65 @@ export async function handleAICommand(input, currentTasks, currentNotes) {
     switch (name) {
       case 'generateTasks':
         const newTasks = await generateTasks(parsedArgs.input);
-        return { type: 'tasks', data: newTasks };
+        return { 
+          type: 'tasks', 
+          data: newTasks,
+          message: `Ik heb de volgende ${newTasks.length > 1 ? 'taken' : 'taak'} toegevoegd: ${newTasks.join(', ')}`
+        };
       case 'readTasksAloud':
         await readTasksAloud(parsedArgs.tasks);
-        return { type: 'action', data: 'Tasks read aloud' };
+        return { 
+          type: 'action', 
+          data: 'Taken worden voorgelezen',
+          message: 'Ik lees je taken nu voor.'
+        };
       case 'planTaskInCalendar':
         try {
           const result = await planTaskInCalendar(parsedArgs.taskDescription, parsedArgs.startDateTime, parsedArgs.endDateTime);
-          return { type: 'action', data: result };
+          return { 
+            type: 'action', 
+            data: result,
+            message: `Ik heb "${parsedArgs.taskDescription}" ingepland van ${new Date(parsedArgs.startDateTime).toLocaleString()} tot ${new Date(parsedArgs.endDateTime).toLocaleString()}.`
+          };
         } catch (error) {
           console.error('Error scheduling task in calendar:', error);
-          return { type: 'error', data: error.message };
+          return { 
+            type: 'error', 
+            data: error.message,
+            message: `Er is een fout opgetreden bij het inplannen: ${error.message}`
+          };
         }
       case 'generateNotes':
         const newNotes = await generateNotes(parsedArgs.input);
-        return { type: 'notes', data: newNotes };
+        return { 
+          type: 'notes', 
+          data: newNotes,
+          message: `Ik heb een nieuwe notitie gemaakt.`
+        };
       default:
         console.error('Unknown function call:', name);
-        return { type: 'error', data: `Received an unknown function call: ${name}` };
+        return { 
+          type: 'error', 
+          data: `Received an unknown function call: ${name}`,
+          message: 'Er is een onbekende functie aangeroepen. Probeer het opnieuw.'
+        };
     }
   } else if (aiMessage.content) {
-    return { type: 'text', data: aiMessage.content };
+    // Direct antwoord zonder functie aanroep
+    return { 
+      type: 'text', 
+      data: aiMessage.content,
+      message: aiMessage.content
+    };
   } else {
     console.error('Unknown response structure:', aiMessage);
-    return { type: 'error', data: 'Received an unknown response type from AI.' };
+    return { 
+      type: 'error', 
+      data: 'Received an unknown response type from AI.',
+      message: 'Er is een onbekende respons van de AI ontvangen. Probeer het opnieuw.'
+    };
   }
 }
-
 
 export async function generateTasks(prompt) {
   try {

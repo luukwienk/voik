@@ -9,7 +9,7 @@ body, html, #root, .App {
 #root {
   display: flex;
   flex-direction: column;
-  max-width: 800px;
+  width: 100%;
   margin: 0 auto;
   padding: 1rem;
   box-sizing: border-box;
