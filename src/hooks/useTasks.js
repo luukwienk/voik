@@ -97,7 +97,40 @@ export function useTasks(user) {
 
   const updateTaskList = async (listName, newListData) => {
     try {
-      // Voeg extra logging toe
+      // Detecteer of we een task object krijgen
+      if (typeof listName === 'object' && listName !== null) {
+        console.log('Received task object instead of listName');
+        const task = listName;
+        const taskList = task.list;
+        
+        if (!taskList) {
+          console.error('Missing list property in task:', task);
+          return;
+        }
+        
+        // Haal huidige items op
+        const currentItems = tasks[taskList]?.items || [];
+        
+        // Update juiste task
+        const updatedItems = currentItems.map(item => 
+          item.id === task.id ? task : item
+        );
+        
+        // Update direct in state en in firebase
+        setTasks(prevTasks => ({
+          ...prevTasks,
+          [taskList]: { items: updatedItems }
+        }));
+        
+        if (user) {
+          const taskDoc = doc(db, 'users', user.uid, 'tasks', taskList);
+          await setDoc(taskDoc, { items: updatedItems });
+        }
+        
+        return;
+      }
+
+      // Originele code vanaf hier...
       console.log('UpdateTaskList called with:', {
         listName,
         newListData
@@ -110,16 +143,23 @@ export function useTasks(user) {
       }
   
       // Zorg ervoor dat we een items array hebben
-      if (!Array.isArray(newListData.items)) {
-        console.error('Invalid items structure:', newListData);
-        throw new Error('Invalid items structure');
+      if (!newListData.items) {
+        console.log('Items array missing, creating empty array for:', listName);
+        newListData.items = [];
+      } else if (!Array.isArray(newListData.items)) {
+        console.error('Invalid items structure:', listName);
+        newListData.items = [];
       }
   
       // Valideer elk item in de array
       const validatedItems = newListData.items.map(item => {
         if (!item || typeof item !== 'object') {
           console.error('Invalid item:', item);
-          throw new Error('Invalid item in task list');
+          return {
+            id: `task-${Date.now()}-${Math.random()}`,
+            text: '',
+            completed: false
+          };
         }
   
         return {

@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTasks, faStickyNote, faClock } from '@fortawesome/free-solid-svg-icons';
+import { faTasks, faStickyNote, faClock, faSearch } from '@fortawesome/free-solid-svg-icons';
 
-const TabsNavigation = ({ onTabChange }) => {
-  const [value, setValue] = useState(0);
+const TabsNavigation = ({ currentTab, onTabChange }) => {
+  // Als currentTab niet wordt doorgegeven, gebruik dan lokale state
+  const [value, setValue] = useState(currentTab || 0);
 
   const handleChange = (newValue) => {
     setValue(newValue);
-    onTabChange(newValue);
+    if (onTabChange) {
+      onTabChange(newValue);
+    }
   };
 
   return (
@@ -17,8 +20,8 @@ const TabsNavigation = ({ onTabChange }) => {
           style={{
             padding: '10px 20px',
             cursor: 'pointer',
-            borderBottom: value === 0 ? '2px solid #333' : 'none',
-            color: value === 0 ? '#333' : '#555',
+            borderBottom: currentTab === 0 ? '2px solid #333' : 'none',
+            color: currentTab === 0 ? '#333' : '#555',
             display: 'flex',
             alignItems: 'center',
           }}
@@ -31,8 +34,8 @@ const TabsNavigation = ({ onTabChange }) => {
           style={{
             padding: '10px 20px',
             cursor: 'pointer',
-            borderBottom: value === 1 ? '2px solid #333' : 'none',
-            color: value === 1 ? '#333' : '#555',
+            borderBottom: currentTab === 1 ? '2px solid #333' : 'none',
+            color: currentTab === 1 ? '#333' : '#555',
             display: 'flex',
             alignItems: 'center',
           }}
@@ -45,14 +48,29 @@ const TabsNavigation = ({ onTabChange }) => {
           style={{
             padding: '10px 20px',
             cursor: 'pointer',
-            borderBottom: value === 2 ? '2px solid #333' : 'none',
-            color: value === 2 ? '#333' : '#555',
+            borderBottom: currentTab === 2 ? '2px solid #333' : 'none',
+            color: currentTab === 2 ? '#333' : '#555',
             display: 'flex',
             alignItems: 'center',
           }}
           onClick={() => handleChange(2)}
         >
           <FontAwesomeIcon icon={faClock} />
+          
+        </div>
+        {/* Nieuwe tab voor taakenoverzicht */}
+        <div
+          style={{
+            padding: '10px 20px',
+            cursor: 'pointer',
+            borderBottom: currentTab === 3 ? '2px solid #333' : 'none',
+            color: currentTab === 3 ? '#333' : '#555',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+          onClick={() => handleChange(3)}
+        >
+          <FontAwesomeIcon icon={faSearch} />
           
         </div>
       </div>

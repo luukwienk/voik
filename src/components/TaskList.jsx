@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import EditTask from './EditTask';
-import RichTextViewer from './RichTextViewer';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faTrash, faCopy, faPlus, faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import MoveTaskModal from './MoveTaskModal';
+import TaskEditorModal from './TaskEditorModal';
 
 const TaskList = ({ tasks = { items: [] }, updateList, currentList, lists, moveTask }) => {
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [newTaskText, setNewTaskText] = useState('');
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [movingTaskId, setMovingTaskId] = useState(null);
 
   const handleAddTask = (e) => {
     e.preventDefault();
@@ -101,19 +102,14 @@ const TaskList = ({ tasks = { items: [] }, updateList, currentList, lists, moveT
     setEditingTaskId(null);
   };
 
+  // Kopieer taken als platte tekst naar het klembord
   const copyTasksToClipboard = () => {
-    // Strip HTML tags when copying to clipboard
-    const taskText = tasks.map(task => {
-      let textContent;
-      try {
-        const contentState = convertFromRaw(JSON.parse(task.text));
-        textContent = contentState.getPlainText();
-      } catch {
-        textContent = task.text;
-      }
+    const taskText = (tasks?.items || []).map(task => {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = task.text;
+      const textContent = tempDiv.textContent || tempDiv.innerText || '';
       return `${task.completed ? '✓' : '☐'} ${textContent}`;
     }).join('\n');
-    
     navigator.clipboard.writeText(taskText).then(() => {
       alert('Copied tasks!');
     }, (err) => {
@@ -142,8 +138,6 @@ const TaskList = ({ tasks = { items: [] }, updateList, currentList, lists, moveT
   };
   
 
-  const [movingTaskId, setMovingTaskId] = useState(null);
-
   const handleMoveTask = (taskId, destinationList) => {
     if (!tasks?.items) {
       console.error('No tasks available to move');
@@ -160,6 +154,25 @@ const TaskList = ({ tasks = { items: [] }, updateList, currentList, lists, moveT
     } else {
       console.error('Task not found:', taskId);
     }
+  };
+
+  // Haal de eerste zichtbare tekstregel uit HTML
+  const getTaskTitle = (html) => {
+    if (!html) return { title: '', hasMoreText: false };
+    // Strip HTML tags en pak de eerste regel
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    const text = tempDiv.textContent || tempDiv.innerText || '';
+    const lines = text.split(/\r?\n/);
+    const title = lines[0];
+    const hasMoreText = lines.length > 1 || text.length > 35;
+    // Beperk de titel tot 35 tekens
+    const maxLength = 35;
+    let displayTitle = title;
+    if (displayTitle.length > maxLength) {
+      displayTitle = displayTitle.substring(0, maxLength) + '...';
+    }
+    return { title: displayTitle, hasMoreText };
   };
 
   return (
@@ -248,7 +261,7 @@ const TaskList = ({ tasks = { items: [] }, updateList, currentList, lists, moveT
                       className={`task-item ${snapshot.isDragging ? 'dragging' : ''}`}
                       style={{
                         display: 'flex',
-                        alignItems: 'flex-start',
+                        alignItems: 'center',
                         backgroundColor: '#fff',
                         border: '1px solid #eee',
                         borderRadius: '6px',
@@ -259,85 +272,76 @@ const TaskList = ({ tasks = { items: [] }, updateList, currentList, lists, moveT
                         ...provided.draggableProps.style,
                       }}
                     >
-                      {editingTaskId === task.id ? (
-                        <EditTask
-                          task={task}
-                          onSave={(updatedText) => handleUpdateTask(task.id, updatedText)}
-                          onCancel={() => setEditingTaskId(null)}
+                      <div style={{ display: 'flex', alignItems: 'center', marginRight: '10px' }}>
+                        <input
+                          type="checkbox"
+                          checked={task.completed}
+                          onChange={() => handleToggleCompletion(task.id)}
+                          style={{ 
+                            margin: 0,
+                            marginRight: '10px',
+                            cursor: 'pointer'
+                          }}
                         />
-                      ) : (
-                        <>
-                          <div style={{ display: 'flex', alignItems: 'center', marginRight: '10px' }}>
-                            <input
-                              type="checkbox"
-                              checked={task.completed}
-                              onChange={() => handleToggleCompletion(task.id)}
-                              style={{ 
-                                margin: 0,
-                                marginRight: '10px',
-                                cursor: 'pointer'
-                              }}
-                            />
-                          </div>
-                          <div style={{ 
-                            flexGrow: 1,
-                            opacity: task.completed ? 0.6 : 1,
-                            textDecoration: task.completed ? 'line-through' : 'none'
-                          }}>
-                            <RichTextViewer content={task.text} />
-                          </div>
-                          <div style={{ 
-                            display: 'flex', 
-                            gap: '8px', 
-                            marginLeft: '10px'
-                          }}>
-                            <button 
-                              onClick={() => setEditingTaskId(task.id)}
-                              style={{
-                                backgroundColor: 'transparent',
-                                border: 'none',
-                                cursor: 'pointer',
-                                color: '#666',
-                                padding: '5px',
-                                borderRadius: '3px',
-                                transition: 'all 0.2s'
-                              }}
-                              title="Edit task"
-                            >
-                              <FontAwesomeIcon icon={faEdit} />
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteTask(task.id)}
-                              style={{
-                                backgroundColor: 'transparent',
-                                border: 'none',
-                                cursor: 'pointer',
-                                color: 'black',
-                                padding: '5px',
-                                borderRadius: '3px',
-                                transition: 'all 0.2s'
-                              }}
-                              title="Delete task"
-                            >
-                              <FontAwesomeIcon icon={faTrash} />
-                            </button>
-                            <button 
-    onClick={() => setMovingTaskId(task.id)}
-    style={{
-      backgroundColor: 'transparent',
-      border: 'none',
-      cursor: 'pointer',
-      color: '#666',
-      padding: '5px',
-      borderRadius: '3px'
-    }}
-    title="Move task to another list"
-  >
-    <FontAwesomeIcon icon={faArrowRight} />
-  </button>
-                          </div>                          
-                        </>
-                      )}
+                      </div>
+                      <div style={{ 
+                        flexGrow: 1,
+                        opacity: task.completed ? 0.6 : 1,
+                        textDecoration: task.completed ? 'line-through' : 'none',
+                        cursor: 'pointer'
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedTask(task);
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          {getTaskTitle(task.text).title}
+                          {getTaskTitle(task.text).hasMoreText && (
+                            <span style={{ 
+                              color: '#2196F3',
+                              fontSize: '12px',
+                              opacity: 0.9
+                            }}>⋯</span>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ 
+                        display: 'flex', 
+                        gap: '8px', 
+                        marginLeft: '10px'
+                      }}>
+                        <button 
+                          onClick={() => handleDeleteTask(task.id)}
+                          style={{
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: 'black',
+                            padding: '3px',
+                            borderRadius: '3px',
+                            transition: 'all 0.2s',
+                            fontSize: '12px'
+                          }}
+                          title="Delete task"
+                        >
+                          <FontAwesomeIcon icon={faTrash} />
+                        </button>
+                        <button 
+                          onClick={() => setMovingTaskId(task.id)}
+                          style={{
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#666',
+                            padding: '3px',
+                            borderRadius: '3px',
+                            fontSize: '12px'
+                          }}
+                          title="Move task to another list"
+                        >
+                          <FontAwesomeIcon icon={faArrowRight} />
+                        </button>
+                      </div>
                     </li>
                   )}
                 </Draggable>
@@ -353,6 +357,16 @@ const TaskList = ({ tasks = { items: [] }, updateList, currentList, lists, moveT
           currentList={currentList}
           onMove={(destinationList) => handleMoveTask(movingTaskId, destinationList)}
           onClose={() => setMovingTaskId(null)}
+        />
+      )}
+      {selectedTask && (
+        <TaskEditorModal
+          task={{ ...selectedTask, list: currentList }}
+          onClose={() => setSelectedTask(null)}
+          updateTaskList={(updatedTask) => {
+            updateList(updatedTask);
+            setSelectedTask(null);
+          }}
         />
       )}
     </DragDropContext>

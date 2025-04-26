@@ -4,6 +4,7 @@ import NoteList from './NoteList';
 import VoiceInputSection from './VoiceInputSection';
 import ListSelector from './ListSelector';
 import Timer from './Timer';
+import TaskOverviewPage from './TaskOverviewPage'; // Importeer de nieuwe component
 
 function MainContent({ 
   currentTab, 
@@ -25,7 +26,7 @@ function MainContent({
   addNoteList,
   deleteTaskList,
   deleteNoteList,
-  moveTask  // Add this new prop
+  moveTask
 }) {
   useEffect(() => {
     if (currentTab === 0) {
@@ -48,6 +49,18 @@ function MainContent({
   const currentItems = currentTab === 0
     ? tasks[currentTaskList]?.items || []
     : notes[currentNoteList]?.items || [];
+
+  // Render TaskOverviewPage als currentTab === 3
+  if (currentTab === 3) {
+    return (
+      <TaskOverviewPage 
+        tasks={tasks} 
+        currentTaskList={currentTaskList}
+        updateTaskList={updateTaskList}
+        moveTask={moveTask}
+      />
+    );
+  }
 
   return (
     <main>
@@ -76,12 +89,18 @@ function MainContent({
           {error && <p className="error">{error}</p>}
           {currentTab === 0 ? (
             <TaskList
-            tasks={tasks[currentTaskList]}
-            currentList={currentTaskList}
-            lists={tasks}
-            moveTask={moveTask}
-            updateList={(newListData) => updateTaskList(currentTaskList, newListData)}
-          />
+              tasks={tasks[currentTaskList]}
+              currentList={currentTaskList}
+              lists={tasks}
+              moveTask={moveTask}
+              updateList={(updatedData) => {
+                if (updatedData.id && updatedData.list) {
+                  updateTaskList(updatedData);
+                } else {
+                  updateTaskList(currentTaskList, updatedData);
+                }
+              }}
+            />
           ) : (
             <NoteList
               notes={notes[currentNoteList]?.items || []}
