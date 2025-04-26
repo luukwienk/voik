@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faTrash, faCopy, faPlus, faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import MoveTaskModal from './MoveTaskModal';
 import TaskEditorModal from './TaskEditorModal';
+import ListSelector from './ListSelector';
 
 const TaskList = ({ tasks = { items: [] }, updateList, currentList, lists, moveTask }) => {
   const [editingTaskId, setEditingTaskId] = useState(null);
@@ -181,12 +182,16 @@ const TaskList = ({ tasks = { items: [] }, updateList, currentList, lists, moveT
         padding: '20px', 
         backgroundColor: '#f9f9f9', 
         borderRadius: '8px',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        maxWidth: '600px',
+        margin: '32px auto'
       }}>
         <form onSubmit={handleAddTask} className="add-task-form" style={{ 
           display: 'flex', 
-          marginBottom: '20px', 
-          gap: '10px'
+          gap: '8px',
+          alignItems: 'center',
+          marginBottom: '20px',
+          width: '100%'
         }}>
           <input
             type="text"
@@ -194,28 +199,37 @@ const TaskList = ({ tasks = { items: [] }, updateList, currentList, lists, moveT
             onChange={(e) => setNewTaskText(e.target.value)}
             placeholder="Add a new task.."
             style={{ 
-              flexGrow: 1,
+              flex: 1,
+              width: '100%',
+              minWidth: 0,
+              margin: 0,
               padding: '10px',
               borderRadius: '4px',
               border: '1px solid #ddd',
-              fontSize: '14px'
+              fontSize: '16px',
+              boxSizing: 'border-box'
             }}
           />
           <button 
             type="submit"
             style={{
-              backgroundColor: '#2196F3',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              padding: '10px 15px',
-              cursor: 'pointer',
+              minWidth: 40,
+              padding: '0 12px',
+              height: 40,
               display: 'flex',
               alignItems: 'center',
-              gap: '5px'
+              justifyContent: 'center',
+              backgroundColor: '#f5f7fa',
+              color: '#2196F3',
+              border: '1px solid #e0e7ef',
+              borderRadius: '4px',
+              boxShadow: 'none',
+              fontSize: '15px',
+              transition: 'background 0.2s, color 0.2s',
+              opacity: 0.7
             }}
           >
-            <FontAwesomeIcon icon={faPlus} />
+            <FontAwesomeIcon icon={faPlus} style={{ fontSize: '14px', color: '#222', opacity: 1 }} />
           </button>
         </form>
 
@@ -227,7 +241,7 @@ const TaskList = ({ tasks = { items: [] }, updateList, currentList, lists, moveT
           borderBottom: '1px solid #eee',
           paddingBottom: '10px'
         }}>
-          <h4 style={{ margin: 0, color: '#333' }}>{currentList}</h4>
+          <h4 style={{ margin: 0, color: '#333', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentList}</h4>
           <button 
             onClick={copyTasksToClipboard} 
             style={{ 
@@ -236,11 +250,16 @@ const TaskList = ({ tasks = { items: [] }, updateList, currentList, lists, moveT
               borderRadius: '4px',
               padding: '8px 12px',
               cursor: 'pointer',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
+              minWidth: 40,
+              minHeight: 40,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
             title="Copy tasks to clipboard"
           >
-            <FontAwesomeIcon icon={faCopy} />
+            <FontAwesomeIcon icon={faCopy} style={{ color: '#222', fontSize: '18px', opacity: 1 }} />
           </button>
         </div>
 

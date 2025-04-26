@@ -50,7 +50,8 @@ main {
 }
 
 .list-selector select {
-  width: auto; /* or a specific width like 200px */
+  width: 100%;
+  box-sizing: border-box;
   padding: 8px;
   font-size: 16px;
   border: 1px solid #ccc;
@@ -237,19 +238,28 @@ select:hover, button:hover {
   color: white;
 }
 
-.add-task-form, .add-note-form {
+.add-task-form {
   display: flex;
+  gap: 8px;
   margin-bottom: 10px;
 }
 
-.add-task-form input, .add-note-form input {
-  flex-grow: 1;
-  padding: 8px;
-  margin-right: 10px;
+.add-task-form input[type="text"] {
+  flex: 1 1 0% !important;
+  width: 100% !important;
+  min-width: 0;
+  margin: 0;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  font-size: 16px;
+  box-sizing: border-box;
 }
 
-.add-task-form button, .add-note-form button {
-  padding: 8px 12px;
+.add-task-form button {
+  min-width: 40px;
+  padding: 0 12px;
+  height: 40px;
 }
 
 .edit-task-container, .edit-note-container {
@@ -479,4 +489,35 @@ select:hover, button:hover {
   .cancel-task-btn, .cancel-note-btn {
     background-color: #d32f2f;
   }
+}
+
+/* Full-width selects & inputs */
+.list-selector select,
+.add-task-form input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Strakkere card-layout rondom lijsten */
+.task-list {
+  padding: 24px;
+  margin: 32px 0;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* Consistente knop-styling */
+button {
+  height: 40px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 4px;
+  background-color: #2196F3;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+button:hover {
+  background-color: #1976d2;
 }

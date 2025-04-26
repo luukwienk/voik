@@ -2,7 +2,7 @@ import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
 
-const ListSelector = ({ lists, currentList, setCurrentList, addList, deleteList, currentTab }) => {
+const ListSelector = ({ lists, currentList, setCurrentList, addList, deleteList, currentTab, selectStyle }) => {
   const listNames = Object.keys(lists);
 
   const handleChange = (e) => {
@@ -20,7 +20,7 @@ const ListSelector = ({ lists, currentList, setCurrentList, addList, deleteList,
 
   return (
     <div className="list-selector">
-      <select value={currentList} onChange={handleChange}>
+      <select value={currentList} onChange={handleChange} style={selectStyle}>
         {listNames.map((listName) => (
           <option key={listName} value={listName}>
             {listName}

@@ -77,19 +77,19 @@ const TaskEditorModal = ({ task, onClose, updateTaskList }) => {
       <div className="editor-modal">
         <div className="editor-toolbar">
           <button onClick={() => editor.chain().focus().toggleBold().run()} className="toolbar-button" title="Vet">
-            <FontAwesomeIcon icon={faBold} />
+            <FontAwesomeIcon icon={faBold} style={{ color: '#222' }} />
           </button>
           <button onClick={() => editor.chain().focus().toggleItalic().run()} className="toolbar-button" title="Cursief">
-            <FontAwesomeIcon icon={faItalic} />
+            <FontAwesomeIcon icon={faItalic} style={{ color: '#222' }} />
           </button>
           <button onClick={() => editor.chain().focus().toggleBulletList().run()} className="toolbar-button" title="Opsomming">
-            <FontAwesomeIcon icon={faList} />
+            <FontAwesomeIcon icon={faList} style={{ color: '#222' }} />
           </button>
           <button onClick={() => setShowURLInput(!showURLInput)} className="toolbar-button" title="Link">
-            <FontAwesomeIcon icon={faLink} />
+            <FontAwesomeIcon icon={faLink} style={{ color: '#222' }} />
           </button>
           <button onClick={addImage} className="toolbar-button" title="Afbeelding">
-            <FontAwesomeIcon icon={faImage} />
+            <FontAwesomeIcon icon={faImage} style={{ color: '#222' }} />
           </button>
         </div>
         
@@ -114,10 +114,10 @@ const TaskEditorModal = ({ task, onClose, updateTaskList }) => {
         
         <div className="editor-actions">
           <button onClick={onClose} className="action-button cancel" title="Annuleren">
-            <FontAwesomeIcon icon={faTimes} />
+            <FontAwesomeIcon icon={faTimes} style={{ color: '#222' }} />
           </button>
           <button onClick={handleSave} className="action-button save" title="Opslaan">
-            <FontAwesomeIcon icon={faCheck} />
+            <FontAwesomeIcon icon={faCheck} style={{ color: '#222' }} />
           </button>
         </div>
       </div>

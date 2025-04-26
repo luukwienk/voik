@@ -75,6 +75,8 @@ function MainContent({
         <Timer />
       ) : (
         <>
+          {isLoading && <p className="loading">Processing...</p>}
+          {error && <p className="error">{error}</p>}
           <div className="list-controls">
             <ListSelector 
               lists={currentTab === 0 ? tasks : notes}
@@ -85,8 +87,6 @@ function MainContent({
               currentTab={currentTab}
             />
           </div>
-          {isLoading && <p className="loading">Processing...</p>}
-          {error && <p className="error">{error}</p>}
           {currentTab === 0 ? (
             <TaskList
               tasks={tasks[currentTaskList]}
