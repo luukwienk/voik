@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faTrash, faCopy, faPlus, faArrowRight } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faTrash, faCopy, faPlus, faArrowRight, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 import MoveTaskModal from './MoveTaskModal';
 import TaskEditorModal from './TaskEditorModal';
 import ListSelector from './ListSelector';
+import DraggableTaskItem from './DraggableTaskItem';
 
 const TaskList = ({ 
   tasks = { items: [] }, 
@@ -12,12 +13,15 @@ const TaskList = ({
   currentList, 
   lists, 
   moveTask, 
-  hideTitleHeader = false // Nieuwe prop om titel te verbergen
+  hideTitleHeader = false, // Nieuwe prop om titel te verbergen
+  signOut
 }) => {
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [newTaskText, setNewTaskText] = useState('');
   const [selectedTask, setSelectedTask] = useState(null);
   const [movingTaskId, setMovingTaskId] = useState(null);
+  const [isTaskDragging, setIsTaskDragging] = useState(false);
+  const [isDraggedOver, setIsDraggedOver] = useState(false);
 
   const handleAddTask = (e) => {
     e.preventDefault();
@@ -125,6 +129,74 @@ const TaskList = ({
     });
   };
 
+  // New functions for drag and drop integration
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDraggedOver(true);
+    
+    // Add a class to indicate droppability
+    e.currentTarget.classList.add('task-list-drag-over');
+    
+    // Set the dropEffect to copy (visual indicator)
+    e.dataTransfer.dropEffect = 'copy';
+  };
+  
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDraggedOver(false);
+    
+    // Remove the class when drag leaves
+    e.currentTarget.classList.remove('task-list-drag-over');
+  };
+  
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDraggedOver(false);
+    
+    // Remove the class
+    e.currentTarget.classList.remove('task-list-drag-over');
+    
+    // Try to get the event data
+    try {
+      const data = e.dataTransfer.getData('text/plain');
+      if (!data) return;
+      
+      console.log('Drop received in TaskList:', data);
+      
+      // Try to parse the data
+      const eventData = JSON.parse(data);
+      
+      // Check if it's a calendar event being dropped back to task list
+      if (eventData && eventData.isCalendarEvent) {
+        console.log('Calendar event dropped back to task list');
+        
+        // Create a new task from the event
+        const newTask = {
+          id: `task-${Date.now()}`,
+          text: eventData.title || 'Event from calendar',
+          completed: false,
+          // You could add more properties from the event if needed
+        };
+        
+        // Add the new task to the list
+        const currentItems = tasks?.items || [];
+        const updatedItems = [newTask, ...currentItems];
+        
+        if (updateList.length === 1) {
+          updateList({
+            items: updatedItems
+          });
+        } else {
+          updateList(currentList, {
+            items: updatedItems
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error handling drop in task list:', err);
+    }
+  };
+
   const onDragEnd = (result) => {
     const { source, destination } = result;
   
@@ -173,9 +245,9 @@ const TaskList = ({
     const text = tempDiv.textContent || tempDiv.innerText || '';
     const lines = text.split(/\r?\n/);
     const title = lines[0];
-    const hasMoreText = lines.length > 1 || text.length > 35;
-    // Beperk de titel tot 35 tekens
-    const maxLength = 35;
+    const hasMoreText = lines.length > 1 || text.length > 75;
+    // Beperk de titel tot 75 tekens
+    const maxLength = 75;
     let displayTitle = title;
     if (displayTitle.length > maxLength) {
       displayTitle = displayTitle.substring(0, maxLength) + '...';
@@ -185,14 +257,47 @@ const TaskList = ({
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="task-list" style={{ 
-        padding: '20px', 
-        backgroundColor: '#f9f9f9', 
-        borderRadius: '8px',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        maxWidth: '100%',
-        width: '100%'
-      }}>
+      <div 
+        className={`task-list ${isDraggedOver ? 'task-list-drag-over' : ''}`} 
+        style={{ 
+          padding: '20px', 
+          backgroundColor: isDraggedOver ? '#e8f4f8' : '#f9f9f9', 
+          borderRadius: '8px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          width: '100%',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+          overflowX: 'hidden',
+          transition: 'background-color 0.3s ease',
+          border: isDraggedOver ? '2px dashed #2196F3' : 'none',
+        }}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+      >
+        {/* Sign-out knop boven het Add new task veld */}
+        {signOut && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '4px' }}>
+            <button
+              onClick={signOut}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#111',
+                fontSize: '22px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                padding: '6px',
+                borderRadius: '4px',
+                boxShadow: 'none',
+              }}
+              title="Uitloggen"
+            >
+              <FontAwesomeIcon icon={faSignOutAlt} />
+            </button>
+          </div>
+        )}
         <form onSubmit={handleAddTask} className="add-task-form" style={{ 
           display: 'flex', 
           gap: '8px',
@@ -273,12 +378,27 @@ const TaskList = ({
           </div>
         )}
 
+        {isDraggedOver && (
+          <div style={{
+            padding: '15px',
+            textAlign: 'center',
+            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+            borderRadius: '6px',
+            marginBottom: '15px',
+            border: '1px dashed #2196F3',
+            color: '#1976D2',
+            fontWeight: 'bold'
+          }}>
+            Drop event here to convert back to task
+          </div>
+        )}
+
         <Droppable droppableId={`tasks-${currentList}`}>
           {(provided) => (
             <ul 
               {...provided.droppableProps} 
               ref={provided.innerRef} 
-              style={{ listStyleType: 'none', padding: 0 }}
+              style={{ listStyleType: 'none', padding: 0, margin: 0, width: '100%', boxSizing: 'border-box', overflowX: 'hidden' }}
             >
               {(tasks?.items || []).map((task, index) => (
                 <Draggable key={task.id} draggableId={`task-${task.id}`} index={index}>
@@ -289,88 +409,23 @@ const TaskList = ({
                       {...provided.dragHandleProps}
                       className={`task-item ${snapshot.isDragging ? 'dragging' : ''}`}
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        backgroundColor: '#fff',
-                        border: '1px solid #eee',
-                        borderRadius: '6px',
-                        padding: '15px',
-                        marginBottom: '10px',
-                        boxShadow: snapshot.isDragging ? '0 5px 15px rgba(0,0,0,0.15)' : '0 2px 4px rgba(0,0,0,0.05)',
-                        transition: 'all 0.2s',
                         ...provided.draggableProps.style,
+                        listStyle: 'none',
+                        padding: 0,
+                        margin: 0,
+                        background: 'none',
+                        border: 'none',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', marginRight: '10px' }}>
-                        <input
-                          type="checkbox"
-                          checked={task.completed}
-                          onChange={() => handleToggleCompletion(task.id)}
-                          style={{ 
-                            margin: 0,
-                            marginRight: '10px',
-                            cursor: 'pointer'
-                          }}
-                        />
-                      </div>
-                      <div style={{ 
-                        flexGrow: 1,
-                        opacity: task.completed ? 0.6 : 1,
-                        textDecoration: task.completed ? 'line-through' : 'none',
-                        cursor: 'pointer'
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedTask(task);
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          {getTaskTitle(task.text).title}
-                          {getTaskTitle(task.text).hasMoreText && (
-                            <span style={{ 
-                              color: '#2196F3',
-                              fontSize: '12px',
-                              opacity: 0.9
-                            }}>⋯</span>
-                          )}
-                        </div>
-                      </div>
-                      <div style={{ 
-                        display: 'flex', 
-                        gap: '8px', 
-                        marginLeft: '10px'
-                      }}>
-                        <button 
-                          onClick={() => handleDeleteTask(task.id)}
-                          style={{
-                            backgroundColor: 'transparent',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: 'black',
-                            padding: '3px',
-                            borderRadius: '3px',
-                            transition: 'all 0.2s',
-                            fontSize: '12px'
-                          }}
-                          title="Delete task"
-                        >
-                          <FontAwesomeIcon icon={faTrash} />
-                        </button>
-                        <button 
-                          onClick={() => setMovingTaskId(task.id)}
-                          style={{
-                            backgroundColor: 'transparent',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: '#666',
-                            padding: '3px',
-                            borderRadius: '3px',
-                            fontSize: '12px'
-                          }}
-                          title="Move task to another list"
-                        >
-                          <FontAwesomeIcon icon={faArrowRight} />
-                        </button>
-                      </div>
+                      <DraggableTaskItem
+                        task={task}
+                        handleToggleCompletion={handleToggleCompletion}
+                        handleDeleteTask={handleDeleteTask}
+                        setMovingTaskId={setMovingTaskId}
+                        handleTaskClick={(t) => setSelectedTask(t)}
+                        onDragStart={() => setIsTaskDragging(true)}
+                        onDragEnd={() => setIsTaskDragging(false)}
+                      />
                     </li>
                   )}
                 </Draggable>
@@ -398,6 +453,13 @@ const TaskList = ({
           }}
         />
       )}
+
+      <style jsx>{`
+        .task-list-drag-over {
+          background-color: #e3f2fd !important;
+          border: 2px dashed #2196F3 !important;
+        }
+      `}</style>
     </DragDropContext>
   );
 };

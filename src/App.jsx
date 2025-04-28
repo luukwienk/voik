@@ -1,21 +1,45 @@
-// App.jsx
+// Updated App.jsx
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import Header from './components/Header';
-import MainContent from './components/MainContentWithCalendar'; // Use this for testing
+import MainContent from './components/MainContentWithCalendar';
 import { useAuth } from './hooks/useAuth';
 import { useTasks } from './hooks/useTasks';
 import { useNotes } from './hooks/useNotes';
 import { useVoiceInput } from './hooks/useVoiceInput';
+import { useHealthTracking } from './hooks/useHealthTracking'; // Import the new hook
 import SignIn from './SignIn';
 import { initClient } from './services/googleCalendar';
+import VoiceInputSection from './components/VoiceInputSection';
 
 function App() {
   const { user, signOut } = useAuth();
   const { tasks, currentTaskList, setCurrentTaskList, addTaskList, deleteTaskList, updateTaskList } = useTasks(user);
   const { notes, currentNoteList, setCurrentNoteList, addNoteList, deleteNoteList, updateNoteList } = useNotes(user);
-  const { recognizedText, aiResponse, isLoading, error, handleVoiceInput, setRecognizedText } = useVoiceInput(tasks, notes, currentTaskList, currentNoteList, updateTaskList, updateNoteList);
-  const [currentTab, setCurrentTab] = useState(0); // Changed to 0 for 'tasks'
+  const { recognizedText, aiResponse, isLoading, error, handleVoiceInput, setRecognizedText } = useVoiceInput(
+    tasks, 
+    notes, 
+    currentTaskList, 
+    currentNoteList, 
+    updateTaskList, 
+    updateNoteList,
+    user?.uid
+  );
+  const [currentTab, setCurrentTab] = useState(0);
+  
+  // Initialize health tracking
+  const { 
+    healthData, 
+    isLoading: healthLoading, 
+    error: healthError, 
+    addHealthEntry, 
+    updateHealthEntry, 
+    deleteHealthEntry,
+    getHealthDataByDateRange,
+    getLatestEntry,
+    calculateWeeklyAverage,
+    calculateTrend
+  } = useHealthTracking(user);
 
   useEffect(() => {
     initClient().catch(error => console.error("Failed to initialize Google API client:", error));
@@ -26,7 +50,10 @@ function App() {
     console.log('Current Task List:', currentTaskList);
     console.log('Notes:', notes);
     console.log('Current Note List:', currentNoteList);
-  }, [tasks, currentTaskList, notes, currentNoteList]);
+    if (healthData) {
+      console.log('Health Data:', healthData);
+    }
+  }, [tasks, currentTaskList, notes, currentNoteList, healthData]);
 
   useEffect(() => {
     if (currentTab === 0) { // 0 for 'tasks'
@@ -121,7 +148,28 @@ function App() {
         addNoteList={addNoteList}
         deleteTaskList={deleteTaskList}
         deleteNoteList={deleteNoteList}
-        moveTask={moveTask} // Add this new prop
+        moveTask={moveTask}
+        signOut={signOut}
+        user={user}
+        // Pass health tracking props
+        healthData={healthData}
+        healthLoading={healthLoading}
+        healthError={healthError}
+        addHealthEntry={addHealthEntry}
+        updateHealthEntry={updateHealthEntry}
+        deleteHealthEntry={deleteHealthEntry}
+        getHealthDataByDateRange={getHealthDataByDateRange}
+        getLatestEntry={getLatestEntry}
+        calculateWeeklyAverage={calculateWeeklyAverage}
+        calculateTrend={calculateTrend}
+      />
+      <VoiceInputSection
+        handleVoiceInput={handleVoiceInput}
+        setRecognizedText={setRecognizedText}
+        recognizedText={recognizedText}
+        aiResponse={aiResponse}
+        currentTasks={tasks[currentTaskList]?.items || []}
+        user={user}
       />
     </div>
   );

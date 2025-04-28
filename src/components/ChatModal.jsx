@@ -13,13 +13,21 @@ const ChatModal = ({
   updateTaskList,
   updateNoteList,
   currentTaskList,
-  currentNoteList
+  currentNoteList,
+  userId
 }) => {
   const [messages, setMessages] = useState([
     { text: "Hallo! Hoe kan ik je vandaag helpen?", isUser: false }
   ]);
+  // Conversatiegeschiedenis voor de AI
+  const [conversationHistory, setConversationHistory] = useState([
+    { role: 'assistant', content: "Hallo! Hoe kan ik je vandaag helpen?" }
+  ]);
   const [isProcessing, setIsProcessing] = useState(false);
   const messagesEndRef = useRef(null);
+
+  // Maximum aantal berichten in geschiedenis (om tokens te beperken)
+  const MAX_HISTORY_MESSAGES = 8;
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -33,16 +41,22 @@ const ChatModal = ({
     const userMessage = { text, isUser: true };
     setMessages(prev => [...prev, userMessage]);
     
+    // Voeg toe aan conversatiegeschiedenis voor de AI
+    const userHistoryItem = { role: 'user', content: text };
+    const updatedHistory = [...conversationHistory, userHistoryItem];
+    
     // Set processing state
     setIsProcessing(true);
     
     try {
-      // Process with AI
-      const result = await handleAICommand(
-        text, 
-        currentTasks?.items || [], 
-        currentNotes?.items || []
-      );
+      // Process with AI - stuur geschiedenis én userId mee
+      const result = await handleAICommand({
+        text,
+        currentTasks: currentTasks?.items || [],
+        currentNotes: currentNotes?.items || [],
+        conversationHistory: updatedHistory.slice(-MAX_HISTORY_MESSAGES),
+        userId
+      });
       
       // Gebruik de message van het resultaat indien beschikbaar
       let responseMessage = result.message || "Er is iets fout gegaan. Probeer het opnieuw.";
@@ -73,20 +87,18 @@ const ChatModal = ({
           break;
           
         case 'action':
-          // Action is al uitgevoerd door de handleAICommand functie
-          break;
-          
         case 'text':
-          // Geen aanvullende actie nodig
-          break;
-          
         case 'error':
-          console.error('Error in AI processing:', result.data);
+          // Geen aanvullende acties nodig
           break;
       }
       
       // Add AI response message
       setMessages(prev => [...prev, { text: responseMessage, isUser: false }]);
+      
+      // Update conversatiegeschiedenis met AI-antwoord
+      const assistantHistoryItem = { role: 'assistant', content: responseMessage };
+      setConversationHistory([...updatedHistory, assistantHistoryItem].slice(-MAX_HISTORY_MESSAGES));
       
     } catch (error) {
       console.error('Error processing message:', error);
@@ -97,6 +109,13 @@ const ChatModal = ({
           isUser: false 
         }
       ]);
+      
+      // Ook de error toevoegen aan de geschiedenis
+      const errorHistoryItem = { 
+        role: 'assistant', 
+        content: "Er is een fout opgetreden bij het verwerken van je bericht. Probeer het later opnieuw."
+      };
+      setConversationHistory([...updatedHistory, errorHistoryItem].slice(-MAX_HISTORY_MESSAGES));
     } finally {
       setIsProcessing(false);
     }
@@ -108,7 +127,7 @@ const ChatModal = ({
     <div className="chat-modal-overlay">
       <div className="chat-modal">
         <div className="chat-header">
-          <h3>Chat Assistent</h3>
+          <h3>TaskBuddy</h3>
           <button onClick={onClose} className="close-button">
             <FontAwesomeIcon icon={faTimes} />
           </button>

@@ -1,0 +1,108 @@
+/* calendarDrag.css - Enhanced styling for drag-and-drop functionality in React Big Calendar */
+
+/* Make events draggable */
+.rbc-event {
+    cursor: grab !important;
+    user-select: none !important;
+    transition: box-shadow 0.2s ease, transform 0.1s ease;
+    z-index: 5;
+  }
+  
+  .rbc-event:active {
+    cursor: grabbing !important;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3) !important;
+    transform: scale(1.02);
+    z-index: 10;
+  }
+  
+  /* Highlight the event when being dragged */
+  .rbc-event.rbc-selected {
+    background-color: #2196F3 !important;
+    outline: 2px solid #0d47a1 !important;
+    z-index: 15 !important;
+  }
+  
+  /* Improve resizing handle visibility */
+  .rbc-event .rbc-resizable-handle {
+    width: 10px;
+    height: 10px;
+    left: 50%;
+    margin-left: -5px;
+    bottom: -2px;
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+  }
+  
+  .rbc-event .rbc-resizable-handle:hover {
+    background-color: rgba(255, 255, 255, 0.8);
+  }
+  
+  /* Add hover state to indicate draggability */
+  .rbc-event:hover {
+    opacity: 0.9;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    transform: translateY(-1px);
+  }
+  
+  /* Style the slot selection to be distinct from drag interactions */
+  .rbc-slot-selection {
+    background-color: rgba(66, 133, 244, 0.2) !important;
+    border: 1px dashed #4285F4 !important;
+  }
+  
+  /* Make sure events stand out in the calendar */
+  .rbc-event {
+    z-index: 4 !important; /* Ensure events are above other elements */
+  }
+  
+  /* Add drop target highlight for time slots */
+  .calendar-drop-target {
+    background-color: rgba(33, 150, 243, 0.2) !important;
+    border: 2px dashed #2196F3 !important;
+    box-shadow: inset 0 0 8px rgba(33, 150, 243, 0.3);
+    transition: all 0.2s ease;
+  }
+  
+  /* Improve the visual feedback when dragging over the calendar */
+  .rbc-time-view .rbc-time-slot:hover {
+    background-color: rgba(33, 150, 243, 0.05);
+  }
+  
+  /* Specific styling for task list items being dragged */
+  .task-dragging {
+    opacity: 0.7 !important;
+    background-color: #f0f9ff !important;
+    border: 1px dashed #2196F3 !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
+    pointer-events: none !important;
+  }
+  
+  /* Enhanced styling for the task list when being dragged over */
+  .task-list-drag-over {
+    background-color: #e3f2fd !important;
+    border: 2px dashed #2196F3 !important;
+    box-shadow: inset 0 0 8px rgba(33, 150, 243, 0.1);
+    transition: all 0.3s ease !important;
+  }
+  
+  /* Animation for notifications */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translate(-50%, 20px);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  }
+  
+  /* Improve calendar container styling */
+  .calendar-container {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    border-radius: 8px;
+    background-color: white;
+    position: relative;
+    transition: all 0.3s ease;
+  }

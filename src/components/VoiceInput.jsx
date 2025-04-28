@@ -9,7 +9,8 @@ const VoiceInput = ({
   onInputComplete, 
   setRecognizedText, 
   language = 'nl-NL',
-  roundButtonStyle = false // Nieuwe prop voor ronde knop styling
+  roundButtonStyle = false, // Nieuwe prop voor ronde knop styling
+  userId
 }) => {
   const { isListening, recognizedText, error, startListening, stopListening } = useSpeechRecognition(language);
   const processedRef = useRef(false);
@@ -29,7 +30,11 @@ const VoiceInput = ({
       const processInput = async () => {
         try {
           console.log('Processing input:', recognizedText);
-          const result = await handleAICommand(recognizedText, currentTasks);
+          const result = await handleAICommand({
+            text: recognizedText,
+            currentTasks,
+            userId
+          });
           processedRef.current = true;
           
           if (onInputComplete) {
@@ -42,7 +47,7 @@ const VoiceInput = ({
 
       processInput();
     }
-  }, [recognizedText, isListening, currentTasks, onInputComplete, setRecognizedText]);
+  }, [recognizedText, isListening, currentTasks, onInputComplete, setRecognizedText, userId]);
 
   return (
     <div className="voice-input">

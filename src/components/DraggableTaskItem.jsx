@@ -1,11 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faArrowRight, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faArrowRight, faCalendarAlt, faGripLines } from '@fortawesome/free-solid-svg-icons';
 
-// Dit component creëert een taakitem dat naar kalenders kan worden gesleept
-const DraggableTaskItem = ({ task, handleToggleCompletion, handleDeleteTask, setMovingTaskId, handleTaskClick }) => {
+// Enhanced draggable task item with improved calendar drag-and-drop
+const DraggableTaskItem = ({ 
+  task, 
+  handleToggleCompletion, 
+  handleDeleteTask, 
+  setMovingTaskId, 
+  handleTaskClick,
+  onDragStart,
+  onDragEnd
+}) => {
+  const [isDragging, setIsDragging] = useState(false);
   
-  // Genereer een schone tekstversie van de taaktekst (zonder HTML)
+  // Extract clean text from HTML task content
   const getTaskTitle = (html) => {
     if (!html) return { title: '', hasMoreText: false };
     const tempDiv = document.createElement('div');
@@ -13,8 +22,8 @@ const DraggableTaskItem = ({ task, handleToggleCompletion, handleDeleteTask, set
     const text = tempDiv.textContent || tempDiv.innerText || '';
     const lines = text.split(/\r?\n/);
     const title = lines[0];
-    const hasMoreText = lines.length > 1 || text.length > 35;
-    const maxLength = 35;
+    const hasMoreText = lines.length > 1 || text.length > 75;
+    const maxLength = 75;
     let displayTitle = title;
     if (displayTitle.length > maxLength) {
       displayTitle = displayTitle.substring(0, maxLength) + '...';
@@ -22,45 +31,95 @@ const DraggableTaskItem = ({ task, handleToggleCompletion, handleDeleteTask, set
     return { title: displayTitle, hasMoreText };
   };
 
-  // Stel de gegevensoverdracht in voor het slepen naar de kalender
+  // Enhanced drag start handler with better data formatting
   const handleDragStart = (e) => {
-    // Deze gegevens worden door de kalender gebruikt om een gebeurtenis te maken
+    console.log('Task drag start triggered for task:', task.id);
+    
+    // Set callback if provided
+    if (onDragStart) onDragStart();
+    
+    setIsDragging(true);
+    
+    // Convert the HTML content to clean text
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = task.text;
     const cleanText = tempDiv.textContent || tempDiv.innerText || 'Task';
+    
+    // Get a short title for the calendar event
     const shortTitle = cleanText.split('\n')[0].substring(0, 30);
     
-    // Eenvoudiger format om problemen met datumverwerking te voorkomen
+    // Create a data structure for the drag operation with all necessary details
     const taskData = {
       id: task.id,
       title: shortTitle,
-      isTask: true,
+      description: cleanText,
       completed: task.completed,
-      // Vereenvoudigd kalendar-formaat
-      kalendFormat: {
-        id: task.id,
-        startAt: new Date().toISOString(),
-        endAt: new Date(new Date().getTime() + 60 * 60 * 1000).toISOString(),
-        summary: shortTitle,
-        color: task.completed ? '#888888' : '#000000'
-      }
+      isTask: true,
+      // Include additional metadata for precise calendar placement
+      dragSource: 'taskList',
+      originalTaskId: task.id,
+      timestamp: Date.now()
     };
     
-    // Stel de overdrachtgegevens in
+    console.log('Dragging task with data:', taskData);
+    
+    // Set the data transfer with the task information - USING STANDARD FORMAT
     e.dataTransfer.setData('text/plain', JSON.stringify(taskData));
+    
+    // Also set a specific format that can be checked for
+    e.dataTransfer.setData('application/x-task', JSON.stringify(taskData));
+    
+    // Set the operation type
     e.dataTransfer.effectAllowed = 'copy';
     
-    // Voeg een klasse toe aan het gesleepte element
+    // Create a drag image for better visual feedback
+    const dragImage = document.createElement('div');
+    dragImage.style.position = 'absolute';
+    dragImage.style.top = '-1000px';
+    dragImage.innerHTML = `<div style="
+      padding: 10px 15px;
+      background-color: #f0f9ff;
+      border: 1px dashed #2196F3;
+      border-radius: 6px;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      color: #333;
+      max-width: 200px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      opacity: 0.9;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    ">${shortTitle}</div>`;
+    
+    // Add the drag image to the document temporarily
+    document.body.appendChild(dragImage);
+    e.dataTransfer.setDragImage(dragImage, 0, 0);
+    
+    // Remove the temporary element after a small delay
+    setTimeout(() => {
+      document.body.removeChild(dragImage);
+    }, 100);
+    
+    // Add a class to style the dragged element
     e.target.classList.add('task-dragging');
   };
 
   const handleDragEnd = (e) => {
+    console.log('Task drag end triggered');
+    
+    // Set callback if provided
+    if (onDragEnd) onDragEnd();
+    
+    setIsDragging(false);
     e.target.classList.remove('task-dragging');
   };
 
+  const { title, hasMoreText } = getTaskTitle(task.text);
+
   return (
     <div
-      className="task-item"
+      className={`task-item ${isDragging ? 'task-dragging' : ''}`}
       draggable="true" 
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
@@ -83,6 +142,20 @@ const DraggableTaskItem = ({ task, handleToggleCompletion, handleDeleteTask, set
         position: 'relative'
       }}
     >
+      {/* Drag handle */}
+      <div 
+        className="drag-handle"
+        style={{ 
+          marginRight: '10px', 
+          cursor: 'grab',
+          color: '#aaa',
+          padding: '5px'
+        }}
+        title="Drag to calendar to schedule"
+      >
+        <FontAwesomeIcon icon={faGripLines} />
+      </div>
+      
       <div style={{ display: 'flex', alignItems: 'center', marginRight: '10px' }}>
         <input
           type="checkbox"
@@ -91,6 +164,7 @@ const DraggableTaskItem = ({ task, handleToggleCompletion, handleDeleteTask, set
             e.stopPropagation();
             handleToggleCompletion(task.id);
           }}
+          onClick={(e) => e.stopPropagation()}
           style={{ 
             margin: 0,
             marginRight: '10px',
@@ -104,8 +178,8 @@ const DraggableTaskItem = ({ task, handleToggleCompletion, handleDeleteTask, set
         textDecoration: task.completed ? 'line-through' : 'none',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          {getTaskTitle(task.text).title}
-          {getTaskTitle(task.text).hasMoreText && (
+          {title}
+          {hasMoreText && (
             <span style={{ 
               color: '#2196F3',
               fontSize: '12px',
@@ -119,17 +193,25 @@ const DraggableTaskItem = ({ task, handleToggleCompletion, handleDeleteTask, set
         gap: '8px', 
         marginLeft: '10px'
       }}>
-        {/* Kalender-hint icoon */}
-        <div style={{
-          fontSize: '12px',
-          color: '#888',
-          display: 'flex',
-          alignItems: 'center',
-          marginRight: '8px'
-        }}>
-          <FontAwesomeIcon icon={faCalendarAlt} style={{ marginRight: '2px' }} />
-          <span>Sleep naar agenda</span>
-        </div>
+        {/* Calendar icon for drag hint */}
+        <button
+          style={{
+            backgroundColor: 'transparent',
+            border: 'none',
+            cursor: 'grab',
+            color: '#2196F3',
+            padding: '3px',
+            borderRadius: '3px',
+            transition: 'all 0.2s',
+            fontSize: '12px'
+          }}
+          title="Drag to calendar to schedule"
+          // Make non-clickable, just visual indicator
+          onClick={(e) => e.stopPropagation()}
+          draggable={false}
+        >
+          <FontAwesomeIcon icon={faCalendarAlt} />
+        </button>
         
         <button 
           onClick={(e) => {
@@ -146,10 +228,11 @@ const DraggableTaskItem = ({ task, handleToggleCompletion, handleDeleteTask, set
             transition: 'all 0.2s',
             fontSize: '12px'
           }}
-          title="Verwijder taak"
+          title="Delete task"
         >
           <FontAwesomeIcon icon={faTrash} />
         </button>
+        
         <button 
           onClick={(e) => {
             e.stopPropagation();
@@ -164,13 +247,13 @@ const DraggableTaskItem = ({ task, handleToggleCompletion, handleDeleteTask, set
             borderRadius: '3px',
             fontSize: '12px'
           }}
-          title="Verplaats taak naar andere lijst"
+          title="Move task to another list"
         >
           <FontAwesomeIcon icon={faArrowRight} />
         </button>
       </div>
       
-      {/* Voeg een draggable hint toe tijdens het slepen */}
+      {/* Enhanced drag styles */}
       <style jsx>{`
         .task-item {
           transition: all 0.2s;
@@ -183,9 +266,20 @@ const DraggableTaskItem = ({ task, handleToggleCompletion, handleDeleteTask, set
         }
         
         .task-dragging {
-          opacity: 0.6;
+          opacity: 0.6 !important;
           background-color: #f0f9ff !important;
           border: 1px dashed #2196F3 !important;
+          transform: scale(1.02) !important;
+          box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
+        }
+        
+        .drag-handle {
+          opacity: 0.5;
+          transition: opacity 0.2s;
+        }
+        
+        .task-item:hover .drag-handle {
+          opacity: 1;
         }
       `}</style>
     </div>

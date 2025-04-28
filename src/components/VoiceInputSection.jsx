@@ -1,7 +1,7 @@
 import React from 'react';
 import VoiceInput from './VoiceInput';
 
-const VoiceInputSection = ({ handleVoiceInput, setRecognizedText, recognizedText, aiResponse, currentTasks }) => {
+const VoiceInputSection = ({ handleVoiceInput, setRecognizedText, recognizedText, aiResponse, currentTasks, user }) => {
   return (
     <div className="voice-input-section">
       <VoiceInput 
@@ -9,7 +9,8 @@ const VoiceInputSection = ({ handleVoiceInput, setRecognizedText, recognizedText
         setRecognizedText={setRecognizedText}
         recognizedText={recognizedText}
         aiResponse={aiResponse}
-        currentTasks={currentTasks}  // Pass currentTasks here
+        currentTasks={currentTasks}
+        userId={user?.uid}
       />
       <div className="prompt-display">
         {recognizedText && <p><b>You said:</b> {recognizedText}</p>}

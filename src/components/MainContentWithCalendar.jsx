@@ -2,53 +2,13 @@ import React, { useEffect, useState } from 'react';
 import TaskList from './TaskList';
 import NoteList from './NoteList';
 import ListSelector from './ListSelector';
-import Timer from './Timer';
 import TaskOverviewPage from './TaskOverviewPage';
-import CalendarPOCContainer from './CalendarPOCContainer';
-import ChatButton from './ChatButton'; // Import de nieuwe ChatButton
-import ChatModal from './ChatModal'; // Import de nieuwe ChatModal
+import BigCalendarView from './BigCalendarView';
+import MinimalistHealthTracker from './health/MinimalistHealthTracker'; // Import the health tracker
+import ChatButton from './ChatButton';
+import ChatModal from './ChatModal';
 import ErrorBoundary from './ErrorBoundary';
-// Add Dutch localization
-const LOCALES = {
-  nl: {
-    buttons: {
-      today: "Vandaag",
-      agenda: "Agenda",
-      day: "Dag",
-      threeDays: "3 Dagen",
-      week: "Week",
-      month: "Maand",
-      showMore: "Toon meer"
-    },
-    calendar: {
-      weekDays: {
-        Sun: "Zo",
-        Mon: "Ma",
-        Tue: "Di",
-        Wed: "Wo",
-        Thu: "Do",
-        Fri: "Vr",
-        Sat: "Za"
-      },
-      months: {
-        Jan: "Januari",
-        Feb: "Februari",
-        Mar: "Maart",
-        Apr: "April",
-        May: "Mei",
-        Jun: "Juni",
-        Jul: "Juli",
-        Aug: "Augustus",
-        Sep: "September",
-        Oct: "Oktober",
-        Nov: "November",
-        Dec: "December"
-      },
-      defaultDateFormat: "DD.MM.YYYY",
-      defaultDateTimeFormat: "DD.MM.YYYY HH:mm"
-    }
-  }
-};
+import VoiceInput from './VoiceInput';
 
 function MainContent({ 
   currentTab, 
@@ -71,9 +31,15 @@ function MainContent({
   deleteTaskList,
   deleteNoteList,
   moveTask,
-  user
+  user,
+  signOut,
+  // Health tracking props would go here when fully integrated
+  healthData,
+  addHealthEntry,
+  updateHealthEntry,
+  deleteHealthEntry
 }) {
-  // Nieuwe state voor het beheren van de ChatModal
+  // State for the chat modal
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
 
   useEffect(() => {
@@ -85,10 +51,6 @@ function MainContent({
       setCurrentNoteList('My Notes');
     }
   }, [currentTab, setCurrentTaskList, setCurrentNoteList]);
-
-  const currentItems = currentTab === 0
-    ? tasks[currentTaskList]?.items || []
-    : notes[currentNoteList]?.items || [];
 
   // Render TaskOverviewPage for tab 3
   if (currentTab === 3) {
@@ -102,56 +64,83 @@ function MainContent({
     );
   }
 
+  // Render Health Tracker for tab 4
+  if (currentTab === 4) {
+    return (
+      <ErrorBoundary>
+        <MinimalistHealthTracker 
+          healthData={healthData} 
+          addHealthEntry={addHealthEntry}
+          updateHealthEntry={updateHealthEntry}
+          deleteHealthEntry={deleteHealthEntry}
+        />
+      </ErrorBoundary>
+    );
+  }
+
   return (
     <main style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
       {currentTab === 2 ? (
-        <Timer />
+        // For calendar tab, use the BigCalendarView
+        <ErrorBoundary>
+          <BigCalendarView
+            tasks={tasks}
+            currentTaskList={currentTaskList}
+            moveTask={moveTask}
+          />
+        </ErrorBoundary>
       ) : (
         <>
           {isLoading && <p className="loading">Processing...</p>}
           {error && <p className="error">{error}</p>}
           
-          {/* User email in top right - moved to Header component */}
-          
+          {/* Combined calendar and task list view */}
           {currentTab === 0 ? (
             <div style={{ 
               display: 'flex', 
-              flexDirection: 'row', // Rij-layout
+              flexDirection: 'row',
               gap: '20px', 
               height: 'calc(100vh - 220px)',
               overflow: 'hidden',
               width: '100%',
               position: 'relative'
             }}>
-              {/* Kalender links, 65% breedte */}
-              <div style={{ flex: '0 0 65%', maxWidth: '65%', overflow: 'auto' }}>
+              {/* Calendar on the left, 63% width */}
+              <div style={{ flex: '0 0 63%', maxWidth: '63%', overflow: 'auto' }}>
                 <ErrorBoundary>
-                  <CalendarPOCContainer 
+                  <BigCalendarView 
                     tasks={tasks}
                     currentTaskList={currentTaskList}
                     moveTask={moveTask}
                   />
                 </ErrorBoundary>
               </div>
-              {/* Takenlijst rechts, 35% breedte */}
-              <div style={{ flex: '0 0 35%', maxWidth: '35%', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-                {/* Lijstselector rechtsboven */}
+              
+              {/* Task list on the right, 37% width */}
+              <div style={{ flex: '0 0 37%', maxWidth: '37%', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+                {/* List selector */}
                 <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'flex-end', 
+                  display: 'flex',
+                  justifyContent: 'flex-start',
                   padding: '10px 0',
-                  marginBottom: '10px'
+                  marginBottom: '10px',
+                  marginTop: '8px',
+                  alignItems: 'center'
                 }}>
-                  <ListSelector 
-                    lists={currentTab === 0 ? tasks : notes}
-                    currentList={currentTab === 0 ? currentTaskList : currentNoteList}
-                    setCurrentList={currentTab === 0 ? setCurrentTaskList : setCurrentNoteList}
-                    addList={currentTab === 0 ? addTaskList : addNoteList}
-                    deleteList={currentTab === 0 ? deleteTaskList : deleteNoteList}
-                    currentTab={currentTab}
-                    selectStyle={{ width: '100%', maxWidth: '300px' }}
-                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <ListSelector 
+                      lists={currentTab === 0 ? tasks : notes}
+                      currentList={currentTab === 0 ? currentTaskList : currentNoteList}
+                      setCurrentList={currentTab === 0 ? setCurrentTaskList : setCurrentNoteList}
+                      addList={currentTab === 0 ? addTaskList : addNoteList}
+                      deleteList={currentTab === 0 ? deleteTaskList : deleteNoteList}
+                      currentTab={currentTab}
+                      selectStyle={{ width: '100%', maxWidth: '300px' }}
+                    />
+                  </div>
                 </div>
+                
+                {/* Task list */}
                 <TaskList
                   tasks={tasks[currentTaskList]}
                   currentList={currentTaskList}
@@ -165,8 +154,10 @@ function MainContent({
                       updateTaskList(currentTaskList, updatedData);
                     }
                   }}
+                  signOut={signOut}
                 />
-                {/* Voice recognition feedback onderaan */}
+                
+                {/* Voice recognition feedback */}
                 {recognizedText && (
                   <div style={{ 
                     padding: '10px', 
@@ -178,9 +169,18 @@ function MainContent({
                     {aiResponse && <p style={{ margin: '5px 0 0 0', fontSize: '14px' }}><b>Response:</b> {aiResponse}</p>}
                   </div>
                 )}
+                
+                {/* Voice input */}
+                <VoiceInput
+                  onInputComplete={handleVoiceInput}
+                  setRecognizedText={setRecognizedText}
+                  currentTasks={tasks[currentTaskList]?.items || []}
+                  userId={user?.uid}
+                />
               </div>
             </div>
           ) : (
+            // Notes view
             <NoteList
               notes={notes[currentNoteList]?.items || []}
               updateList={(newItems) => updateNoteList(currentNoteList, { items: newItems })}
@@ -188,7 +188,7 @@ function MainContent({
             />
           )}
           
-          {/* Vervang de oude VoiceInput door de nieuwe ChatButton */}
+          {/* Chat button */}
           <div style={{
             position: 'fixed',
             bottom: '20px',
@@ -198,7 +198,7 @@ function MainContent({
             <ChatButton onClick={() => setIsChatModalOpen(true)} />
           </div>
           
-          {/* Voeg de ChatModal component toe */}
+          {/* Chat modal */}
           <ChatModal 
             isOpen={isChatModalOpen}
             onClose={() => setIsChatModalOpen(false)}
@@ -208,6 +208,7 @@ function MainContent({
             updateNoteList={updateNoteList}
             currentTaskList={currentTaskList}
             currentNoteList={currentNoteList}
+            userId={user?.uid}
           />
         </>
       )}
