@@ -2,15 +2,17 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import Header from './components/Header';
-import MainContent from './components/MainContentWithCalendar';
+import ResponsiveMainContent from './components/ResponsiveMainContent';
 import { useAuth } from './hooks/useAuth';
 import { useTasks } from './hooks/useTasks';
 import { useNotes } from './hooks/useNotes';
 import { useVoiceInput } from './hooks/useVoiceInput';
-import { useHealthTracking } from './hooks/useHealthTracking'; // Import the new hook
+import { useHealthTracking } from './hooks/useHealthTracking';
 import SignIn from './SignIn';
 import { initClient } from './services/googleCalendar';
-import VoiceInputSection from './components/VoiceInputSection';
+// PWA registration
+import * as serviceWorkerRegistration from './serviceWorkerRegistration';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 function App() {
   const { user, signOut } = useAuth();
@@ -117,18 +119,9 @@ function App() {
         signOut={signOut}
         currentTab={currentTab}
         setCurrentTab={handleTabChange}
-        tasks={tasks}
-        notes={notes}
-        currentTaskList={currentTaskList}
-        currentNoteList={currentNoteList}
-        setCurrentTaskList={setCurrentTaskList}
-        setCurrentNoteList={setCurrentNoteList}
-        addTaskList={addTaskList}
-        addNoteList={addNoteList}
-        deleteTaskList={deleteTaskList}
-        deleteNoteList={deleteNoteList}
       />
-      <MainContent
+      
+      <ResponsiveMainContent
         currentTab={currentTab}
         tasks={tasks}
         notes={notes}
@@ -163,16 +156,14 @@ function App() {
         calculateWeeklyAverage={calculateWeeklyAverage}
         calculateTrend={calculateTrend}
       />
-      <VoiceInputSection
-        handleVoiceInput={handleVoiceInput}
-        setRecognizedText={setRecognizedText}
-        recognizedText={recognizedText}
-        aiResponse={aiResponse}
-        currentTasks={tasks[currentTaskList]?.items || []}
-        user={user}
-      />
+      
+      {/* PWA Install Prompt */}
+      <PWAInstallPrompt />
     </div>
   );
 }
+
+// Register service worker for PWA functionality
+serviceWorkerRegistration.register();
 
 export default App;

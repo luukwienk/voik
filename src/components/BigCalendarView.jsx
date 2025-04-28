@@ -9,6 +9,7 @@ import { useGoogleCalendar } from '../hooks/useGoogleCalendar';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSave, faTrash, faSync, faCog, faCheck, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
 import CalendarConfigModal from './CalendarConfigModal';
+import '../styles/calendarResponsive.css';
 import { rbcEventToGoogleEvent, googleEventToRbcEvent } from '../utils/bigCalendarUtils';
 import { kalendEventToGoogleEvent } from '../utils/taskEventUtils';
 

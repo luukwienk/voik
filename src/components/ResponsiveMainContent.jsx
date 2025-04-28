@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import MainContentWithCalendar from './MainContentWithCalendar';
 import TaskList from './TaskList';
 import NoteList from './NoteList';
 import ListSelector from './ListSelector';
@@ -8,27 +7,12 @@ import MinimalistHealthTracker from './health/MinimalistHealthTracker';
 import ChatButton from './ChatButton';
 import ChatModal from './ChatModal';
 import ErrorBoundary from './ErrorBoundary';
-
-// Custom hook for responsive design
-const useMediaQuery = (query) => {
-  const [matches, setMatches] = useState(false);
-
-  useEffect(() => {
-    const media = window.matchMedia(query);
-    if (media.matches !== matches) {
-      setMatches(media.matches);
-    }
-
-    const listener = () => setMatches(media.matches);
-    window.addEventListener('resize', listener);
-    return () => window.removeEventListener('resize', listener);
-  }, [matches, query]);
-
-  return matches;
-};
+import BigCalendarView from './BigCalendarView';
+import useMediaQuery from '../hooks/useMediaQuery';
+import '../styles/responsive.css';
 
 function ResponsiveMainContent({
-  currentTab,
+  currentTab, 
   tasks,
   notes,
   currentTaskList,
@@ -37,6 +21,12 @@ function ResponsiveMainContent({
   setCurrentNoteList,
   updateTaskList,
   updateNoteList,
+  recognizedText, 
+  aiResponse, 
+  isLoading = false, 
+  error, 
+  handleVoiceInput, 
+  setRecognizedText, 
   addTaskList,
   addNoteList,
   deleteTaskList,
@@ -44,10 +34,15 @@ function ResponsiveMainContent({
   moveTask,
   user,
   signOut,
+  // Health tracking props
   healthData,
   addHealthEntry,
   updateHealthEntry,
-  deleteHealthEntry
+  deleteHealthEntry,
+  getHealthDataByDateRange,
+  getLatestEntry,
+  calculateWeeklyAverage,
+  calculateTrend
 }) {
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 768px)');
@@ -65,12 +60,14 @@ function ResponsiveMainContent({
   // Render TaskOverviewPage for tab 3
   if (currentTab === 3) {
     return (
-      <TaskOverviewPage 
-        tasks={tasks} 
-        currentTaskList={currentTaskList}
-        updateTaskList={updateTaskList}
-        moveTask={moveTask}
-      />
+      <ErrorBoundary>
+        <TaskOverviewPage 
+          tasks={tasks} 
+          currentTaskList={currentTaskList}
+          updateTaskList={updateTaskList}
+          moveTask={moveTask}
+        />
+      </ErrorBoundary>
     );
   }
 
@@ -83,6 +80,10 @@ function ResponsiveMainContent({
           addHealthEntry={addHealthEntry}
           updateHealthEntry={updateHealthEntry}
           deleteHealthEntry={deleteHealthEntry}
+          getHealthDataByDateRange={getHealthDataByDateRange || (() => {})}
+          getLatestEntry={getLatestEntry || (() => {})}
+          calculateWeeklyAverage={calculateWeeklyAverage || (() => {})}
+          calculateTrend={calculateTrend || (() => {})}
         />
       </ErrorBoundary>
     );
@@ -93,34 +94,123 @@ function ResponsiveMainContent({
     // Desktop Layout (calendar + task list)
     return (
       <ErrorBoundary>
-        <MainContentWithCalendar
-          currentTab={currentTab}
-          tasks={tasks}
-          notes={notes}
-          currentTaskList={currentTaskList}
-          currentNoteList={currentNoteList}
-          setCurrentTaskList={setCurrentTaskList}
-          setCurrentNoteList={setCurrentNoteList}
-          updateTaskList={updateTaskList}
-          updateNoteList={updateNoteList}
-          addTaskList={addTaskList}
-          addNoteList={addNoteList}
-          deleteTaskList={deleteTaskList}
-          deleteNoteList={deleteNoteList}
-          moveTask={moveTask}
-          user={user}
-          signOut={signOut}
-          healthData={healthData}
-          addHealthEntry={addHealthEntry}
-          updateHealthEntry={updateHealthEntry}
-          deleteHealthEntry={deleteHealthEntry}
-        />
+        <main className="responsive-container">
+          {currentTab === 2 ? (
+            // For calendar tab, use the BigCalendarView
+            <BigCalendarView
+              tasks={tasks}
+              currentTaskList={currentTaskList}
+              moveTask={moveTask}
+            />
+          ) : (
+            <>
+              {isLoading && <p className="loading">Processing...</p>}
+              {error && <p className="error">{error}</p>}
+              
+              {/* Combined calendar and task list view */}
+              {currentTab === 0 ? (
+                <div className="desktop-flex-row">
+                  {/* Calendar on the left, 63% width */}
+                  <div className="calendar-container">
+                    <ErrorBoundary>
+                      <BigCalendarView 
+                        tasks={tasks}
+                        currentTaskList={currentTaskList}
+                        moveTask={moveTask}
+                      />
+                    </ErrorBoundary>
+                  </div>
+                  
+                  {/* Task list on the right, 37% width */}
+                  <div className="tasklist-container">
+                    {/* List selector */}
+                    <div style={{ 
+                      display: 'flex',
+                      justifyContent: 'flex-start',
+                      padding: '10px 0',
+                      marginBottom: '10px',
+                      marginTop: '8px',
+                      alignItems: 'center'
+                    }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <ListSelector 
+                          lists={tasks}
+                          currentList={currentTaskList}
+                          setCurrentList={setCurrentTaskList}
+                          addList={addTaskList}
+                          deleteList={deleteTaskList}
+                          currentTab={currentTab}
+                          selectStyle={{ width: '100%', maxWidth: '300px' }}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Task list */}
+                    <TaskList
+                      tasks={tasks[currentTaskList]}
+                      currentList={currentTaskList}
+                      lists={tasks}
+                      moveTask={moveTask}
+                      hideTitleHeader={true}
+                      updateList={(updatedData) => {
+                        if (updatedData.id && updatedData.list) {
+                          updateTaskList(updatedData);
+                        } else {
+                          updateTaskList(currentTaskList, updatedData);
+                        }
+                      }}
+                      signOut={signOut}
+                    />
+                    
+                    {/* Show recognized text feedback if available */}
+                    {recognizedText && (
+                      <div style={{ 
+                        padding: '10px', 
+                        marginTop: '10px', 
+                        backgroundColor: '#f5f5f5', 
+                        borderRadius: '8px'
+                      }}>
+                        <p style={{ margin: '0', fontSize: '14px' }}><b>You said:</b> {recognizedText}</p>
+                        {aiResponse && <p style={{ margin: '5px 0 0 0', fontSize: '14px' }}><b>Response:</b> {aiResponse}</p>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : currentTab === 1 ? (
+                // Notes view
+                <NoteList
+                  notes={notes[currentNoteList]?.items || []}
+                  updateList={(newItems) => updateNoteList(currentNoteList, { items: newItems })}
+                  currentList={currentNoteList}
+                />
+              ) : null}
+              
+              {/* Chat button */}
+              <div className="chat-button-container">
+                <ChatButton onClick={() => setIsChatModalOpen(true)} />
+              </div>
+              
+              {/* Chat modal */}
+              <ChatModal 
+                isOpen={isChatModalOpen}
+                onClose={() => setIsChatModalOpen(false)}
+                currentTasks={tasks[currentTaskList]}
+                currentNotes={notes[currentNoteList]}
+                updateTaskList={updateTaskList}
+                updateNoteList={updateNoteList}
+                currentTaskList={currentTaskList}
+                currentNoteList={currentNoteList}
+                userId={user?.uid}
+              />
+            </>
+          )}
+        </main>
       </ErrorBoundary>
     );
   } else {
     // Mobile Layout (task list only with chat button)
     return (
-      <main style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
+      <main className="responsive-container mobile-full-width">
         {currentTab === 2 ? (
           // For calendar tab, we'll show a simplified calendar view on mobile
           // You can implement a mobile-friendly calendar here later
@@ -178,7 +268,9 @@ function ResponsiveMainContent({
         )}
         
         {/* Chat button for all mobile views */}
-        <ChatButton onClick={() => setIsChatModalOpen(true)} />
+        <div className="chat-button-container">
+          <ChatButton onClick={() => setIsChatModalOpen(true)} />
+        </div>
         
         {/* Chat modal */}
         <ChatModal 

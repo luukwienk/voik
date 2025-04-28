@@ -1,0 +1,219 @@
+/* responsive.css - Styles for responsive layout */
+
+/* Global responsive behavior */
+html, body, #root, .App {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  /* Base container for responsive layout */
+  .responsive-container {
+    width: 100%;
+    max-width: 100%;
+    min-height: calc(100vh - 150px);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  
+  /* Ensure calendar is visible */
+  .calendar-container {
+    min-height: 400px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 10px;
+    margin-bottom: 16px;
+  }
+  
+  /* Fix for BigCalendarView to make it visible */
+  .calendar-container .rbc-calendar {
+    min-height: 400px;
+    height: calc(100vh - 280px);
+  }
+  
+  /* Chat button positioning */
+  .chat-button-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 100;
+  }
+  
+  /* Desktop styles (for screens wider than 768px) */
+  @media (min-width: 768px) {
+    .desktop-flex-row {
+      display: flex;
+      flex-direction: row;
+      gap: 20px;
+      height: calc(100vh - 150px);
+      overflow: hidden;
+      width: 100%;
+      position: relative;
+    }
+    
+    .calendar-container {
+      flex: 0 0 63%;
+      max-width: 63%;
+      overflow: auto;
+      height: 100%;
+    }
+    
+    .tasklist-container {
+      flex: 0 0 37%;
+      max-width: 37%;
+      overflow: auto;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    /* Make scrollbars thinner and prettier on desktop */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+  }
+  
+  /* Mobile styles (for screens narrower than 768px) */
+  @media (max-width: 767px) {
+    .mobile-full-width {
+      width: 100%;
+      max-width: 100%;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+    
+    .task-list {
+      max-height: calc(100vh - 200px);
+      overflow-y: auto;
+    }
+    
+    /* Hide certain elements on mobile */
+    .desktop-only {
+      display: none !important;
+    }
+    
+    /* Optimize touch targets for mobile */
+    button, 
+    input[type="checkbox"],
+    .task-item {
+      min-height: 44px; /* Minimum size for touch targets */
+    }
+    
+    /* Adjust task list padding on mobile */
+    .task-list li {
+      padding: 12px 8px;
+    }
+    
+    /* Adjust the ChatButton on mobile */
+    .chat-button {
+      width: 56px;
+      height: 56px;
+      bottom: 16px;
+      right: 16px;
+    }
+  }
+  
+  /* Special styles for iPads */
+  @media only screen and (min-device-width: 768px) and (max-device-width: 1024px) {
+    .calendar-container {
+      min-height: 500px;
+    }
+    
+    .tasklist-container {
+      min-height: 400px;
+    }
+    
+    /* Fix for iPad calendar rendering */
+    .rbc-calendar {
+      min-height: 500px !important;
+      visibility: visible !important;
+    }
+    
+    /* Fix for iPad white screen */
+    #root, .App, main, .responsive-container {
+      display: block !important;
+      min-height: 100vh !important;
+    }
+    
+    .desktop-flex-row {
+      display: block !important;
+    }
+    
+    .calendar-container,
+    .tasklist-container {
+      width: 100% !important;
+      max-width: 100% !important;
+      margin-bottom: 20px;
+    }
+  }
+  
+  /* Layout helpers */
+  .full-height {
+    height: 100%;
+  }
+  
+  .flex-column {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .flex-row {
+    display: flex;
+    flex-direction: row;
+  }
+  
+  .flex-grow {
+    flex-grow: 1;
+  }
+  
+  /* Dark mode adjustments */
+  @media (prefers-color-scheme: dark) {
+    .task-list {
+      background-color: #1e1e1e;
+    }
+    
+    @media (min-width: 768px) {
+      ::-webkit-scrollbar-track {
+        background: #222;
+      }
+      
+      ::-webkit-scrollbar-thumb {
+        background: #555;
+      }
+      
+      ::-webkit-scrollbar-thumb:hover {
+        background: #777;
+      }
+    }
+  }
+  
+  /* Safe areas for notched devices */
+  @supports (padding: max(0px)) {
+    .chat-button {
+      bottom: max(20px, env(safe-area-inset-bottom));
+      right: max(20px, env(safe-area-inset-right));
+    }
+    
+    .chat-modal-overlay {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
