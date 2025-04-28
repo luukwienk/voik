@@ -10,8 +10,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSave, faTrash, faSync, faCog, faCheck, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
 import CalendarConfigModal from './CalendarConfigModal';
 import '../styles/calendarResponsive.css';
-import { rbcEventToGoogleEvent, googleEventToRbcEvent } from '../utils/bigCalendarUtils';
-import { kalendEventToGoogleEvent } from '../utils/taskEventUtils';
+import '../styles/centeredLayout.css';
 
 // Initialize the localizer with moment
 const localizer = momentLocalizer(moment);
@@ -470,7 +469,9 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
         display: 'flex',
         flexDirection: 'column',
         gap: '2px',
-        minHeight: '40px'
+        minHeight: '40px',
+        height: '100%',
+        justifyContent: 'space-between'
       }}>
         <div style={{ 
           fontWeight: 'bold',
@@ -609,6 +610,8 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
         longPressThreshold={10}
         step={15}
         timeslots={4}
+        min={new Date(new Date().setHours(5, 0, 0))}  // 05:00
+        max={new Date(new Date().setHours(18, 0, 0))} // 18:00
         dragFromOutsideItem={isDragOver ? () => true : null}
       />
       

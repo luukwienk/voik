@@ -2,11 +2,24 @@ import React from 'react';
 import TabsNavigation from './TabsNavigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
+import '../styles/header.css';
 
 function Header({ user, signOut, currentTab, setCurrentTab }) {
   return (
     <header className="app-header">
-      <TabsNavigation currentTab={currentTab} onTabChange={setCurrentTab} />
+      <div className="header-container">
+        <div className="tabs-container">
+          <TabsNavigation currentTab={currentTab} onTabChange={setCurrentTab} />
+        </div>
+        
+        <button
+          onClick={signOut}
+          className="sign-out-button"
+          title="Uitloggen"
+        >
+          <FontAwesomeIcon icon={faSignOutAlt} />
+        </button>
+      </div>
     </header>
   );
 }

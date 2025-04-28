@@ -8,6 +8,7 @@ import {
   faSearch, 
   faHeartbeat 
 } from '@fortawesome/free-solid-svg-icons';
+import '../styles/tabs.css';
 
 const TabsNavigation = ({ currentTab, onTabChange }) => {
   // Als currentTab niet wordt doorgegeven, gebruik dan lokale state
@@ -21,78 +22,38 @@ const TabsNavigation = ({ currentTab, onTabChange }) => {
   };
 
   return (
-    <div style={{ backgroundColor: 'white', padding: '10px' }}>
-      <div style={{ display: 'flex' }}>
+    <div className="tabs-navigation">
+      <div className="tabs-container">
         <div
-          style={{
-            padding: '10px 20px',
-            cursor: 'pointer',
-            borderBottom: currentTab === 0 ? '2px solid #333' : 'none',
-            color: currentTab === 0 ? '#333' : '#555',
-            display: 'flex',
-            alignItems: 'center',
-          }}
+          className={`tab-item ${currentTab === 0 ? 'active' : ''}`}
           onClick={() => handleChange(0)}
         >
           <FontAwesomeIcon icon={faTasks} />
-          
         </div>
         <div
-          style={{
-            padding: '10px 20px',
-            cursor: 'pointer',
-            borderBottom: currentTab === 1 ? '2px solid #333' : 'none',
-            color: currentTab === 1 ? '#333' : '#555',
-            display: 'flex',
-            alignItems: 'center',
-          }}
+          className={`tab-item ${currentTab === 1 ? 'active' : ''}`}
           onClick={() => handleChange(1)}
         >
           <FontAwesomeIcon icon={faStickyNote} />
-          
         </div>
         <div
-          style={{
-            padding: '10px 20px',
-            cursor: 'pointer',
-            borderBottom: currentTab === 2 ? '2px solid #333' : 'none',
-            color: currentTab === 2 ? '#333' : '#555',
-            display: 'flex',
-            alignItems: 'center',
-          }}
+          className={`tab-item ${currentTab === 2 ? 'active' : ''}`}
           onClick={() => handleChange(2)}
         >
           <FontAwesomeIcon icon={faClock} />
-          
         </div>
         <div
-          style={{
-            padding: '10px 20px',
-            cursor: 'pointer',
-            borderBottom: currentTab === 3 ? '2px solid #333' : 'none',
-            color: currentTab === 3 ? '#333' : '#555',
-            display: 'flex',
-            alignItems: 'center',
-          }}
+          className={`tab-item ${currentTab === 3 ? 'active' : ''}`}
           onClick={() => handleChange(3)}
         >
           <FontAwesomeIcon icon={faSearch} />
-          
         </div>
-        {/* New health tracker tab */}
+        {/* Health tracker tab */}
         <div
-          style={{
-            padding: '10px 20px',
-            cursor: 'pointer',
-            borderBottom: currentTab === 4 ? '2px solid #333' : 'none',
-            color: currentTab === 4 ? '#333' : '#555',
-            display: 'flex',
-            alignItems: 'center',
-          }}
+          className={`tab-item ${currentTab === 4 ? 'active' : ''}`}
           onClick={() => handleChange(4)}
         >
           <FontAwesomeIcon icon={faHeartbeat} />
-          
         </div>
       </div>
     </div>

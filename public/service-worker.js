@@ -11,8 +11,33 @@ const PRECACHE_ASSETS = [
   '/static/js/bundle.js',
   '/manifest.json',
   '/favicon.ico',
-  '/logo192.png',
-  '/logo512.png'
+  
+  // iOS icons
+  '/ios/100.png',
+  '/ios/152.png',
+  '/ios/167.png',
+  '/ios/180.png',
+  '/ios/192.png',
+  '/ios/512.png',
+  '/ios/1024.png',
+  
+  // Android icons
+  '/android/Square44x44Logo.altform-unplated_targetsize-192.png',
+  '/android/Square44x44Logo.altform-unplated_targetsize-512.png',
+  '/android/Square44x44Logo.altform-lightunplated_targetsize-192.png',
+  
+  // Windows 11 icons
+  '/windows11/SplashScreen.scale-100.png',
+  '/windows11/SplashScreen.scale-125.png',
+  '/windows11/SplashScreen.scale-150.png',
+  '/windows11/SplashScreen.scale-200.png',
+  '/windows11/SplashScreen.scale-400.png',
+  '/windows11/LargeTile.scale-100.png',
+  '/windows11/LargeTile.scale-125.png',
+  '/windows11/LargeTile.scale-150.png',
+  '/windows11/SmallTile.scale-100.png',
+  '/windows11/SmallTile.scale-125.png',
+  '/windows11/SmallTile.scale-150.png'
 ];
 
 // Install event - precache static assets
@@ -83,7 +108,7 @@ self.addEventListener('fetch', event => {
     }).catch(() => {
       // Fallback for offline
       if (event.request.url.includes('.png') || event.request.url.includes('.jpg')) {
-        return caches.match('/logo192.png');
+        return caches.match('/ios/180.png');
       }
       return new Response('You are offline and the resource is not cached.');
     })
@@ -95,8 +120,8 @@ self.addEventListener('push', event => {
   const data = event.data.json();
   const options = {
     body: data.body,
-    icon: '/logo192.png',
-    badge: '/logo192.png',
+    icon: '/ios/180.png',
+    badge: '/ios/100.png',
     vibrate: [100, 50, 100],
     data: {
       url: data.actionUrl || '/'

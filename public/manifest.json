@@ -8,21 +8,14 @@
       "type": "image/x-icon"
     },
     {
-      "src": "logo192.png",
+      "src": "android-chrome-192x192.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "logo512.png",
+      "src": "android-chrome-512x512.png",
       "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "any"
-    },
-    {
-      "src": "maskable_icon.png",
-      "type": "image/png",
-      "sizes": "192x192",
-      "purpose": "maskable"
+      "sizes": "512x512"
     }
   ],
   "start_url": ".",
@@ -34,14 +27,16 @@
   "description": "Manage your tasks and calendar in one place",
   "screenshots": [
     {
-      "src": "screenshot1.png",
+      "src": "windows11/SplashScreen.scale-100.png",
       "type": "image/png",
-      "sizes": "540x720"
+      "sizes": "620x300",
+      "form_factor": "wide"
     },
     {
-      "src": "screenshot2.png",
+      "src": "windows11/SplashScreen.scale-200.png",
       "type": "image/png",
-      "sizes": "540x720"
+      "sizes": "1240x600",
+      "form_factor": "wide"
     }
   ]
 }

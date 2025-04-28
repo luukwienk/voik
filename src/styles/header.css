@@ -1,0 +1,77 @@
+/* Header styling for improved layout and responsiveness */
+
+.app-header {
+  width: 100%;
+  background-color: white;
+  padding: 0;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  position: relative;
+}
+
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  position: relative;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.tabs-container {
+  flex: 1;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Hide scrollbar but allow scrolling */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.tabs-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Sign out button */
+.sign-out-button {
+  background: none;
+  border: none;
+  color: #111;
+  font-size: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 6px;
+  border-radius: 4px;
+  box-shadow: none;
+  margin-left: 10px;
+  transition: background-color 0.2s;
+}
+
+.sign-out-button:hover {
+  background-color: rgba(0,0,0,0.05);
+}
+
+/* Responsive adjustments */
+@media (max-width: 767px) {
+  .sign-out-button {
+    font-size: 18px;
+    padding: 4px;
+  }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .app-header {
+    background-color: #1e1e1e;
+    box-shadow: 0 1px 3px rgba(255,255,255,0.1);
+  }
+  
+  .sign-out-button {
+    color: #eee;
+  }
+  
+  .sign-out-button:hover {
+    background-color: rgba(255,255,255,0.1);
+  }
+}

@@ -1,0 +1,170 @@
+/* Centered layout for desktop view */
+
+/* Base container styles */
+.responsive-container {
+    width: 100%;
+    max-width: 1680px; /* Increased by 20% from 1400px */
+    margin: 0 auto;
+    padding: 0 13px;
+    box-sizing: border-box;
+  }
+  
+  /* Desktop flex row with proper spacing and centering */
+  .desktop-flex-row {
+    display: flex;
+    flex-direction: row;
+    gap: 2.5px !important;
+    min-height: calc(100vh - 150px);
+    max-width: 1680px;
+    margin: 0 auto;
+    padding: 6px 13px 13px 13px;
+  }
+  
+  /* Adjust width proportions for better appearance */
+  .calendar-container {
+    flex: 0 0 93%;
+    max-width: 93%;
+    min-width: 600px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    padding: 8px !important;
+    height: auto;
+    min-height: 650px;
+    overflow: hidden;
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+  
+  .tasklist-container {
+    flex: 0 0 22%;
+    max-width: 22%;
+    min-width: 350px;
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 500px;
+    padding: 0 !important;
+  }
+  
+  /* Make sure the calendar renders properly */
+  .calendar-container .rbc-calendar {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box;
+    height: calc(100vh - 180px) !important;
+    min-height: 630px;
+    background-color: white;
+  }
+  
+  /* Calendar time view adjustments */
+  .rbc-time-view .rbc-time-content {
+    height: auto !important;
+    min-height: 600px !important;
+  }
+  
+  .rbc-time-view .rbc-time-header-content {
+    min-height: 60px !important;
+  }
+  
+  .rbc-timeslot-group {
+    min-height: 60px !important;
+  }
+  
+  .rbc-time-gutter {
+    width: 65px !important;
+  }
+  
+  .rbc-event {
+    min-height: 30px !important;
+    padding: 4px 8px !important;
+  }
+  
+  .rbc-time-view {
+    min-height: 650px !important;
+    height: auto !important;
+  }
+  
+  .rbc-day-slot {
+    background-color: white !important;
+  }
+  
+  .rbc-timeslot-group:nth-child(n+7):nth-child(-n+19) .rbc-time-slot {
+    background-color: rgba(240, 248, 255, 0.6) !important;
+  }
+  
+  /* Task list adjustments */
+  .task-list {
+    padding: 15px !important;
+  }
+  
+  .task-list li {
+    margin-bottom: 6px !important;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 1200px) {
+    .desktop-flex-row {
+      padding: 6px;
+    }
+  
+    .calendar-container, 
+    .tasklist-container {
+      padding: 6px;
+    }
+  }
+  
+  /* Medium screens - maintain horizontal layout with adjusted proportions */
+  @media (min-width: 768px) and (max-width: 1000px) {
+    .calendar-container {
+      flex: 0 0 68%;
+      max-width: 68%;
+      min-width: 400px;
+    }
+    
+    .tasklist-container {
+      flex: 0 0 48%;
+      max-width: 48%;
+      min-width: 300px;
+    }
+    
+    .desktop-flex-row {
+      gap: 8px;
+    }
+  }
+  
+  /* Special handling for iPad */
+  @media only screen and (min-device-width: 768px) and (max-device-width: 1024px) {
+    .responsive-container {
+      width: 90%;
+      margin: 0 auto;
+      padding: 0;
+    }
+    
+    .desktop-flex-row {
+      width: 100%;
+      padding: 6px;
+      gap: 20px;
+    }
+  }
+  
+  /* Dark mode adjustments */
+  @media (prefers-color-scheme: dark) {
+    .calendar-container {
+      background-color: #1e1e1e;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    
+    .calendar-container .rbc-calendar {
+      background-color: #1e1e1e;
+    }
+    
+    .rbc-day-slot {
+      background-color: #1e1e1e !important;
+    }
+    
+    .rbc-timeslot-group:nth-child(n+7):nth-child(-n+19) .rbc-time-slot {
+      background-color: rgba(30, 40, 50, 0.4) !important;
+    }
+  }

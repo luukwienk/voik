@@ -134,18 +134,16 @@ html, body, #root, .App {
   
   /* Special styles for iPads */
   @media only screen and (min-device-width: 768px) and (max-device-width: 1024px) {
+    /* Hide calendar on iPad view */
     .calendar-container {
-      min-height: 500px;
+      display: none !important;
     }
     
     .tasklist-container {
       min-height: 400px;
-    }
-    
-    /* Fix for iPad calendar rendering */
-    .rbc-calendar {
-      min-height: 500px !important;
-      visibility: visible !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      flex: 1 1 auto !important;
     }
     
     /* Fix for iPad white screen */
@@ -158,8 +156,8 @@ html, body, #root, .App {
       display: block !important;
     }
     
-    .calendar-container,
-    .tasklist-container {
+    /* Make task list full width */
+    .task-list {
       width: 100% !important;
       max-width: 100% !important;
       margin-bottom: 20px;

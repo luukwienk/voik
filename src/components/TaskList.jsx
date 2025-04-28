@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faTrash, faCopy, faPlus, faArrowRight, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faTrash, faCopy, faPlus, faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import MoveTaskModal from './MoveTaskModal';
 import TaskEditorModal from './TaskEditorModal';
 import ListSelector from './ListSelector';
@@ -13,8 +13,7 @@ const TaskList = ({
   currentList, 
   lists, 
   moveTask, 
-  hideTitleHeader = false, // Nieuwe prop om titel te verbergen
-  signOut
+  hideTitleHeader = false // Nieuwe prop om titel te verbergen
 }) => {
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [newTaskText, setNewTaskText] = useState('');
@@ -275,29 +274,6 @@ const TaskList = ({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
       >
-        {/* Sign-out knop boven het Add new task veld */}
-        {signOut && (
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '4px' }}>
-            <button
-              onClick={signOut}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#111',
-                fontSize: '22px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                padding: '6px',
-                borderRadius: '4px',
-                boxShadow: 'none',
-              }}
-              title="Uitloggen"
-            >
-              <FontAwesomeIcon icon={faSignOutAlt} />
-            </button>
-          </div>
-        )}
         <form onSubmit={handleAddTask} className="add-task-form" style={{ 
           display: 'flex', 
           gap: '8px',

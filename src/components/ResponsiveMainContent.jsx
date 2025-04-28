@@ -10,6 +10,7 @@ import ErrorBoundary from './ErrorBoundary';
 import BigCalendarView from './BigCalendarView';
 import useMediaQuery from '../hooks/useMediaQuery';
 import '../styles/responsive.css';
+import '../styles/centeredLayout.css';
 
 function ResponsiveMainContent({
   currentTab, 
@@ -45,7 +46,12 @@ function ResponsiveMainContent({
   calculateTrend
 }) {
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
-  const isDesktop = useMediaQuery('(min-width: 768px)');
+  // Detect if device is an iPad
+  const isIPad = /iPad/.test(navigator.userAgent) || 
+                (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document);
+  
+  // Consider iPad as mobile for our layout
+  const isDesktop = useMediaQuery('(min-width: 768px)') && !isIPad;
 
   useEffect(() => {
     if (currentTab === 0) {

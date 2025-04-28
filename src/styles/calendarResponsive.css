@@ -2,109 +2,178 @@
 
 /* Make sure calendar is visible and sized properly */
 .rbc-calendar {
-  min-height: 400px !important;
-  height: 100% !important;
-  background-color: white;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-/* Fix for toolbar sizing */
-.rbc-toolbar {
-  flex-wrap: wrap;
-  justify-content: center;
-  margin-bottom: 10px;
-}
-
-.rbc-toolbar button {
-  margin: 2px;
-}
-
-/* Improved event styling */
-.rbc-event {
-  border-radius: 4px !important;
-  padding: 2px 4px !important;
-  background-color: #3498db !important;
-  border: none !important;
-  color: white !important;
-  font-size: 12px !important;
-}
-
-/* Fix for iPad specific rendering */
-@media only screen and (min-device-width: 768px) and (max-device-width: 1024px) {
-  /* Full-width calendar for iPad */
-  .calendar-container {
+    min-height: 630px !important;
+    height: 100% !important;
+    background-color: white;
+    border-radius: 8px;
+    overflow: hidden;
     width: 100% !important;
-    max-width: 100% !important;
-    flex: 1 1 auto !important;
-    margin-bottom: 20px;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box;
   }
   
-  .rbc-calendar {
-    min-height: 500px !important;
-    height: 600px !important;
-    visibility: visible !important;
-    display: flex !important;
-    flex-direction: column !important;
-  }
-  
-  /* Larger touch targets for iPad */
-  .rbc-toolbar button {
-    padding: 10px 15px !important;
-    font-size: 14px !important;
-  }
-  
-  .rbc-event {
-    padding: 4px 6px !important;
-    font-size: 14px !important;
-  }
-}
-
-/* Mobile calendar styles */
-@media (max-width: 767px) {
+  /* Fix for toolbar sizing */
   .rbc-toolbar {
-    font-size: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 10px;
+    padding: 0 !important;
   }
   
   .rbc-toolbar button {
-    padding: 5px 8px;
-    font-size: 12px;
+    margin: 2px;
   }
   
-  .rbc-toolbar span {
-    font-size: 14px;
-    font-weight: bold;
-  }
-  
-  /* Compact time slots for mobile */
+  /* Make time columns better sized */
   .rbc-time-view .rbc-time-gutter,
   .rbc-time-view .rbc-time-header-gutter {
-    width: 50px !important;
+    width: 60px !important; 
   }
   
+  /* Make time slots taller */
+  .rbc-time-view .rbc-time-slot {
+    min-height: 25px !important;
+  }
+  
+  /* Improve time content to use full height */
   .rbc-time-view .rbc-time-content {
-    border-left: 1px solid #ddd;
+    flex: 1 !important;
+    min-height: 500px !important;
   }
   
-  /* Improved event rendering on mobile */
+  /* Improved event styling */
   .rbc-event {
-    padding: 1px 2px !important;
-    font-size: 10px !important;
+    border-radius: 4px !important;
+    padding: 2px 6px !important;
+    background-color: #3498db !important;
+    border: none !important;
+    color: white !important;
+    font-size: 12px !important;
+    min-height: 28px !important;
   }
   
-  /* Stack buttons in toolbar on very small screens */
-  @media (max-width: 480px) {
-    .rbc-toolbar {
-      flex-direction: column;
-      align-items: stretch;
+  /* Make the overall time view use more space */
+  .rbc-time-view {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 600px !important;
+    margin: 0 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box;
+  }
+  
+  .rbc-time-header {
+    width: 100% !important;
+  }
+  
+  /* Fix for iPad specific rendering */
+  @media only screen and (min-device-width: 768px) and (max-device-width: 1024px) {
+    /* Full-width calendar for iPad */
+    .calendar-container {
+      width: 100% !important;
+      max-width: 100% !important;
+      flex: 1 1 auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      box-sizing: border-box;
+      margin-bottom: 20px;
     }
     
-    .rbc-toolbar-label {
-      margin: 8px 0;
+    .rbc-calendar {
+      min-height: 500px !important;
+      height: 600px !important;
+      visibility: visible !important;
+      display: flex !important;
+      flex-direction: column !important;
     }
     
-    .rbc-btn-group {
-      margin: 4px 0;
+    /* Larger touch targets for iPad */
+    .rbc-toolbar button {
+      padding: 10px 15px !important;
+      font-size: 14px !important;
+    }
+    
+    .rbc-event {
+      padding: 4px 6px !important;
+      font-size: 14px !important;
     }
   }
+  
+  /* Mobile calendar styles */
+  @media (max-width: 767px) {
+    .rbc-toolbar {
+      font-size: 12px;
+    }
+    
+    .rbc-toolbar button {
+      padding: 5px 8px;
+      font-size: 12px;
+    }
+    
+    .rbc-toolbar span {
+      font-size: 14px;
+      font-weight: bold;
+    }
+    
+    /* Compact time slots for mobile */
+    .rbc-time-view .rbc-time-gutter,
+    .rbc-time-view .rbc-time-header-gutter {
+      width: 50px !important;
+    }
+    
+    .rbc-time-view .rbc-time-content {
+      border-left: 1px solid #ddd;
+    }
+    
+    /* Improved event rendering on mobile */
+    .rbc-event {
+      padding: 1px 2px !important;
+      font-size: 10px !important;
+    }
+    
+    /* Stack buttons in toolbar on very small screens */
+    @media (max-width: 480px) {
+      .rbc-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .rbc-toolbar-label {
+        margin: 8px 0;
+      }
+      
+      .rbc-btn-group {
+        margin: 4px 0;
+      }
+    }
+  }
+
+.calendar-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  flex: 1 1 auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box;
+}
+
+.desktop-flex-row {
+  align-items: stretch;
+}
+
+.calendar-container,
+.rbc-calendar,
+.rbc-time-view,
+.tasklist-container {
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+.rbc-time-slot {
+  min-height: 18px !important;
 }
