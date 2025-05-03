@@ -1,20 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
+import TaskList from '@tiptap/extension-task-list';
+import TaskItem from '@tiptap/extension-task-item';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBold, faItalic, faList, faLink, faImage, faCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faBold, faItalic, faList, faLink, faImage, faCheck, faTimes, faTasks } from '@fortawesome/free-solid-svg-icons';
 
 const TaskEditorModal = ({ task, onClose, updateTaskList }) => {
-  const [showURLInput, setShowURLInput] = React.useState(false);
-  const [urlValue, setURLValue] = React.useState('');
+  const [showURLInput, setShowURLInput] = useState(false);
+  const [urlValue, setURLValue] = useState('');
+  const [titleValue, setTitleValue] = useState(task.title || '');
 
   const editor = useEditor({
     extensions: [
       StarterKit,
       Link.configure({ openOnClick: true, linkOnPaste: true }),
       Image.configure({ inline: true, allowBase64: true }),
+      TaskList,
+      TaskItem.configure({
+        nested: true,
+      }),
     ],
     content: typeof task.text === 'string' && task.text.includes('"blocks":') 
       ? convertDraftToHTML(task.text) 
@@ -27,6 +34,7 @@ const TaskEditorModal = ({ task, onClose, updateTaskList }) => {
     const html = editor.getHTML();
     const updatedTask = {
       ...task,
+      title: titleValue.trim() || 'Naamloze taak',
       text: html,
       list: task.list
     };
@@ -72,9 +80,24 @@ const TaskEditorModal = ({ task, onClose, updateTaskList }) => {
     input.click();
   };
 
+  const addCheckbox = () => {
+    editor.chain().focus().toggleTaskList().run();
+  };
+
   return (
     <div className="editor-modal-overlay">
       <div className="editor-modal">
+        {/* Titel veld - nu onzichtbaar en zonder randen */}
+        <div className="title-container">
+          <input
+            type="text"
+            value={titleValue}
+            onChange={(e) => setTitleValue(e.target.value)}
+            placeholder="Taak titel..."
+            className="title-input"
+          />
+        </div>
+
         <div className="editor-toolbar">
           <button onClick={() => editor.chain().focus().toggleBold().run()} className="toolbar-button" title="Vet">
             <FontAwesomeIcon icon={faBold} style={{ color: '#222' }} />
@@ -84,6 +107,9 @@ const TaskEditorModal = ({ task, onClose, updateTaskList }) => {
           </button>
           <button onClick={() => editor.chain().focus().toggleBulletList().run()} className="toolbar-button" title="Opsomming">
             <FontAwesomeIcon icon={faList} style={{ color: '#222' }} />
+          </button>
+          <button onClick={addCheckbox} className="toolbar-button" title="Checkboxes">
+            <FontAwesomeIcon icon={faTasks} style={{ color: '#222' }} />
           </button>
           <button onClick={() => setShowURLInput(!showURLInput)} className="toolbar-button" title="Link">
             <FontAwesomeIcon icon={faLink} style={{ color: '#222' }} />
@@ -146,6 +172,35 @@ const TaskEditorModal = ({ task, onClose, updateTaskList }) => {
           flex-direction: column;
           box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
           overflow: hidden;
+        }
+        
+        .title-container {
+          padding: 20px 16px 0 16px;
+          background-color: white;
+          width: 100%;
+          box-sizing: border-box;
+        }
+        
+        .title-input {
+          width: 100%;
+          padding: 0 0 10px 0;
+          font-size: 24px;
+          font-weight: 700;
+          border: none;
+          border-bottom: 1px solid #eee;
+          outline: none;
+          background-color: transparent;
+          margin-bottom: 5px;
+          box-sizing: border-box;
+        }
+        
+        .title-input::placeholder {
+          color: #aaa;
+          opacity: 0.7;
+        }
+        
+        .title-input:focus {
+          border-bottom: 1px solid #2196F3;
         }
         
         .editor-toolbar {
@@ -213,6 +268,27 @@ const TaskEditorModal = ({ task, onClose, updateTaskList }) => {
           outline: none;
           padding: 16px;
         }
+
+        /* Checkbox styling */
+        .editor-content .ProseMirror ul[data-type="taskList"] {
+          list-style: none;
+          padding: 0;
+        }
+
+        .editor-content .ProseMirror li[data-type="taskItem"] {
+          display: flex;
+          align-items: flex-start;
+          margin-bottom: 8px;
+        }
+
+        .editor-content .ProseMirror li[data-type="taskItem"] > label {
+          margin-right: 0.5rem;
+          user-select: none;
+        }
+
+        .editor-content .ProseMirror li[data-type="taskItem"] > div {
+          flex: 1;
+        }
         
         .editor-actions {
           display: flex;
@@ -255,6 +331,24 @@ const TaskEditorModal = ({ task, onClose, updateTaskList }) => {
           .editor-modal {
             background-color: #1e1e1e;
             color: #fff;
+          }
+          
+          .title-container {
+            background-color: #1e1e1e;
+          }
+          
+          .title-input {
+            background-color: transparent;
+            color: #fff;
+            border-bottom: 1px solid #444;
+          }
+          
+          .title-input::placeholder {
+            color: #888;
+          }
+          
+          .title-input:focus {
+            border-bottom: 1px solid #2196F3;
           }
           
           .editor-toolbar {

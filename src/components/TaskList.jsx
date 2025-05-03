@@ -13,34 +13,26 @@ const TaskList = ({
   currentList, 
   lists, 
   moveTask, 
-  hideTitleHeader = false // Nieuwe prop om titel te verbergen
+  hideTitleHeader = false
 }) => {
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [newTaskText, setNewTaskText] = useState('');
   const [selectedTask, setSelectedTask] = useState(null);
   const [movingTaskId, setMovingTaskId] = useState(null);
   const [isTaskDragging, setIsTaskDragging] = useState(false);
-  const [isDraggedOver, setIsDraggedOver] = useState(false);
 
   const handleAddTask = (e) => {
     e.preventDefault();
     if (newTaskText.trim()) {
       const newTask = {
         id: `task-${Date.now()}`,
+        title: newTaskText,
         text: newTaskText,
         completed: false
       };
   
       const currentItems = tasks?.items || [];
       const updatedItems = [newTask, ...currentItems];
-  
-      // Log voor debugging
-      console.log('Adding task:', {
-        listName: currentList,
-        newListData: {
-          items: updatedItems
-        }
-      });
   
       // Compatibiliteit met beide update methodes
       if (updateList.length === 1) {
@@ -59,7 +51,6 @@ const TaskList = ({
     }
   };
        
-
   const handleToggleCompletion = (taskId) => {
     const currentItems = tasks?.items || [];
     const updatedItems = currentItems.map(task =>
@@ -91,7 +82,6 @@ const TaskList = ({
       });
     }
   };
-
      
   const handleUpdateTask = (taskId, newText) => {
     const currentItems = tasks?.items || [];
@@ -119,7 +109,7 @@ const TaskList = ({
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = task.text;
       const textContent = tempDiv.textContent || tempDiv.innerText || '';
-      return `${task.completed ? '✓' : '☐'} ${textContent}`;
+      return `${task.completed ? '✓' : '☐'} ${task.title || textContent}`;
     }).join('\n');
     navigator.clipboard.writeText(taskText).then(() => {
       alert('Copied tasks!');
@@ -128,53 +118,24 @@ const TaskList = ({
     });
   };
 
-  // New functions for drag and drop integration
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDraggedOver(true);
-    
-    // Add a class to indicate droppability
-    e.currentTarget.classList.add('task-list-drag-over');
-    
-    // Set the dropEffect to copy (visual indicator)
-    e.dataTransfer.dropEffect = 'copy';
-  };
-  
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    setIsDraggedOver(false);
-    
-    // Remove the class when drag leaves
-    e.currentTarget.classList.remove('task-list-drag-over');
-  };
-  
+  // Extreem eenvoudige drop handler, alleen voor compatibiliteit
   const handleDrop = (e) => {
     e.preventDefault();
-    setIsDraggedOver(false);
     
-    // Remove the class
-    e.currentTarget.classList.remove('task-list-drag-over');
-    
-    // Try to get the event data
     try {
       const data = e.dataTransfer.getData('text/plain');
       if (!data) return;
       
-      console.log('Drop received in TaskList:', data);
-      
-      // Try to parse the data
       const eventData = JSON.parse(data);
       
       // Check if it's a calendar event being dropped back to task list
       if (eventData && eventData.isCalendarEvent) {
-        console.log('Calendar event dropped back to task list');
-        
         // Create a new task from the event
         const newTask = {
           id: `task-${Date.now()}`,
+          title: eventData.title || 'Event from calendar',
           text: eventData.title || 'Event from calendar',
           completed: false,
-          // You could add more properties from the event if needed
         };
         
         // Add the new task to the list
@@ -207,8 +168,6 @@ const TaskList = ({
     const [removed] = currentItems.splice(source.index, 1);
     currentItems.splice(destination.index, 0, removed);
   
-    console.log('Updating after drag with:', { items: currentItems });
-  
     if (updateList.length === 1) {
       updateList({ items: currentItems });
     } else if (updateList.length === 2) {
@@ -216,7 +175,6 @@ const TaskList = ({
     }
   };
   
-
   const handleMoveTask = (taskId, destinationList) => {
     if (!tasks?.items) {
       console.error('No tasks available to move');
@@ -227,7 +185,6 @@ const TaskList = ({
     const taskToMove = taskArray.find(task => task.id === taskId);
     
     if (taskToMove) {
-      console.log('Moving task:', taskToMove, 'from', currentList, 'to', destinationList);
       moveTask(taskToMove, currentList, destinationList);
       setMovingTaskId(null);
     } else {
@@ -235,44 +192,25 @@ const TaskList = ({
     }
   };
 
-  // Haal de eerste zichtbare tekstregel uit HTML
-  const getTaskTitle = (html) => {
-    if (!html) return { title: '', hasMoreText: false };
-    // Strip HTML tags en pak de eerste regel
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = html;
-    const text = tempDiv.textContent || tempDiv.innerText || '';
-    const lines = text.split(/\r?\n/);
-    const title = lines[0];
-    const hasMoreText = lines.length > 1 || text.length > 75;
-    // Beperk de titel tot 75 tekens
-    const maxLength = 75;
-    let displayTitle = title;
-    if (displayTitle.length > maxLength) {
-      displayTitle = displayTitle.substring(0, maxLength) + '...';
-    }
-    return { title: displayTitle, hasMoreText };
-  };
-
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div 
-        className={`task-list ${isDraggedOver ? 'task-list-drag-over' : ''}`} 
+        className="task-list"
         style={{ 
           padding: '20px', 
-          backgroundColor: isDraggedOver ? '#e8f4f8' : '#f9f9f9', 
+          backgroundColor: '#F0F8FF', 
           borderRadius: '8px',
           boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
           width: '100%',
+          height: '100%',
           maxWidth: '100%',
           boxSizing: 'border-box',
           overflowX: 'hidden',
-          transition: 'background-color 0.3s ease',
-          border: isDraggedOver ? '2px dashed #2196F3' : 'none',
+          display: 'flex',
+          flexDirection: 'column'
         }}
         onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
+        onDragOver={(e) => e.preventDefault()}
       >
         <form onSubmit={handleAddTask} className="add-task-form" style={{ 
           display: 'flex', 
@@ -354,27 +292,21 @@ const TaskList = ({
           </div>
         )}
 
-        {isDraggedOver && (
-          <div style={{
-            padding: '15px',
-            textAlign: 'center',
-            backgroundColor: 'rgba(33, 150, 243, 0.1)',
-            borderRadius: '6px',
-            marginBottom: '15px',
-            border: '1px dashed #2196F3',
-            color: '#1976D2',
-            fontWeight: 'bold'
-          }}>
-            Drop event here to convert back to task
-          </div>
-        )}
-
         <Droppable droppableId={`tasks-${currentList}`}>
           {(provided) => (
             <ul 
               {...provided.droppableProps} 
               ref={provided.innerRef} 
-              style={{ listStyleType: 'none', padding: 0, margin: 0, width: '100%', boxSizing: 'border-box', overflowX: 'hidden' }}
+              style={{ 
+                listStyleType: 'none', 
+                padding: 0, 
+                margin: 0, 
+                width: '100%', 
+                boxSizing: 'border-box', 
+                overflowX: 'hidden',
+                flex: '1 1 auto', // Laat de lijst groeien om beschikbare ruimte te vullen
+                overflowY: 'auto' // Voeg scrollbars toe indien nodig
+              }}
             >
               {(tasks?.items || []).map((task, index) => (
                 <Draggable key={task.id} draggableId={`task-${task.id}`} index={index}>
@@ -383,7 +315,6 @@ const TaskList = ({
                       ref={provided.innerRef}
                       {...provided.draggableProps}
                       {...provided.dragHandleProps}
-                      className={`task-item ${snapshot.isDragging ? 'dragging' : ''}`}
                       style={{
                         ...provided.draggableProps.style,
                         listStyle: 'none',
@@ -429,13 +360,6 @@ const TaskList = ({
           }}
         />
       )}
-
-      <style jsx>{`
-        .task-list-drag-over {
-          background-color: #e3f2fd !important;
-          border: 2px dashed #2196F3 !important;
-        }
-      `}</style>
     </DragDropContext>
   );
 };

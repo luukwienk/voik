@@ -13,7 +13,7 @@
   .desktop-flex-row {
     display: flex;
     flex-direction: row;
-    gap: 2.5px !important;
+    gap: 20px !important; /* Vergroot de ruimte tussen agenda en takenlijst */
     min-height: calc(100vh - 150px);
     max-width: 1680px;
     margin: 0 auto;
@@ -45,6 +45,22 @@
     height: auto;
     min-height: 500px;
     padding: 0 !important;
+  }
+  
+  /* Adjust task list to fill the full height */
+  .task-list {
+    background-color: #F0F8FF !important; /* Zeer lichtblauwe achtergrond */
+    height: 100% !important;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+  }
+  
+  /* Make the task items list expand to fill available space */
+  .task-list ul {
+    flex: 1;
+    overflow: auto;
   }
   
   /* Make sure the calendar renders properly */
@@ -94,7 +110,7 @@
     background-color: rgba(240, 248, 255, 0.6) !important;
   }
   
-  /* Task list adjustments */
+  /* Task list padding */
   .task-list {
     padding: 15px !important;
   }
@@ -107,6 +123,7 @@
   @media (max-width: 1200px) {
     .desktop-flex-row {
       padding: 6px;
+      gap: 15px !important; /* Ook bij kleinere schermen de ruimte behouden */
     }
   
     .calendar-container, 
@@ -130,7 +147,7 @@
     }
     
     .desktop-flex-row {
-      gap: 8px;
+      gap: 15px !important; /* Ook bij middelgrote schermen de ruimte behouden */
     }
   }
   
@@ -166,5 +183,10 @@
     
     .rbc-timeslot-group:nth-child(n+7):nth-child(-n+19) .rbc-time-slot {
       background-color: rgba(30, 40, 50, 0.4) !important;
+    }
+
+    /* Dark mode variant voor de lichtblauwe achtergrond */
+    .task-list {
+      background-color: #1a2533 !important;
     }
   }

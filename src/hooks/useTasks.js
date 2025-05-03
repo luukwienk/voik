@@ -16,6 +16,16 @@ export function useTasks(user) {
     }
   }, [user]);
 
+  // Helper function om titel uit tekst te halen
+  const extractTitleFromText = (text) => {
+    if (!text) return '';
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = text;
+    const cleanText = tempDiv.textContent || tempDiv.innerText || '';
+    const lines = cleanText.split(/\r?\n/);
+    return lines[0].trim();
+  };
+
   const loadTasks = async (userId) => {
     try {
       console.log('Loading tasks for user:', userId);
@@ -23,10 +33,22 @@ export function useTasks(user) {
       const tasksSnapshot = await getDocs(tasksCollection);
       const loadedTasks = {};
       tasksSnapshot.forEach((doc) => {
+        // Controleer en voeg titles toe aan taken die nog geen titel hebben
+        const items = doc.data().items || [];
+        const updatedItems = items.map(item => {
+          if (!item.title) {
+            return {
+              ...item,
+              title: extractTitleFromText(item.text)
+            };
+          }
+          return item;
+        });
+
         loadedTasks[doc.id] = {
-          items: doc.data().items || []
+          items: updatedItems
         };
-        console.log(`Loaded task list "${doc.id}":`, doc.data().items);
+        console.log(`Loaded task list "${doc.id}":`, updatedItems);
       });
       if (Object.keys(loadedTasks).length === 0) {
         loadedTasks['Today'] = { items: [] };
@@ -151,19 +173,24 @@ export function useTasks(user) {
         newListData.items = [];
       }
   
-      // Valideer elk item in de array
+      // Valideer elk item in de array en voeg title toe als het ontbreekt
       const validatedItems = newListData.items.map(item => {
         if (!item || typeof item !== 'object') {
           console.error('Invalid item:', item);
           return {
             id: `task-${Date.now()}-${Math.random()}`,
+            title: 'Nieuwe taak',
             text: '',
             completed: false
           };
         }
   
+        // Extract title from text if missing
+        const title = item.title || extractTitleFromText(item.text) || 'Nieuwe taak';
+        
         return {
           id: item.id || `task-${Date.now()}-${Math.random()}`,
+          title: title,
           text: item.text || '',
           completed: Boolean(item.completed)
         };

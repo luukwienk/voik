@@ -134,7 +134,7 @@ function ResponsiveMainContent({
                       display: 'flex',
                       justifyContent: 'flex-start',
                       padding: '10px 0',
-                      marginBottom: '10px',
+                      marginBottom: '0px',
                       marginTop: '8px',
                       alignItems: 'center'
                     }}>
@@ -151,22 +151,30 @@ function ResponsiveMainContent({
                       </div>
                     </div>
                     
-                    {/* Task list */}
-                    <TaskList
-                      tasks={tasks[currentTaskList]}
-                      currentList={currentTaskList}
-                      lists={tasks}
-                      moveTask={moveTask}
-                      hideTitleHeader={true}
-                      updateList={(updatedData) => {
-                        if (updatedData.id && updatedData.list) {
-                          updateTaskList(updatedData);
-                        } else {
-                          updateTaskList(currentTaskList, updatedData);
-                        }
-                      }}
-                      signOut={signOut}
-                    />
+                    {/* Task list - pas de container styling aan om de hele hoogte te benutten */}
+                    <div style={{ 
+                      flex: '1 1 auto',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      height: 'calc(100% - 58px)',
+                      marginTop: '8px'
+                    }}>
+                      <TaskList
+                        tasks={tasks[currentTaskList]}
+                        currentList={currentTaskList}
+                        lists={tasks}
+                        moveTask={moveTask}
+                        hideTitleHeader={true}
+                        updateList={(updatedData) => {
+                          if (updatedData.id && updatedData.list) {
+                            updateTaskList(updatedData);
+                          } else {
+                            updateTaskList(currentTaskList, updatedData);
+                          }
+                        }}
+                        signOut={signOut}
+                      />
+                    </div>
                     
                     {/* Show recognized text feedback if available */}
                     {recognizedText && (
