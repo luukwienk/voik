@@ -12,6 +12,7 @@ import {
   faWeight, 
   faSpinner
 } from '@fortawesome/free-solid-svg-icons';
+import HealthEntriesList from './HealthEntriesList';
 
 const MinimalistHealthTracker = ({ 
   healthData = [], 
@@ -78,13 +79,42 @@ const MinimalistHealthTracker = ({
       .sort((a, b) => new Date(a.date) - new Date(b.date));
     
     if (filteredData.length > 0) {
-      const formattedData = filteredData.map(entry => ({
-        date: new Date(entry.date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }),
-        weight: parseFloat(entry.weight) || 0,
-        calories: parseInt(entry.calories) || 0,
-        waist: parseFloat(entry.waist) || 0,
-        workout: parseInt(entry.workout) || 0
-      }));
+      // Definieer redelijke grenzen voor elke metriek
+      const metricLimits = {
+        weight: { min: 30, max: 300 }, // in kg
+        waist: { min: 40, max: 200 },  // in cm
+        calories: { min: 0, max: 10000 },
+        workout: { min: 0, max: 500 }  // in minuten
+      };
+
+      const formattedData = filteredData.map(entry => {
+        // Zorg ervoor dat alle waarden geldig zijn
+        const weight = entry.weight !== null && entry.weight !== undefined ? parseFloat(entry.weight) : null;
+        const calories = entry.calories !== null && entry.calories !== undefined ? parseInt(entry.calories) : null;
+        const waist = entry.waist !== null && entry.waist !== undefined ? parseFloat(entry.waist) : null;
+        const workout = entry.workout !== null && entry.workout !== undefined ? parseInt(entry.workout) : null;
+        
+        // Controleer of waarden binnen redelijke grenzen vallen
+        const validWeight = weight !== null && !isNaN(weight) && 
+          weight >= metricLimits.weight.min && weight <= metricLimits.weight.max ? weight : null;
+        
+        const validCalories = calories !== null && !isNaN(calories) && 
+          calories >= metricLimits.calories.min && calories <= metricLimits.calories.max ? calories : null;
+        
+        const validWaist = waist !== null && !isNaN(waist) && 
+          waist >= metricLimits.waist.min && waist <= metricLimits.waist.max ? waist : null;
+        
+        const validWorkout = workout !== null && !isNaN(workout) && 
+          workout >= metricLimits.workout.min && workout <= metricLimits.workout.max ? workout : null;
+        
+        return {
+          date: new Date(entry.date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }),
+          weight: validWeight,
+          calories: validCalories,
+          waist: validWaist,
+          workout: validWorkout
+        };
+      });
       
       setChartData(formattedData);
     } else {
@@ -292,11 +322,13 @@ const MinimalistHealthTracker = ({
     <div style={{
       display: 'flex',
       flexDirection: 'column',
-      height: '100%',
+      width: '100%',
+      maxWidth: '100%',
       backgroundColor: 'white',
       borderRadius: '8px',
       padding: '16px',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+      boxSizing: 'border-box',
+      height: 'auto'
     }}>
       {/* Date header */}
       <div style={{
@@ -345,12 +377,15 @@ const MinimalistHealthTracker = ({
           padding: '24px',
           borderRadius: '8px',
           marginBottom: '24px',
-          border: '1px solid #eee'
+          border: '1px solid #eee',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+          overflowX: 'auto'
         }}>
           <form onSubmit={handleQuickSubmit}>
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
               gap: '24px',
               marginBottom: '24px'
             }}>
@@ -368,11 +403,12 @@ const MinimalistHealthTracker = ({
                   value={entryValues.date}
                   onChange={handleInputChange}
                   style={{
-                    width: '80%',
+                    width: '100%',
                     padding: '10px',
                     border: '2px solid #ddd',
                     borderRadius: '4px',
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    boxSizing: 'border-box'
                   }}
                 />
               </div>
@@ -392,11 +428,12 @@ const MinimalistHealthTracker = ({
                   onChange={handleInputChange}
                   placeholder="75.5"
                   style={{
-                    width: '  80%',
+                    width: '100%',
                     padding: '10px',
                     border: '2px solid #ddd',
                     borderRadius: '4px',
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    boxSizing: 'border-box'
                   }}
                 />
               </div>
@@ -415,11 +452,12 @@ const MinimalistHealthTracker = ({
                   onChange={handleInputChange}
                   placeholder="2000"
                   style={{
-                    width: '80%',
+                    width: '100%',
                     padding: '10px',
                     border: '2px solid #ddd',
                     borderRadius: '4px',
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    boxSizing: 'border-box'
                   }}
                 />
               </div>
@@ -439,11 +477,12 @@ const MinimalistHealthTracker = ({
                   onChange={handleInputChange}
                   placeholder="85"
                   style={{
-                    width: '80%',
+                    width: '100%',
                     padding: '10px',
                     border: '2px solid #ddd',
                     borderRadius: '4px',
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    boxSizing: 'border-box'
                   }}
                 />
               </div>
@@ -462,11 +501,12 @@ const MinimalistHealthTracker = ({
                   onChange={handleInputChange}
                   placeholder="45"
                   style={{
-                    width: '80%',
+                    width: '100%',
                     padding: '10px',
                     border: '2px solid #ddd',
                     borderRadius: '4px',
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    boxSizing: 'border-box'
                   }}
                 />
               </div>
@@ -513,7 +553,7 @@ const MinimalistHealthTracker = ({
       {/* Metric cards */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(2, 1fr)',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
         gap: '12px',
         marginBottom: '24px'
       }}>
@@ -629,18 +669,25 @@ const MinimalistHealthTracker = ({
       {/* Progress chart */}
       <div style={{
         backgroundColor: '#f9f9f9',
-        padding: '16px',
+        padding: '16px 16px 24px 16px',
         borderRadius: '8px',
         border: '1px solid #eee',
-        flexGrow: 1,
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        width: '100%',
+        maxWidth: '100%',
+        boxSizing: 'border-box',
+        overflowX: 'hidden',
+        marginBottom: '24px',
+        minHeight: '450px'
       }}>
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '16px'
+          marginBottom: '20px',
+          flexWrap: 'wrap',
+          gap: '10px'
         }}>
           <div style={{
             display: 'flex',
@@ -665,7 +712,8 @@ const MinimalistHealthTracker = ({
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            fontSize: '14px'
+            fontSize: '14px',
+            flexWrap: 'wrap'
           }}>
             <button 
               onClick={() => handleTimeRangeChange('week')}
@@ -677,7 +725,8 @@ const MinimalistHealthTracker = ({
                 cursor: 'pointer',
                 marginRight: '8px',
                 fontSize: '12px',
-                color: timeRange === 'week' ? '#2196F3' : '#666'
+                color: timeRange === 'week' ? '#2196F3' : '#666',
+                whiteSpace: 'nowrap'
               }}
             >
               Week
@@ -692,7 +741,8 @@ const MinimalistHealthTracker = ({
                 cursor: 'pointer',
                 marginRight: '8px',
                 fontSize: '12px',
-                color: timeRange === 'month' ? '#2196F3' : '#666'
+                color: timeRange === 'month' ? '#2196F3' : '#666',
+                whiteSpace: 'nowrap'
               }}
             >
               Month
@@ -706,7 +756,8 @@ const MinimalistHealthTracker = ({
                 borderRadius: '4px',
                 cursor: 'pointer',
                 fontSize: '12px',
-                color: timeRange === 'year' ? '#2196F3' : '#666'
+                color: timeRange === 'year' ? '#2196F3' : '#666',
+                whiteSpace: 'nowrap'
               }}
             >
               Year
@@ -714,17 +765,66 @@ const MinimalistHealthTracker = ({
           </div>
         </div>
         
-        <div style={{ height: '250px', flexGrow: 1 }}>
+        <div style={{ height: '400px', width: '100%', maxWidth: '100%', marginBottom: '15px' }}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
+            <LineChart 
+              data={chartData}
+              margin={{ bottom: 30, top: 20, left: 10, right: 10 }}
+            >
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
               <XAxis dataKey="date" axisLine={false} tickLine={false} />
               <YAxis 
-                domain={['auto', 'auto']} 
+                domain={[
+                  dataMin => {
+                    // Bepaal de minimumwaarde op basis van de geselecteerde metric
+                    if (activeMetric === 'weight') {
+                      // Voor gewicht: rond af naar beneden naar dichtstbijzijnde 5
+                      return Math.floor(dataMin / 5) * 5 - 5;
+                    } else if (activeMetric === 'waist') {
+                      // Voor taille: rond af naar beneden naar dichtstbijzijnde 5
+                      return Math.floor(dataMin / 5) * 5 - 5;
+                    } else if (activeMetric === 'calories') {
+                      // Voor calorieën: rond af naar beneden naar dichtstbijzijnde 500
+                      return Math.floor(dataMin / 500) * 500 - 500;
+                    } else {
+                      // Voor workout: rond af naar beneden naar dichtstbijzijnde 15
+                      return Math.max(0, Math.floor(dataMin / 15) * 15 - 15);
+                    }
+                  },
+                  dataMax => {
+                    // Bepaal de maximumwaarde op basis van de geselecteerde metric
+                    if (activeMetric === 'weight') {
+                      // Voor gewicht: rond af naar boven naar dichtstbijzijnde 5
+                      return Math.ceil(dataMax / 5) * 5 + 5;
+                    } else if (activeMetric === 'waist') {
+                      // Voor taille: rond af naar boven naar dichtstbijzijnde 5
+                      return Math.ceil(dataMax / 5) * 5 + 5;
+                    } else if (activeMetric === 'calories') {
+                      // Voor calorieën: rond af naar boven naar dichtstbijzijnde 500
+                      return Math.ceil(dataMax / 500) * 500 + 500;
+                    } else {
+                      // Voor workout: rond af naar boven naar dichtstbijzijnde 15
+                      return Math.ceil(dataMax / 15) * 15 + 15;
+                    }
+                  }
+                ]}
                 axisLine={false} 
                 tickLine={false} 
                 width={30}
                 style={{ fontSize: '12px' }}
+                padding={{ bottom: 30, top: 10 }}
+                tickCount={5}
+                tickFormatter={(value) => {
+                  if (activeMetric === 'weight') {
+                    return `${value} kg`;
+                  } else if (activeMetric === 'waist') {
+                    return `${value} cm`;
+                  } else if (activeMetric === 'calories') {
+                    return value;
+                  } else {
+                    return `${value} min`;
+                  }
+                }}
               />
               <Tooltip 
                 contentStyle={{ 
@@ -741,15 +841,17 @@ const MinimalistHealthTracker = ({
                 strokeWidth={2}
                 dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
                 activeDot={{ r: 6, strokeWidth: 0, fill: getMetricColor(activeMetric) }}
+                connectNulls={true}
               />
             </LineChart>
           </ResponsiveContainer>
         </div>
         
         <div style={{
-          marginTop: '16px',
-          display: 'flex',
-          justifyContent: 'space-between',
+          marginTop: '20px',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
+          gap: '10px',
           fontSize: '14px',
           color: '#666'
         }}>
@@ -772,6 +874,25 @@ const MinimalistHealthTracker = ({
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Entries list in its own section that appears after scrolling down */}
+      <div style={{
+        backgroundColor: '#f9f9f9',
+        padding: '16px',
+        borderRadius: '8px',
+        border: '1px solid #eee',
+        width: '100%',
+        maxWidth: '100%',
+        boxSizing: 'border-box',
+        marginTop: '10px'
+      }}>
+        <HealthEntriesList 
+          healthData={healthData}
+          updateHealthEntry={updateHealthEntry}
+          deleteHealthEntry={deleteHealthEntry}
+          activeMetric={activeMetric}
+        />
       </div>
     </div>
   );

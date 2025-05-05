@@ -57,24 +57,37 @@ function App() {
     }
   }, [tasks, currentTaskList, notes, currentNoteList, healthData]);
 
+  // Dit effect zorgt ervoor dat de juiste initiële lijst wordt geselecteerd
+  // maar behoudt de huidige lijsten bij tabwisseling
+  const [initialTabsVisited, setInitialTabsVisited] = useState({ 0: false, 1: false });
+  
   useEffect(() => {
-    if (currentTab === 0) { // 0 for 'tasks'
-      console.log('App: Switching to tasks, setting currentTaskList to "Today"');
-      setCurrentTaskList('Today');
-    } else if (currentTab === 1) { // 1 for 'notes'
-      console.log('App: Switching to notes, setting currentNoteList to "My Notes"');
+    if (currentTab === 1 && !initialTabsVisited[1]) { // 1 for 'notes'
+      console.log('App: Eerste bezoek aan notes tab, standaard notelist instellen op "My Notes"');
       setCurrentNoteList('My Notes');
+      setInitialTabsVisited(prev => ({ ...prev, 1: true }));
+    } else if (currentTab === 0 && !initialTabsVisited[0]) {
+      console.log('App: Eerste bezoek aan tasks tab, standaard tasklist instellen op "Today"');
+      setCurrentTaskList('Today');
+      setInitialTabsVisited(prev => ({ ...prev, 0: true }));
     }
-  }, [currentTab, setCurrentTaskList, setCurrentNoteList]);
+    // We behouden de huidige lijsten bij terugkeer naar tabs
+  }, [currentTab, setCurrentNoteList, setCurrentTaskList, initialTabsVisited]);
 
   const handleTabChange = (tab) => {
     if (tab !== currentTab) {
       setCurrentTab(tab);
-      if (tab === 0) { // 0 for 'tasks'
-        setCurrentTaskList('Today');
-      } else if (tab === 1) { // 1 for 'notes'
+      
+      // Bij eerste navigatie naar elke tab, stel standaardlijsten in
+      if (tab === 1 && !initialTabsVisited[1]) { // 1 voor 'notes'
         setCurrentNoteList('My Notes');
+        setInitialTabsVisited(prev => ({ ...prev, 1: true }));
+      } else if (tab === 0 && !initialTabsVisited[0]) {
+        setCurrentTaskList('Today');
+        setInitialTabsVisited(prev => ({ ...prev, 0: true }));
       }
+      
+      // We behouden de geselecteerde lijsten bij tabwisseling
     }
   };
 

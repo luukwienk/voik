@@ -50,14 +50,25 @@ export function useTasks(user) {
         };
         console.log(`Loaded task list "${doc.id}":`, updatedItems);
       });
+      
+      // Zorg ervoor dat er altijd een 'Today' lijst is
+      if (!loadedTasks['Today']) {
+        loadedTasks['Today'] = { items: [] };
+        console.log('Created missing "Today" task list');
+        await saveTasks(userId, loadedTasks);
+      }
+      
       if (Object.keys(loadedTasks).length === 0) {
         loadedTasks['Today'] = { items: [] };
         console.log('Created default "Today" task list');
         await saveTasks(userId, loadedTasks);
       }
+      
       console.log('All loaded tasks:', loadedTasks);
       setTasks(loadedTasks);
-      setCurrentTaskList(Object.keys(loadedTasks)[0]);
+      
+      // Altijd 'Today' selecteren als standaard, ongeacht welke lijsten er zijn
+      setCurrentTaskList('Today');
       setTasksLoaded(true);
     } catch (error) {
       console.error('Error loading tasks:', error);

@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
 
 const MoveTaskModal = ({ lists, currentList, onMove, onClose }) => {
   const [selectedList, setSelectedList] = useState('');
@@ -46,14 +48,22 @@ const MoveTaskModal = ({ lists, currentList, onMove, onClose }) => {
           <button
             onClick={onClose}
             style={{
-              padding: '8px 16px',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              backgroundColor: 'white',
-              cursor: 'pointer'
+              background: 'none',
+              border: 'none',
+              fontSize: '18px',
+              padding: '8px',
+              borderRadius: '50%',
+              cursor: 'pointer',
+              width: '40px',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background 0.2s'
             }}
+            title="Annuleren"
           >
-            Cancel
+            <FontAwesomeIcon icon={faTimes} style={{ color: '#888' }} />
           </button>
           <button
             onClick={() => {
@@ -64,16 +74,23 @@ const MoveTaskModal = ({ lists, currentList, onMove, onClose }) => {
             }}
             disabled={!selectedList}
             style={{
-              padding: '8px 16px',
-              backgroundColor: '#2196F3',
-              color: 'white',
+              background: 'none',
               border: 'none',
-              borderRadius: '4px',
+              fontSize: '18px',
+              padding: '8px',
+              borderRadius: '50%',
               cursor: selectedList ? 'pointer' : 'not-allowed',
+              width: '40px',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background 0.2s',
               opacity: selectedList ? 1 : 0.6
             }}
+            title="Verplaatsen"
           >
-            Move
+            <FontAwesomeIcon icon={faCheck} style={{ color: selectedList ? '#2196F3' : '#888' }} />
           </button>
         </div>
       </div>

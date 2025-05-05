@@ -53,16 +53,6 @@ function ResponsiveMainContent({
   // Consider iPad as mobile for our layout
   const isDesktop = useMediaQuery('(min-width: 768px)') && !isIPad;
 
-  useEffect(() => {
-    if (currentTab === 0) {
-      console.log('ResponsiveMainContent: Switching to tasks, setting currentTaskList to "Today"');
-      setCurrentTaskList('Today');
-    } else if (currentTab === 1) {
-      console.log('ResponsiveMainContent: Switching to notes, setting currentNoteList to "My Notes"');
-      setCurrentNoteList('My Notes');
-    }
-  }, [currentTab, setCurrentTaskList, setCurrentNoteList]);
-
   // Render TaskOverviewPage for tab 3
   if (currentTab === 3) {
     return (
@@ -81,16 +71,43 @@ function ResponsiveMainContent({
   if (currentTab === 4) {
     return (
       <ErrorBoundary>
-        <MinimalistHealthTracker 
-          healthData={healthData} 
-          addHealthEntry={addHealthEntry}
-          updateHealthEntry={updateHealthEntry}
-          deleteHealthEntry={deleteHealthEntry}
-          getHealthDataByDateRange={getHealthDataByDateRange || (() => {})}
-          getLatestEntry={getLatestEntry || (() => {})}
-          calculateWeeklyAverage={calculateWeeklyAverage || (() => {})}
-          calculateTrend={calculateTrend || (() => {})}
-        />
+        <main className={`responsive-container ${!isDesktop ? 'mobile-full-width' : ''}`} style={{ 
+          width: '100%',
+          maxWidth: '100%', 
+          boxSizing: 'border-box',
+          height: 'calc(100vh - 130px)',
+          overflowY: 'auto'
+        }}>
+          <MinimalistHealthTracker 
+            healthData={healthData} 
+            healthLoading={isLoading}
+            addHealthEntry={addHealthEntry}
+            updateHealthEntry={updateHealthEntry}
+            deleteHealthEntry={deleteHealthEntry}
+            getHealthDataByDateRange={getHealthDataByDateRange || (() => {})}
+            getLatestEntry={getLatestEntry || (() => {})}
+            calculateWeeklyAverage={calculateWeeklyAverage || (() => {})}
+            calculateTrend={calculateTrend || (() => {})}
+          />
+            
+          {/* Chat button */}
+          <div className="chat-button-container">
+            <ChatButton onClick={() => setIsChatModalOpen(true)} />
+          </div>
+            
+          {/* Chat modal */}
+          <ChatModal 
+            isOpen={isChatModalOpen}
+            onClose={() => setIsChatModalOpen(false)}
+            currentTasks={tasks[currentTaskList]}
+            currentNotes={notes[currentNoteList]}
+            updateTaskList={updateTaskList}
+            updateNoteList={updateNoteList}
+            currentTaskList={currentTaskList}
+            currentNoteList={currentNoteList}
+            userId={user?.uid}
+          />
+        </main>
       </ErrorBoundary>
     );
   }

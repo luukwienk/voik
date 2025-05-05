@@ -139,7 +139,7 @@ const TaskOverviewPage = ({ tasks, updateTaskList }) => {
       {/* Modal component */}
       {selectedTask && (
         <TaskEditorModal 
-          task={selectedTask} 
+          task={selectedTask}
           tasks={tasks}
           onClose={() => setSelectedTask(null)} 
           updateTaskList={(updatedTask) => {
