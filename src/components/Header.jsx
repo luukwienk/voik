@@ -12,13 +12,16 @@ function Header({ user, signOut, currentTab, setCurrentTab }) {
           <TabsNavigation currentTab={currentTab} onTabChange={setCurrentTab} />
         </div>
         
-        <button
-          onClick={signOut}
-          className="sign-out-button"
-          title="Uitloggen"
-        >
-          <FontAwesomeIcon icon={faSignOutAlt} />
-        </button>
+        <div className="header-actions">
+          <button
+            onClick={signOut}
+            className="sign-out-button"
+            title="Uitloggen"
+            aria-label="Uitloggen"
+          >
+            <FontAwesomeIcon icon={faSignOutAlt} />
+          </button>
+        </div>
       </div>
     </header>
   );

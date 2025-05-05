@@ -7,6 +7,7 @@
   margin-bottom: 20px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   position: relative;
+  overflow: visible;
 }
 
 .header-container {
@@ -17,6 +18,8 @@
   position: relative;
   max-width: 1400px;
   margin: 0 auto;
+  padding: 0 15px; /* Padding aan de zijkanten voor mobiel */
+  box-sizing: border-box; /* Zorgt dat padding binnen de width valt */
 }
 
 .tabs-container {
@@ -26,37 +29,63 @@
   /* Hide scrollbar but allow scrolling */
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
+  margin-right: 10px; /* Extra ruimte voor de sign-out button */
 }
 
 .tabs-container::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
 }
 
+/* Header actions container */
+.header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0; /* Voorkomt dat de container krimpt */
+  width: auto;
+  position: relative;
+}
+
 /* Sign out button */
 .sign-out-button {
-  background: none;
+  background-color: #64b5f6; /* Lichtblauwe achtergrond */
   border: none;
-  color: #111;
+  color: white; /* Witte tekst voor contrast */
   font-size: 22px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  padding: 6px;
+  justify-content: center;
+  padding: 6px 10px;
   border-radius: 4px;
   box-shadow: none;
-  margin-left: 10px;
+  margin-left: 5px;
   transition: background-color 0.2s;
+  position: relative;
+  min-width: 40px; /* Minimale breedte zodat het icoon goed past */
+  flex-shrink: 0; /* Voorkomt dat de knop krimpt als er weinig ruimte is */
 }
 
 .sign-out-button:hover {
-  background-color: rgba(0,0,0,0.05);
+  background-color: #42a5f5; /* Donkerder blauw bij hover */
 }
 
 /* Responsive adjustments */
 @media (max-width: 767px) {
   .sign-out-button {
     font-size: 18px;
-    padding: 4px;
+    padding: 4px 8px;
+    margin-left: 5px; /* Kleinere marge op mobiel */
+    position: relative;
+    min-width: 36px; /* Iets kleinere minimale breedte op mobiel */
+  }
+  
+  .header-container {
+    padding: 0 10px; /* Iets minder padding op mobiel */
+  }
+  
+  .tabs-container {
+    margin-right: 5px; /* Minder ruimte voor de sign-out button op mobiel */
   }
 }
 
@@ -68,10 +97,11 @@
   }
   
   .sign-out-button {
-    color: #eee;
+    background-color: #42a5f5; /* Iets donkerder blauw voor donkere modus */
+    color: white;
   }
   
   .sign-out-button:hover {
-    background-color: rgba(255,255,255,0.1);
+    background-color: #2196F3; /* Nog donkerder blauw bij hover in donkere modus */
   }
 }

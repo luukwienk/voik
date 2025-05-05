@@ -26,13 +26,17 @@ html, body, #root, .App {
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     padding: 10px;
-    margin-bottom: 16px;
+    margin: 0;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
   }
   
   /* Fix for BigCalendarView to make it visible */
   .calendar-container .rbc-calendar {
     min-height: 400px;
-    height: calc(100vh - 280px);
+    height: 100%;
+    flex: 1;
   }
   
   /* Chat button positioning */
@@ -53,22 +57,33 @@ html, body, #root, .App {
       overflow: hidden;
       width: 100%;
       position: relative;
+      align-items: stretch;
     }
     
     .calendar-container {
       flex: 0 0 63%;
       max-width: 63%;
-      overflow: auto;
-      height: 100%;
+      overflow: hidden;
+      height: auto;
+      display: flex;
+      flex-direction: column;
     }
     
     .tasklist-container {
       flex: 0 0 37%;
       max-width: 37%;
-      overflow: auto;
-      height: 100%;
+      overflow: hidden;
+      height: auto;
       display: flex;
       flex-direction: column;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .calendar-container, .tasklist-container {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
     }
     
     /* Make scrollbars thinner and prettier on desktop */

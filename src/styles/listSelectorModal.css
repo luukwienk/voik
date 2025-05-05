@@ -1,0 +1,250 @@
+/* Stijlen voor ListSelectorModal component */
+
+.list-selector-container {
+  width: 100%;
+  position: relative;
+}
+
+.list-selector-title {
+  cursor: pointer;
+  padding: 5px 0;
+  transition: opacity 0.2s;
+}
+
+.list-selector-title:hover {
+  opacity: 0.7;
+}
+
+.list-selector-title h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+}
+
+.list-selector-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.list-selector-modal {
+  background-color: white;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 400px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.list-selector-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.list-selector-modal-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.list-selector-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #888;
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.list-selector-close-btn:hover {
+  background-color: #f0f0f0;
+  color: #555;
+}
+
+.list-selector-search {
+  padding: 10px 20px;
+  position: relative;
+  border-bottom: 1px solid #eee;
+}
+
+.search-icon {
+  position: absolute;
+  left: 30px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #aaa;
+}
+
+.list-search-input {
+  width: 100%;
+  padding: 10px 10px 10px 35px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+
+.list-search-input:focus {
+  outline: none;
+  border-color: #64b5f6;
+  box-shadow: 0 0 0 2px rgba(100, 181, 246, 0.2);
+}
+
+.list-selector-options {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 0;
+  overscroll-behavior: contain; /* Voorkomt dat scrolling doorloopt naar onderliggende elementen */
+  -webkit-overflow-scrolling: touch; /* Zorgt voor vloeiend scrollen op iOS */
+}
+
+.list-option {
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.list-option:hover {
+  background-color: #f5f5f5;
+}
+
+.list-option.active {
+  background-color: #e3f2fd;
+  font-weight: 500;
+}
+
+.list-delete-btn {
+  opacity: 0;
+  background: none;
+  border: none;
+  color: #f44336;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.list-option:hover .list-delete-btn {
+  opacity: 0.7;
+}
+
+.list-delete-btn:hover {
+  background-color: rgba(244, 67, 54, 0.1);
+  opacity: 1 !important;
+}
+
+.no-results {
+  text-align: center;
+  color: #888;
+  padding: 20px;
+  font-style: italic;
+}
+
+.list-selector-footer {
+  padding: 16px 20px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: center;
+}
+
+.add-list-btn {
+  background-color: #64b5f6;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+}
+
+.add-list-btn:hover {
+  background-color: #42a5f5;
+}
+
+/* Donkere modus ondersteuning */
+@media (prefers-color-scheme: dark) {
+  .list-selector-modal {
+    background-color: #1e1e1e;
+    color: #eee;
+  }
+  
+  .list-selector-modal-header,
+  .list-selector-search,
+  .list-selector-footer {
+    border-color: #333;
+  }
+  
+  .list-search-input {
+    background-color: #2d2d2d;
+    border-color: #444;
+    color: #eee;
+  }
+  
+  .list-search-input:focus {
+    border-color: #42a5f5;
+    box-shadow: 0 0 0 2px rgba(66, 165, 245, 0.2);
+  }
+  
+  .list-selector-close-btn {
+    color: #bbb;
+  }
+  
+  .list-selector-close-btn:hover {
+    background-color: #333;
+    color: #eee;
+  }
+  
+  .list-option:hover {
+    background-color: #2a2a2a;
+  }
+  
+  .list-option.active {
+    background-color: #103a5d;
+  }
+  
+  .no-results {
+    color: #aaa;
+  }
+}
+
+/* Responsieve aanpassingen */
+@media (max-width: 768px) {
+  .list-selector-modal {
+    width: 95%;
+    max-height: 70vh;
+  }
+  
+  .list-selector-title h2 {
+    font-size: 1.2rem;
+  }
+} 

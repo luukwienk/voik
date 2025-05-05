@@ -18,7 +18,7 @@ const TaskEditorModal = ({ task, onClose, updateTaskList }) => {
       StarterKit,
       Link.configure({ openOnClick: true, linkOnPaste: true }),
       Image.configure({ inline: true, allowBase64: true }),
-      TaskList,
+      TaskList.configure({}),
       TaskItem.configure({
         nested: true,
       }),
@@ -267,27 +267,35 @@ const TaskEditorModal = ({ task, onClose, updateTaskList }) => {
           min-height: 200px;
           outline: none;
           padding: 16px;
+          background-color: white;
         }
 
-        /* Checkbox styling */
+        /* Basisstijlen voor task items - minimalistisch */
         .editor-content .ProseMirror ul[data-type="taskList"] {
           list-style: none;
           padding: 0;
+          margin: 0;
         }
 
         .editor-content .ProseMirror li[data-type="taskItem"] {
           display: flex;
-          align-items: flex-start;
-          margin-bottom: 8px;
+          margin: 0;
+          line-height: 1.5;
         }
 
         .editor-content .ProseMirror li[data-type="taskItem"] > label {
-          margin-right: 0.5rem;
-          user-select: none;
+          margin-right: 8px;
         }
 
         .editor-content .ProseMirror li[data-type="taskItem"] > div {
           flex: 1;
+        }
+
+        /* Reset achtergronden */
+        .editor-content .ProseMirror *:not(input) {
+          background: transparent !important;
+          box-shadow: none !important;
+          border-radius: 0 !important;
         }
         
         .editor-actions {
@@ -383,6 +391,19 @@ const TaskEditorModal = ({ task, onClose, updateTaskList }) => {
           
           .editor-content .ProseMirror {
             color: #fff;
+            background-color: #1e1e1e;
+          }
+          
+          /* Dark mode specifieke styling reset voor task items */
+          .editor-content .ProseMirror ul[data-type="taskList"],
+          .editor-content .ProseMirror ul.task-list,
+          .editor-content .ProseMirror li[data-type="taskItem"],
+          .editor-content .ProseMirror li.task-item,
+          .editor-content .ProseMirror li[data-type="taskItem"] > div,
+          .editor-content .ProseMirror li.task-item > div {
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
           }
           
           .editor-actions {

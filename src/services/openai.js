@@ -86,6 +86,22 @@ const functions = [
       properties: {}
     }
   },
+  {
+    name: 'searchTasks',
+    description: 'Doorzoek taken op basis van zoekcriteria',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string' },
+        lists: { 
+          type: 'array',
+          items: { type: 'string' }
+        },
+        includeCompleted: { type: 'boolean' }
+      },
+      required: ['query']
+    }
+  },
 ];
 
 export async function handleAICommand({ text, currentTasks = [], currentNotes = [], conversationHistory = [], userId = null }) {
@@ -112,6 +128,14 @@ export async function handleAICommand({ text, currentTasks = [], currentNotes = 
         Wanneer je notities wilt toevoegen, roep dan de generateNotes functie aan.
         Wanneer je taken wilt voorlezen, roep dan de readTasksAloud functie aan.
         Wanneer je een taak wilt inplannen, roep dan de planTaskInCalendar functie aan.
+        
+        Je kunt taken zoeken met de searchTasks functie.
+        Wanneer de gebruiker vraagt naar taken die specifieke woorden bevatten, gebruik dan de searchTasks functie.
+        
+        Voorbeelden van vragen waarbij je searchTasks moet gebruiken:
+        - "Heb ik taken over auto wassen?"
+        - "Zoek taken die gaan over presentatie"
+        - "Staan er ergens taken over klaarmaken voor vakantie?"
         
         Als de gebruiker een vraag stelt of een gesprek wil voeren, reageer dan als een behulpzame assistent zonder noodzakelijkerwijs een functie aan te roepen.`
       }
@@ -255,6 +279,9 @@ export async function handleAICommand({ text, currentTasks = [], currentNotes = 
             data: formattedLists,
             message: message
           };
+        case 'searchTasks':
+          const searchResults = await searchTasks(parsedArgs, userId);
+          return searchResults;
         default:
           console.error('Unknown function call:', name);
           return {
@@ -634,6 +661,99 @@ export async function getAllTaskListsFromDatabase(userId) {
     console.error('Fout bij ophalen van alle takenlijsten:', error);
     throw error;
   }
+}
+
+export async function searchTasks(params, userId) {
+  try {
+    const { query, lists = [], includeCompleted = true } = params;
+    console.log('Searching tasks with params:', params);
+    
+    if (!userId) {
+      console.error('No userId provided for task search');
+      return {
+        type: 'error',
+        data: 'User authentication required',
+        message: 'Je moet ingelogd zijn om taken te kunnen zoeken.'
+      };
+    }
+    
+    // Haal alle takenlijsten op
+    const allTaskLists = await getAllTaskListsFromDatabase(userId);
+    
+    // Bepaal welke lijsten we gaan doorzoeken
+    const listsToSearch = lists.length > 0 
+      ? lists.filter(list => allTaskLists[list])
+      : Object.keys(allTaskLists);
+    
+    console.log(`Searching ${listsToSearch.length} lists: ${listsToSearch.join(', ')}`);
+    
+    // Zoek in alle relevante lijsten
+    let searchResults = [];
+    
+    for (const listName of listsToSearch) {
+      const items = allTaskLists[listName]?.items || [];
+      const filteredItems = items
+        .filter(task => {
+          // Filter op voltooiingsstatus indien nodig
+          if (!includeCompleted && task.completed) return false;
+          
+          // Zoek in titel en tekst
+          const taskText = task.text || '';
+          const taskTitle = task.title || extractTitleFromText(taskText);
+          const searchText = query.toLowerCase();
+          
+          return taskText.toLowerCase().includes(searchText) || 
+                 taskTitle.toLowerCase().includes(searchText);
+        })
+        .map(task => ({
+          ...task,
+          list: listName // Voeg lijst naam toe aan resultaat
+        }));
+      
+      searchResults = [...searchResults, ...filteredItems];
+    }
+    
+    console.log(`Found ${searchResults.length} matching tasks`);
+    
+    return {
+      type: 'taskSearch',
+      data: searchResults,
+      message: formatSearchResults(searchResults, query, listsToSearch)
+    };
+  } catch (error) {
+    console.error('Error searching tasks:', error);
+    return {
+      type: 'error',
+      data: error.message,
+      message: `Er is een fout opgetreden bij het zoeken: ${error.message}`
+    };
+  }
+}
+
+// Helper functie om titel uit tekst te halen
+function extractTitleFromText(text) {
+  if (!text) return '';
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = text;
+  const cleanText = tempDiv.textContent || tempDiv.innerText || '';
+  const lines = cleanText.split(/\r?\n/);
+  return lines[0].trim();
+}
+
+// Helper functie om zoekresultaten te formatteren
+function formatSearchResults(results, query, listsSearched) {
+  if (results.length === 0) {
+    return `Ik heb geen taken gevonden die overeenkomen met "${query}" in ${listsSearched.join(', ')}.`;
+  }
+  
+  const message = `Ik heb ${results.length} ${results.length === 1 ? 'taak' : 'taken'} gevonden die overeenkomen met "${query}":
+  
+${results.slice(0, 10).map((task, index) => 
+  `${index + 1}. **${task.title || extractTitleFromText(task.text) || 'Ongetitelde taak'}** ${task.completed ? '(✓)' : ''} - Lijst: ${task.list}`
+).join('\n')}
+${results.length > 10 ? `\n...en ${results.length - 10} meer taken.` : ''}`;
+
+  return message;
 }
 
 

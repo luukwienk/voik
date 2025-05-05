@@ -4,8 +4,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faTrash, faCopy, faPlus, faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import MoveTaskModal from './MoveTaskModal';
 import TaskEditorModal from './TaskEditorModal';
-import ListSelector from './ListSelector';
+// import ListSelector from './ListSelector'; // Verwijder deze import
 import DraggableTaskItem from './DraggableTaskItem';
+import ListSelectorModal from './ListSelectorModal';
 
 const TaskList = ({ 
   tasks = { items: [] }, 
@@ -13,7 +14,10 @@ const TaskList = ({
   currentList, 
   lists, 
   moveTask, 
-  hideTitleHeader = false
+  hideTitleHeader = false,
+  setCurrentList,
+  addList,
+  deleteList
 }) => {
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [newTaskText, setNewTaskText] = useState('');
@@ -203,15 +207,30 @@ const TaskList = ({
           boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
           width: '100%',
           height: '100%',
+          minHeight: '400px', /* Minimale hoogte zodat lege lijst niet ineenklapt */
           maxWidth: '100%',
           boxSizing: 'border-box',
           overflowX: 'hidden',
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          flex: '1 1 auto', /* Zorgt dat de TaskList groeit om de beschikbare ruimte te vullen */
         }}
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}
       >
+        {/* Lijst-selector boven de 'Add a new task' input - altijd weergeven als setCurrentList beschikbaar is */}
+        {setCurrentList && lists && (
+          <div style={{ marginBottom: '15px' }}>
+            <ListSelectorModal 
+              lists={lists}
+              currentList={currentList}
+              setCurrentList={setCurrentList}
+              addList={addList}
+              deleteList={deleteList}
+            />
+          </div>
+        )}
+
         <form onSubmit={handleAddTask} className="add-task-form" style={{ 
           display: 'flex', 
           gap: '8px',
@@ -259,8 +278,8 @@ const TaskList = ({
           </button>
         </form>
 
-        {/* Header alleen tonen als hideTitleHeader false is */}
-        {!hideTitleHeader && (
+        {/* Header alleen tonen als we geen gebruik maken van de ingebouwde lijst-selector */}
+        {!setCurrentList && (
           <div className="task-list-header" style={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
@@ -305,38 +324,58 @@ const TaskList = ({
                 boxSizing: 'border-box', 
                 overflowX: 'hidden',
                 flex: '1 1 auto', // Laat de lijst groeien om beschikbare ruimte te vullen
-                overflowY: 'auto' // Voeg scrollbars toe indien nodig
+                overflowY: 'auto', // Voeg scrollbars toe indien nodig
+                display: 'flex',
+                flexDirection: 'column'
               }}
             >
-              {(tasks?.items || []).map((task, index) => (
-                <Draggable key={task.id} draggableId={`task-${task.id}`} index={index}>
-                  {(provided, snapshot) => (
-                    <li
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                      style={{
-                        ...provided.draggableProps.style,
-                        listStyle: 'none',
-                        padding: 0,
-                        margin: 0,
-                        background: 'none',
-                        border: 'none',
-                      }}
-                    >
-                      <DraggableTaskItem
-                        task={task}
-                        handleToggleCompletion={handleToggleCompletion}
-                        handleDeleteTask={handleDeleteTask}
-                        setMovingTaskId={setMovingTaskId}
-                        handleTaskClick={(t) => setSelectedTask(t)}
-                        onDragStart={() => setIsTaskDragging(true)}
-                        onDragEnd={() => setIsTaskDragging(false)}
-                      />
-                    </li>
-                  )}
-                </Draggable>
-              ))}
+              {(tasks?.items || []).length > 0 ? (
+                // Bestaande takenlijst weergave
+                (tasks?.items || []).map((task, index) => (
+                  <Draggable key={task.id} draggableId={`task-${task.id}`} index={index}>
+                    {(provided, snapshot) => (
+                      <li
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        style={{
+                          ...provided.draggableProps.style,
+                          listStyle: 'none',
+                          padding: 0,
+                          margin: 0,
+                          background: 'none',
+                          border: 'none',
+                        }}
+                      >
+                        <DraggableTaskItem
+                          task={task}
+                          handleToggleCompletion={handleToggleCompletion}
+                          handleDeleteTask={handleDeleteTask}
+                          setMovingTaskId={setMovingTaskId}
+                          handleTaskClick={(t) => setSelectedTask(t)}
+                          onDragStart={() => setIsTaskDragging(true)}
+                          onDragEnd={() => setIsTaskDragging(false)}
+                        />
+                      </li>
+                    )}
+                  </Draggable>
+                ))
+              ) : (
+                // Lege staat weergave wanneer er geen taken zijn
+                <div style={{
+                  flex: '1',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  color: '#888',
+                  textAlign: 'center',
+                  padding: '40px 20px'
+                }}>
+                  <div style={{ fontSize: '18px', marginBottom: '10px' }}>Geen taken in deze lijst</div>
+                  <div style={{ fontSize: '14px' }}>Voeg een nieuwe taak toe met het invoerveld hierboven</div>
+                </div>
+              )}
               {provided.placeholder}
             </ul>
           )}

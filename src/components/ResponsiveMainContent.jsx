@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+// Verwijder de react-router-dom import die niet wordt gebruikt
+// import { Route, Routes, useNavigate } from 'react-router-dom';
 import TaskList from './TaskList';
 import NoteList from './NoteList';
-import ListSelector from './ListSelector';
 import TaskOverviewPage from './TaskOverviewPage';
 import MinimalistHealthTracker from './health/MinimalistHealthTracker';
 import ChatButton from './ChatButton';
@@ -11,6 +12,7 @@ import BigCalendarView from './BigCalendarView';
 import useMediaQuery from '../hooks/useMediaQuery';
 import '../styles/responsive.css';
 import '../styles/centeredLayout.css';
+import ListSelectorModal from './ListSelectorModal';
 
 function ResponsiveMainContent({
   currentTab, 
@@ -146,52 +148,25 @@ function ResponsiveMainContent({
                   
                   {/* Task list on the right, 37% width */}
                   <div className="tasklist-container">
-                    {/* List selector */}
-                    <div style={{ 
-                      display: 'flex',
-                      justifyContent: 'flex-start',
-                      padding: '10px 0',
-                      marginBottom: '0px',
-                      marginTop: '8px',
-                      alignItems: 'center'
-                    }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <ListSelector 
-                          lists={tasks}
-                          currentList={currentTaskList}
-                          setCurrentList={setCurrentTaskList}
-                          addList={addTaskList}
-                          deleteList={deleteTaskList}
-                          currentTab={currentTab}
-                          selectStyle={{ width: '100%', maxWidth: '300px' }}
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Task list - pas de container styling aan om de hele hoogte te benutten */}
-                    <div style={{ 
-                      flex: '1 1 auto',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      height: 'calc(100% - 58px)',
-                      marginTop: '8px'
-                    }}>
-                      <TaskList
-                        tasks={tasks[currentTaskList]}
-                        currentList={currentTaskList}
-                        lists={tasks}
-                        moveTask={moveTask}
-                        hideTitleHeader={true}
-                        updateList={(updatedData) => {
-                          if (updatedData.id && updatedData.list) {
-                            updateTaskList(updatedData);
-                          } else {
-                            updateTaskList(currentTaskList, updatedData);
-                          }
-                        }}
-                        signOut={signOut}
-                      />
-                    </div>
+                    {/* Task list - geen extra container meer, TaskList direct */}
+                    <TaskList
+                      tasks={tasks[currentTaskList]}
+                      currentList={currentTaskList}
+                      lists={tasks}
+                      moveTask={moveTask}
+                      hideTitleHeader={true}
+                      setCurrentList={setCurrentTaskList}
+                      addList={addTaskList}
+                      deleteList={deleteTaskList}
+                      updateList={(updatedData) => {
+                        if (updatedData.id && updatedData.list) {
+                          updateTaskList(updatedData);
+                        } else {
+                          updateTaskList(currentTaskList, updatedData);
+                        }
+                      }}
+                      signOut={signOut}
+                    />
                     
                     {/* Show recognized text feedback if available */}
                     {recognizedText && (
@@ -251,27 +226,6 @@ function ResponsiveMainContent({
           </div>
         ) : (
           <>
-            {/* List selector */}
-            <div style={{ 
-              display: 'flex',
-              justifyContent: 'flex-start',
-              padding: '10px 15px',
-              marginBottom: '10px',
-              alignItems: 'center'
-            }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <ListSelector 
-                  lists={currentTab === 0 ? tasks : notes}
-                  currentList={currentTab === 0 ? currentTaskList : currentNoteList}
-                  setCurrentList={currentTab === 0 ? setCurrentTaskList : setCurrentNoteList}
-                  addList={currentTab === 0 ? addTaskList : addNoteList}
-                  deleteList={currentTab === 0 ? deleteTaskList : deleteNoteList}
-                  currentTab={currentTab}
-                  selectStyle={{ width: '100%' }}
-                />
-              </div>
-            </div>
-            
             {/* Task or Note list based on current tab */}
             {currentTab === 0 ? (
               <TaskList
@@ -279,6 +233,9 @@ function ResponsiveMainContent({
                 currentList={currentTaskList}
                 lists={tasks}
                 moveTask={moveTask}
+                setCurrentList={setCurrentTaskList}
+                addList={addTaskList}
+                deleteList={deleteTaskList}
                 updateList={(updatedData) => {
                   if (updatedData.id && updatedData.list) {
                     updateTaskList(updatedData);
