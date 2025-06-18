@@ -45,11 +45,16 @@ const ChatModal = ({
       document.body.style.position = 'fixed';
       document.body.style.width = '100%';
       document.body.style.top = `-${window.scrollY}px`;
+      // iOS Safari specific fixes
+      document.body.style.height = '100%';
+      document.body.style.touchAction = 'none';
     } else {
       document.body.style.overflow = '';
       document.body.style.position = '';
       document.body.style.width = '';
       document.body.style.top = '';
+      document.body.style.height = '';
+      document.body.style.touchAction = '';
     }
 
     return () => {
@@ -57,6 +62,8 @@ const ChatModal = ({
       document.body.style.position = '';
       document.body.style.width = '';
       document.body.style.top = '';
+      document.body.style.height = '';
+      document.body.style.touchAction = '';
     };
   }, [isOpen]);
 
@@ -178,13 +185,22 @@ const ChatModal = ({
           z-index: 1000;
           -webkit-overflow-scrolling: touch;
           overscroll-behavior: contain;
+          ${isMobile ? `
+            height: 100dvh;
+            /* iOS Safari specific fixes */
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+          ` : ''}
         }
         
         .chat-modal {
           background-color: white;
           border-radius: 8px;
           width: 90%;
-          height: ${isMobile ? '100%' : '80vh'};
+          height: ${isMobile ? '100dvh' : '80vh'};
           max-width: 500px;
           display: flex;
           flex-direction: column;
@@ -195,7 +211,15 @@ const ChatModal = ({
             border-radius: 0;
             width: 100%;
             max-width: 100%;
-            height: 100%;
+            height: 100dvh;
+            /* iOS Safari specific fixes */
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
           ` : ''}
         }
         
