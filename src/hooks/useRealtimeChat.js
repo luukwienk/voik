@@ -15,9 +15,17 @@ export function useRealtimeChat({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [messages, setMessages] = useState([]);
   const [error, setError] = useState(null);
+  const [lastInputMethod, setLastInputMethod] = useState('text'); // Track input method
   
   const clientRef = useRef(null);
   const unsubscribersRef = useRef([]);
+  const lastInputMethodRef = useRef('text');
+
+  // Helper function to update both state and ref
+  const updateLastInputMethod = (method) => {
+    setLastInputMethod(method);
+    lastInputMethodRef.current = method;
+  };
 
   // Initialize client and event handlers
   useEffect(() => {
@@ -92,6 +100,7 @@ export function useRealtimeChat({
     // Message events
     unsubscribers.push(
       client.on('assistant.message', (message) => {
+        console.log('🔵 assistant.message event:', message);
         setMessages(prev => [...prev, {
           id: message.id,
           text: message.content,
@@ -100,10 +109,18 @@ export function useRealtimeChat({
       })
     );
     
-    // Audio events
+    // Audio events - ONLY play audio if last input was voice
     unsubscribers.push(
-      client.on('response.audio.delta', () => {
-        setIsSpeaking(true);
+      client.on('response.audio.delta', (audioData) => {
+        // Only play audio if the last input was voice
+        if (lastInputMethodRef.current === 'voice') {
+          setIsSpeaking(true);
+          // Let the audio processor handle the audio playback
+          // The audio processor is already set up in the client
+        } else {
+          // For text input, we skip audio playback
+          console.log('Skipping audio playback for text input');
+        }
       })
     );
     
@@ -119,7 +136,7 @@ export function useRealtimeChat({
       })
     );
     
-    // Text streaming events
+    // Text streaming events - Always show text regardless of input method
     let currentMessageId = null;
     let currentText = '';
     
@@ -127,11 +144,13 @@ export function useRealtimeChat({
       client.on('text.delta', (delta) => {
         if (!currentMessageId) {
           currentMessageId = `msg-${Date.now()}`;
+          const audioIndicator = lastInputMethodRef.current === 'voice' ? ' 🔊' : '';
           setMessages(prev => [...prev, {
             id: currentMessageId,
             text: delta,
             isUser: false,
-            isStreaming: true
+            isStreaming: true,
+            hasAudio: lastInputMethodRef.current === 'voice'
           }]);
           currentText = delta;
         } else {
@@ -146,11 +165,13 @@ export function useRealtimeChat({
     );
     
     unsubscribers.push(
-      client.on('text.done', () => {
+      client.on('text.done', (fullText) => {
+        console.log('🟢 text.done event:', fullText);
         if (currentMessageId) {
+          // Update the message with the complete text
           setMessages(prev => prev.map(msg => 
             msg.id === currentMessageId 
-              ? { ...msg, isStreaming: false }
+              ? { ...msg, isStreaming: false, text: fullText || currentText }
               : msg
           ));
           currentMessageId = null;
@@ -169,7 +190,8 @@ export function useRealtimeChat({
     
     // Response events
     unsubscribers.push(
-      client.on('response.complete', () => {
+      client.on('response.complete', (event) => {
+        console.log('🟡 response.complete event:', event);
         setIsSpeaking(false);
       })
     );
@@ -209,9 +231,9 @@ export function useRealtimeChat({
         clientRef.current = null;
       }
     };
-  }, []); // Empty deps, only run once
+  }, []); // Removed lastInputMethod from dependencies
 
-  // Function call handler
+  // Function call handler (unchanged)
   const handleFunctionCall = useCallback(async ({ name, arguments: args, call_id }) => {
     console.log(`Executing function: ${name}`, args);
     
@@ -256,9 +278,8 @@ export function useRealtimeChat({
             added: newTasks.length
           });
           
-          // Trigger response - langere delay voor stabiliteit
+          // Trigger response
           setTimeout(() => {
-            console.log('Triggering response after get_tasks_from_list');
             if (clientRef.current && clientRef.current.ws?.readyState === WebSocket.OPEN) {
               clientRef.current.send({
                 type: 'response.create',
@@ -266,10 +287,8 @@ export function useRealtimeChat({
                   modalities: ['text', 'audio']
                 }
               });
-            } else {
-              console.warn('WebSocket not ready for response.create');
             }
-          }, 500); // Verhoogd van 100ms naar 500ms
+          }, 500);
           break;
         }
         
@@ -423,8 +442,6 @@ export function useRealtimeChat({
           }
           
           if (tasks && tasks[list_name]) {
-            // Dit zou eigenlijk de UI moeten updaten, maar dat kunnen we niet direct
-            // We geven feedback dat de lijst bestaat
             sendFunctionResult({
               success: true,
               message: `Takenlijst "${list_name}" bestaat. Je kunt taken toevoegen aan deze lijst.`,
@@ -473,9 +490,8 @@ export function useRealtimeChat({
             });
           }
           
-          // Trigger een response na de function call - langere delay
+          // Trigger response
           setTimeout(() => {
-            console.log('Triggering response after add_tasks');
             if (clientRef.current && clientRef.current.ws?.readyState === WebSocket.OPEN) {
               clientRef.current.send({
                 type: 'response.create',
@@ -504,10 +520,11 @@ export function useRealtimeChat({
     }
   }, [tasks, currentTasks, currentTaskList, updateTaskList]);
 
-  // Start conversation with recording
+  // Start conversation with recording (VOICE input)
   const startConversation = async () => {
     try {
       setError(null);
+      updateLastInputMethod('voice'); // Set input method to voice
       
       // Ensure connection
       if (!clientRef.current.ws || clientRef.current.ws.readyState !== WebSocket.OPEN) {
@@ -525,20 +542,18 @@ export function useRealtimeChat({
           role: 'system',
           content: [
             {
-              type: 'input_text',  // Changed from 'text' to 'input_text'
+              type: 'input_text',
               text: `Context voor de gebruiker:
               - Huidige takenlijst: "${currentTaskList}" met ${currentTasks?.items?.length || 0} taken
               - Alle takenlijsten: ${Object.keys(tasks || {}).join(', ')}
               - Tijdzone: Europe/Amsterdam
+              - Input methode: VOICE (geef audio response)
               
               Gebruik de beschikbare functies om taken te beheren.`
             }
           ]
         }
       });
-      
-      // Start speaking indicator when AI starts responding
-      setIsSpeaking(true);
       
     } catch (error) {
       console.error('Error starting conversation:', error);
@@ -554,9 +569,11 @@ export function useRealtimeChat({
     }
   };
 
-  // Send text message
+  // Send text message (TEXT input)
   const sendTextMessage = (text) => {
     if (!text.trim()) return;
+    
+    updateLastInputMethod('text'); // Set input method to text
     
     // Add user message to UI
     setMessages(prev => [...prev, {
@@ -565,14 +582,32 @@ export function useRealtimeChat({
       isUser: true
     }]);
     
-    // Send to API
+    // Send to API with context about text-only response
+    clientRef.current.send({
+      type: 'conversation.item.create',
+      item: {
+        type: 'message',
+        role: 'system',
+        content: [
+          {
+            type: 'input_text',
+            text: `De gebruiker heeft een TEXT bericht gestuurd. Geef alleen een tekst response, GEEN audio.`
+          }
+        ]
+      }
+    });
+    
+    // Send the actual message
     clientRef.current.sendMessage(text);
     
-    // Create response
-    clientRef.current.createResponse();
-    
-    // Start speaking indicator
-    setIsSpeaking(true);
+    // Create response with text-only modality for text input
+    clientRef.current.send({
+      type: 'response.create',
+      response: {
+        modalities: ['text'], // Only text for text input!
+        instructions: 'Respond with text only, no audio.'
+      }
+    });
   };
 
   // Cancel current response

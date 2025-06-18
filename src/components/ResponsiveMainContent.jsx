@@ -129,17 +129,7 @@ function ResponsiveMainContent({
                     </ErrorBoundary>
                   </div>
                   {/* Task list on the right, 37% width */}
-                  <div className="tasklist-container">
-                    {/* ListSelector direct boven TaskList */}
-                    <div style={{ marginTop: 24 }}>
-                      <ListSelector
-                        lists={tasks}
-                        currentList={currentTaskList}
-                        setCurrentList={setCurrentTaskList}
-                        addList={addTaskList}
-                        deleteList={deleteTaskList}
-                      />
-                    </div>
+                  <div className="tasklist-container" style={{ marginTop: 24 }}>
                     <TaskList
                       tasks={tasks[currentTaskList]}
                       currentList={currentTaskList}
@@ -184,16 +174,6 @@ function ResponsiveMainContent({
     // Mobile Layout (task list only with chat button)
     return (
       <main className="responsive-container mobile-full-width">
-        {/* ListSelector direct boven TaskList */}
-        <div style={{ marginTop: 24 }}>
-          <ListSelector
-            lists={tasks}
-            currentList={currentTaskList}
-            setCurrentList={setCurrentTaskList}
-            addList={addTaskList}
-            deleteList={deleteTaskList}
-          />
-        </div>
         {currentTab === 1 ? (
           // For calendar tab, we'll show a simplified calendar view on mobile
           // You can implement a mobile-friendly calendar here later
@@ -205,23 +185,25 @@ function ResponsiveMainContent({
           <>
             {/* Task list based on current tab */}
             {currentTab === 0 ? (
-              <TaskList
-                tasks={tasks[currentTaskList]}
-                currentList={currentTaskList}
-                lists={tasks}
-                moveTask={moveTask}
-                setCurrentList={setCurrentTaskList}
-                addList={addTaskList}
-                deleteList={deleteTaskList}
-                updateList={(updatedData) => {
-                  if (updatedData.id && updatedData.list) {
-                    updateTaskList(updatedData);
-                  } else {
-                    updateTaskList(currentTaskList, updatedData);
-                  }
-                }}
-                signOut={signOut}
-              />
+              <div style={{ marginTop: 24 }}>
+                <TaskList
+                  tasks={tasks[currentTaskList]}
+                  currentList={currentTaskList}
+                  lists={tasks}
+                  moveTask={moveTask}
+                  setCurrentList={setCurrentTaskList}
+                  addList={addTaskList}
+                  deleteList={deleteTaskList}
+                  updateList={(updatedData) => {
+                    if (updatedData.id && updatedData.list) {
+                      updateTaskList(updatedData);
+                    } else {
+                      updateTaskList(currentTaskList, updatedData);
+                    }
+                  }}
+                  signOut={signOut}
+                />
+              </div>
             ) : null}
           </>
         )}

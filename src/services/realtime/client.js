@@ -20,6 +20,7 @@ export class RealtimeClient {
     this.pingInterval = null;
     this.sessionUrl = null;
     this.recordingStartTime = null;
+    this.audioPlaybackEnabled = true; // Control audio playback
     
     this.sessionConfig = {
       model: 'gpt-4o-realtime-preview-2024-12-17',
@@ -57,8 +58,6 @@ export class RealtimeClient {
     try {
       console.log('Connecting to OpenAI Realtime API...');
       
-      // Direct WebSocket connection to OpenAI Realtime API
-      // The API key is sent as a query parameter for browser compatibility
       const wsUrl = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17`;
       
       console.log('Connecting to WebSocket:', wsUrl);
@@ -203,10 +202,15 @@ export class RealtimeClient {
         break;
         
       case 'response.audio.delta':
-        console.log('Received audio delta');
+        console.log('Received audio delta, playback enabled:', this.audioPlaybackEnabled);
         if (event.delta) {
-          this.audioProcessor.playAudio(event.delta);
+          // Emit the event so the hook can decide what to do
           this.emit('response.audio.delta', event.delta);
+          
+          // Only play audio if enabled
+          if (this.audioPlaybackEnabled) {
+            this.audioProcessor.playAudio(event.delta);
+          }
         }
         break;
         
@@ -250,6 +254,17 @@ export class RealtimeClient {
     }
   }
 
+  // Enable or disable audio playback
+  setAudioPlayback(enabled) {
+    this.audioPlaybackEnabled = enabled;
+    console.log('Audio playback set to:', enabled);
+    
+    // If disabling, stop any current playback
+    if (!enabled) {
+      this.audioProcessor.stopPlayback();
+    }
+  }
+
   sendAudio(base64Audio) {
     this.send({
       type: 'input_audio_buffer.append',
@@ -281,7 +296,6 @@ export class RealtimeClient {
     this.audioProcessor.stopRecording();
     
     // Only commit if we have been recording for a minimum time
-    // This prevents empty buffer commits
     if (this.recordingStartTime) {
       const recordingDuration = Date.now() - this.recordingStartTime;
       console.log(`Recording duration: ${recordingDuration}ms`);
@@ -290,7 +304,6 @@ export class RealtimeClient {
         this.send({ type: 'input_audio_buffer.commit' });
       } else {
         console.log('Skipping commit - recording too short');
-        // Clear the buffer instead
         this.send({ type: 'input_audio_buffer.clear' });
       }
     } else {

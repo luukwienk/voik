@@ -157,7 +157,10 @@
   }
   .App {
     padding-top: 56px;
-    padding-bottom: 32px;
+    padding-bottom: 0px;
+  }
+  .tasklist-container {
+    margin-bottom: 8px;
   }
 }
 
