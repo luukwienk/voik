@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 // Verwijder de react-router-dom import die niet wordt gebruikt
 // import { Route, Routes, useNavigate } from 'react-router-dom';
 import TaskList from './TaskList';
-import NoteList from './NoteList';
 import TaskOverviewPage from './TaskOverviewPage';
 import MinimalistHealthTracker from './health/MinimalistHealthTracker';
 import ChatButton from './ChatButton';
@@ -13,27 +12,16 @@ import useMediaQuery from '../hooks/useMediaQuery';
 import '../styles/responsive.css';
 import '../styles/centeredLayout.css';
 import ListSelectorModal from './ListSelectorModal';
+import ListSelector from './ListSelector';
 
 function ResponsiveMainContent({
   currentTab, 
   tasks,
-  notes,
   currentTaskList,
-  currentNoteList,
   setCurrentTaskList,
-  setCurrentNoteList,
   updateTaskList,
-  updateNoteList,
-  recognizedText, 
-  aiResponse, 
-  isLoading = false, 
-  error, 
-  handleVoiceInput, 
-  setRecognizedText, 
   addTaskList,
-  addNoteList,
   deleteTaskList,
-  deleteNoteList,
   moveTask,
   user,
   signOut,
@@ -55,8 +43,8 @@ function ResponsiveMainContent({
   // Consider iPad as mobile for our layout
   const isDesktop = useMediaQuery('(min-width: 768px)') && !isIPad;
 
-  // Render TaskOverviewPage for tab 3
-  if (currentTab === 3) {
+  // Render TaskOverviewPage for tab 2
+  if (currentTab === 2) {
     return (
       <ErrorBoundary>
         <TaskOverviewPage 
@@ -69,8 +57,8 @@ function ResponsiveMainContent({
     );
   }
 
-  // Render Health Tracker for tab 4
-  if (currentTab === 4) {
+  // Render Health Tracker for tab 3
+  if (currentTab === 3) {
     return (
       <ErrorBoundary>
         <main className={`responsive-container ${!isDesktop ? 'mobile-full-width' : ''}`} style={{ 
@@ -82,7 +70,7 @@ function ResponsiveMainContent({
         }}>
           <MinimalistHealthTracker 
             healthData={healthData} 
-            healthLoading={isLoading}
+            healthLoading={false}
             addHealthEntry={addHealthEntry}
             updateHealthEntry={updateHealthEntry}
             deleteHealthEntry={deleteHealthEntry}
@@ -101,12 +89,10 @@ function ResponsiveMainContent({
           <ChatModal 
             isOpen={isChatModalOpen}
             onClose={() => setIsChatModalOpen(false)}
-            currentTasks={tasks[currentTaskList]}
-            currentNotes={notes[currentNoteList]}
+            tasks={tasks}
+            currentTasks={tasks[currentTaskList] || { items: [] }}
             updateTaskList={updateTaskList}
-            updateNoteList={updateNoteList}
             currentTaskList={currentTaskList}
-            currentNoteList={currentNoteList}
             userId={user?.uid}
           />
         </main>
@@ -120,7 +106,7 @@ function ResponsiveMainContent({
     return (
       <ErrorBoundary>
         <main className="responsive-container">
-          {currentTab === 2 ? (
+          {currentTab === 1 ? (
             // For calendar tab, use the BigCalendarView
             <BigCalendarView
               tasks={tasks}
@@ -129,9 +115,6 @@ function ResponsiveMainContent({
             />
           ) : (
             <>
-              {isLoading && <p className="loading">Processing...</p>}
-              {error && <p className="error">{error}</p>}
-              
               {/* Combined calendar and task list view */}
               {currentTab === 0 ? (
                 <div className="desktop-flex-row">
@@ -145,10 +128,18 @@ function ResponsiveMainContent({
                       />
                     </ErrorBoundary>
                   </div>
-                  
                   {/* Task list on the right, 37% width */}
                   <div className="tasklist-container">
-                    {/* Task list - geen extra container meer, TaskList direct */}
+                    {/* ListSelector direct boven TaskList */}
+                    <div style={{ marginTop: 24 }}>
+                      <ListSelector
+                        lists={tasks}
+                        currentList={currentTaskList}
+                        setCurrentList={setCurrentTaskList}
+                        addList={addTaskList}
+                        deleteList={deleteTaskList}
+                      />
+                    </div>
                     <TaskList
                       tasks={tasks[currentTaskList]}
                       currentList={currentTaskList}
@@ -167,45 +158,21 @@ function ResponsiveMainContent({
                       }}
                       signOut={signOut}
                     />
-                    
-                    {/* Show recognized text feedback if available */}
-                    {recognizedText && (
-                      <div style={{ 
-                        padding: '10px', 
-                        marginTop: '10px', 
-                        backgroundColor: '#f5f5f5', 
-                        borderRadius: '8px'
-                      }}>
-                        <p style={{ margin: '0', fontSize: '14px' }}><b>You said:</b> {recognizedText}</p>
-                        {aiResponse && <p style={{ margin: '5px 0 0 0', fontSize: '14px' }}><b>Response:</b> {aiResponse}</p>}
-                      </div>
-                    )}
                   </div>
                 </div>
-              ) : currentTab === 1 ? (
-                // Notes view
-                <NoteList
-                  notes={notes[currentNoteList]?.items || []}
-                  updateList={(newItems) => updateNoteList(currentNoteList, { items: newItems })}
-                  currentList={currentNoteList}
-                />
               ) : null}
-              
               {/* Chat button */}
               <div className="chat-button-container">
                 <ChatButton onClick={() => setIsChatModalOpen(true)} />
               </div>
-              
               {/* Chat modal */}
               <ChatModal 
                 isOpen={isChatModalOpen}
                 onClose={() => setIsChatModalOpen(false)}
-                currentTasks={tasks[currentTaskList]}
-                currentNotes={notes[currentNoteList]}
+                tasks={tasks}
+                currentTasks={tasks[currentTaskList] || { items: [] }}
                 updateTaskList={updateTaskList}
-                updateNoteList={updateNoteList}
                 currentTaskList={currentTaskList}
-                currentNoteList={currentNoteList}
                 userId={user?.uid}
               />
             </>
@@ -217,7 +184,17 @@ function ResponsiveMainContent({
     // Mobile Layout (task list only with chat button)
     return (
       <main className="responsive-container mobile-full-width">
-        {currentTab === 2 ? (
+        {/* ListSelector direct boven TaskList */}
+        <div style={{ marginTop: 24 }}>
+          <ListSelector
+            lists={tasks}
+            currentList={currentTaskList}
+            setCurrentList={setCurrentTaskList}
+            addList={addTaskList}
+            deleteList={deleteTaskList}
+          />
+        </div>
+        {currentTab === 1 ? (
           // For calendar tab, we'll show a simplified calendar view on mobile
           // You can implement a mobile-friendly calendar here later
           <div style={{padding: '20px', textAlign: 'center'}}>
@@ -226,7 +203,7 @@ function ResponsiveMainContent({
           </div>
         ) : (
           <>
-            {/* Task or Note list based on current tab */}
+            {/* Task list based on current tab */}
             {currentTab === 0 ? (
               <TaskList
                 tasks={tasks[currentTaskList]}
@@ -245,31 +222,21 @@ function ResponsiveMainContent({
                 }}
                 signOut={signOut}
               />
-            ) : (
-              <NoteList
-                notes={notes[currentNoteList]?.items || []}
-                updateList={(newItems) => updateNoteList(currentNoteList, { items: newItems })}
-                currentList={currentNoteList}
-              />
-            )}
+            ) : null}
           </>
         )}
-        
         {/* Chat button for all mobile views */}
         <div className="chat-button-container">
           <ChatButton onClick={() => setIsChatModalOpen(true)} />
         </div>
-        
         {/* Chat modal */}
         <ChatModal 
           isOpen={isChatModalOpen}
           onClose={() => setIsChatModalOpen(false)}
-          currentTasks={tasks[currentTaskList]}
-          currentNotes={notes[currentNoteList]}
+          tasks={tasks}
+          currentTasks={tasks[currentTaskList] || { items: [] }}
           updateTaskList={updateTaskList}
-          updateNoteList={updateNoteList}
           currentTaskList={currentTaskList}
-          currentNoteList={currentNoteList}
           userId={user?.uid}
         />
       </main>

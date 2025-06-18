@@ -145,6 +145,28 @@ html, body, #root, .App {
       bottom: 16px;
       right: 16px;
     }
+    
+    .responsive-container {
+      min-height: 100vh !important;
+      height: 100vh !important;
+      display: flex;
+      flex-direction: column;
+      padding-bottom: 72px !important;
+      padding-top: 0 !important;
+    }
+    .task-list {
+      margin: 0 !important;
+      padding: 0 !important;
+      border-radius: 0 !important;
+      flex: 1 1 auto !important;
+      height: 100% !important;
+      min-height: 0 !important;
+      background: #F0F8FF !important;
+      box-shadow: none !important;
+    }
+    .app-header {
+      margin-bottom: 0 !important;
+    }
   }
   
   /* Special styles for iPads */

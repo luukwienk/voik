@@ -1,33 +1,64 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faComment } from '@fortawesome/free-solid-svg-icons';
+import { faTimes } from '@fortawesome/free-solid-svg-icons';
 import ChatMessage from './ChatMessage';
-import ChatInput from './ChatInput';
-import { handleAICommand } from '../services/openai';
+import RealtimeChatInput from './RealtimeChatInput';
+import RealtimeStatus from './RealtimeStatus';
+import { useRealtimeChat } from '../hooks/useRealtimeChat';
+import useMediaQuery from '../hooks/useMediaQuery';
 
 const ChatModal = ({ 
   isOpen, 
   onClose, 
+  tasks,
   currentTasks, 
-  currentNotes, 
   updateTaskList,
-  updateNoteList,
   currentTaskList,
-  currentNoteList,
-  userId
+  userId 
 }) => {
-  const [messages, setMessages] = useState([
-    { text: "Hallo! Hoe kan ik je vandaag helpen?", isUser: false }
-  ]);
-  // Conversatiegeschiedenis voor de AI
-  const [conversationHistory, setConversationHistory] = useState([
-    { role: 'assistant', content: "Hallo! Hoe kan ik je vandaag helpen?" }
-  ]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const messagesEndRef = useRef(null);
+  const [inputMode, setInputMode] = useState('text'); // 'text' or 'voice'
+  
+  const {
+    isConnected,
+    isRecording,
+    isSpeaking,
+    messages,
+    startConversation,
+    stopConversation,
+    sendTextMessage,
+    error
+  } = useRealtimeChat({ 
+    userId, 
+    tasks: tasks || {},
+    currentTasks: tasks?.[currentTaskList] || { items: [] },
+    updateTaskList: (listId, updates) => updateTaskList(listId, updates),
+    currentTaskList
+  });
 
-  // Maximum aantal berichten in geschiedenis (om tokens te beperken)
-  const MAX_HISTORY_MESSAGES = 8;
+  const messagesEndRef = useRef(null);
+  const isMobile = useMediaQuery('(max-width: 767px)');
+
+  // Prevent background scrolling when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.top = `-${window.scrollY}px`;
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
+    };
+  }, [isOpen]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -36,88 +67,38 @@ const ChatModal = ({
     }
   }, [messages]);
 
-  const handleChatSubmit = async (text) => {
-    // Add user message immediately
-    const userMessage = { text, isUser: true };
-    setMessages(prev => [...prev, userMessage]);
-    
-    // Voeg toe aan conversatiegeschiedenis voor de AI
-    const userHistoryItem = { role: 'user', content: text };
-    const updatedHistory = [...conversationHistory, userHistoryItem];
-    
-    // Set processing state
-    setIsProcessing(true);
-    
-    try {
-      // Process with AI - stuur geschiedenis én userId mee
-      const result = await handleAICommand({
-        text,
-        currentTasks: currentTasks?.items || [],
-        currentNotes: currentNotes?.items || [],
-        conversationHistory: updatedHistory.slice(-MAX_HISTORY_MESSAGES),
-        userId
-      });
-      
-      // Gebruik de message van het resultaat indien beschikbaar
-      let responseMessage = result.message || "Er is iets fout gegaan. Probeer het opnieuw.";
-      
-      // Voer de juiste acties uit op basis van het type
-      switch (result.type) {
-        case 'tasks':
-          const newTasks = result.data.map(task => ({
-            id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            text: task,
-            completed: false
-          }));
-          
-          updateTaskList(currentTaskList, {
-            items: [...newTasks, ...(currentTasks?.items || [])]
-          });
-          break;
-          
-        case 'notes':
-          const newNotes = result.data.map(note => ({
-            id: `note-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            text: note
-          }));
-          
-          updateNoteList(currentNoteList, {
-            items: [...newNotes, ...(currentNotes?.items || [])]
-          });
-          break;
-          
-        case 'action':
-        case 'text':
-        case 'error':
-          // Geen aanvullende acties nodig
-          break;
+  // Handle mode toggle
+  const handleToggleMode = () => {
+    if (inputMode === 'text') {
+      // Switching to voice
+      setInputMode('voice');
+      // Stop any ongoing recording when switching modes
+      if (isRecording) {
+        stopConversation();
       }
-      
-      // Add AI response message
-      setMessages(prev => [...prev, { text: responseMessage, isUser: false }]);
-      
-      // Update conversatiegeschiedenis met AI-antwoord
-      const assistantHistoryItem = { role: 'assistant', content: responseMessage };
-      setConversationHistory([...updatedHistory, assistantHistoryItem].slice(-MAX_HISTORY_MESSAGES));
-      
-    } catch (error) {
-      console.error('Error processing message:', error);
-      setMessages(prev => [
-        ...prev, 
-        { 
-          text: "Er is een fout opgetreden bij het verwerken van je bericht. Probeer het later opnieuw.", 
-          isUser: false 
-        }
-      ]);
-      
-      // Ook de error toevoegen aan de geschiedenis
-      const errorHistoryItem = { 
-        role: 'assistant', 
-        content: "Er is een fout opgetreden bij het verwerken van je bericht. Probeer het later opnieuw."
-      };
-      setConversationHistory([...updatedHistory, errorHistoryItem].slice(-MAX_HISTORY_MESSAGES));
-    } finally {
-      setIsProcessing(false);
+    } else {
+      // Switching to text
+      setInputMode('text');
+      // Stop recording if active
+      if (isRecording) {
+        stopConversation();
+      }
+    }
+  };
+
+  // Handle text send
+  const handleSendText = (text) => {
+    if (text && sendTextMessage) {
+      sendTextMessage(text);
+    }
+  };
+
+  // Handle voice button click
+  const handleVoiceButton = () => {
+    if (isRecording) {
+      stopConversation();
+    } else {
+      startConversation();
     }
   };
 
@@ -127,10 +108,17 @@ const ChatModal = ({
     <div className="chat-modal-overlay">
       <div className="chat-modal">
         <div className="chat-header">
-          <h3>TaskBuddy</h3>
-          <button onClick={onClose} className="close-button">
-            <FontAwesomeIcon icon={faTimes} />
-          </button>
+          <h3>TaskBuddy Assistant</h3>
+          <div className="header-controls">
+            <RealtimeStatus 
+              isConnected={isConnected} 
+              isRecording={isRecording}
+              isSpeaking={isSpeaking}
+            />
+            <button onClick={onClose} className="close-button">
+              <FontAwesomeIcon icon={faTimes} />
+            </button>
+          </div>
         </div>
         
         <div className="chat-messages">
@@ -141,25 +129,42 @@ const ChatModal = ({
               isUser={msg.isUser} 
             />
           ))}
-          
-          {isProcessing && (
-            <div className="processing-indicator">
-              <div className="dot"></div>
-              <div className="dot"></div>
-              <div className="dot"></div>
+          {error && (
+            <div className="error-message">
+              ⚠️ {error}
             </div>
           )}
-          
           <div ref={messagesEndRef} />
         </div>
         
-        <ChatInput 
-          onSubmit={handleChatSubmit} 
-          isProcessing={isProcessing} 
+        {/* Voice mode UI */}
+        {inputMode === 'voice' && (
+          <div className="voice-mode-container">
+            <button 
+              onClick={handleVoiceButton}
+              className={`voice-button ${isRecording ? 'recording' : ''}`}
+              disabled={!isConnected}
+              title={!isConnected ? 'Wachten op verbinding...' : isRecording ? 'Stop opname' : 'Start opname'}
+            >
+              {isRecording ? '⏹️' : '🎤'}
+            </button>
+            <p className="voice-mode-hint">
+              {isRecording ? 'Aan het luisteren...' : 'Tap om te spreken'}
+            </p>
+          </div>
+        )}
+        
+        {/* Text/Voice input */}
+        <RealtimeChatInput 
+          onSendText={handleSendText}
+          onToggleMode={handleToggleMode}
+          inputMode={inputMode}
+          isProcessing={isSpeaking}
+          disabled={!isConnected}
         />
       </div>
       
-      <style jsx>{`
+      <style>{`
         .chat-modal-overlay {
           position: fixed;
           top: 0;
@@ -171,18 +176,27 @@ const ChatModal = ({
           justify-content: center;
           align-items: center;
           z-index: 1000;
+          -webkit-overflow-scrolling: touch;
+          overscroll-behavior: contain;
         }
         
         .chat-modal {
           background-color: white;
           border-radius: 8px;
-          max-width: 500px;
           width: 90%;
-          max-height: 80vh;
+          height: ${isMobile ? '100%' : '80vh'};
+          max-width: 500px;
           display: flex;
           flex-direction: column;
           box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
           overflow: hidden;
+          position: relative;
+          ${isMobile ? `
+            border-radius: 0;
+            width: 100%;
+            max-width: 100%;
+            height: 100%;
+          ` : ''}
         }
         
         .chat-header {
@@ -191,6 +205,16 @@ const ChatModal = ({
           align-items: center;
           padding: 16px;
           border-bottom: 1px solid #eee;
+          background-color: white;
+          position: sticky;
+          top: 0;
+          z-index: 1;
+        }
+        
+        .header-controls {
+          display: flex;
+          align-items: center;
+          gap: 12px;
         }
         
         .chat-header h3 {
@@ -208,6 +232,7 @@ const ChatModal = ({
           padding: 4px 8px;
           border-radius: 4px;
           transition: all 0.2s;
+          -webkit-tap-highlight-color: transparent;
         }
         
         .close-button:hover {
@@ -222,35 +247,68 @@ const ChatModal = ({
           display: flex;
           flex-direction: column;
           min-height: 200px;
-          max-height: calc(80vh - 140px);
+          -webkit-overflow-scrolling: touch;
+          overscroll-behavior: contain;
         }
         
-        .processing-indicator {
+        .error-message {
+          background-color: #fee;
+          color: #c33;
+          padding: 8px 12px;
+          border-radius: 4px;
+          margin: 8px 0;
+          font-size: 14px;
+        }
+        
+        .voice-mode-container {
+          padding: 20px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 12px;
+          border-top: 1px solid #eee;
+        }
+        
+        .voice-button {
+          width: 64px;
+          height: 64px;
+          border-radius: 50%;
+          border: none;
+          background-color: #f0f0f0;
+          cursor: pointer;
           display: flex;
           align-items: center;
-          gap: 4px;
-          margin: 8px 0 8px 44px;
+          justify-content: center;
+          font-size: 28px;
+          transition: all 0.2s;
+          -webkit-tap-highlight-color: transparent;
         }
         
-        .dot {
-          width: 8px;
-          height: 8px;
-          background-color: #999;
-          border-radius: 50%;
-          animation: pulse 1.5s infinite ease-in-out;
+        .voice-button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
         
-        .dot:nth-child(2) {
-          animation-delay: 0.5s;
+        .voice-button:not(:disabled):hover {
+          background-color: #e0e0e0;
         }
         
-        .dot:nth-child(3) {
-          animation-delay: 1s;
+        .voice-button.recording {
+          background-color: #ff4444;
+          color: white;
+          animation: pulse 1.5s infinite;
+        }
+        
+        .voice-mode-hint {
+          margin: 0;
+          color: #666;
+          font-size: 14px;
         }
         
         @keyframes pulse {
-          0%, 100% { transform: scale(0.8); opacity: 0.5; }
-          50% { transform: scale(1.2); opacity: 1; }
+          0% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+          100% { transform: scale(1); }
         }
         
         /* Dark mode */
@@ -261,6 +319,7 @@ const ChatModal = ({
           
           .chat-header {
             border-bottom: 1px solid #333;
+            background-color: #1e1e1e;
           }
           
           .chat-header h3 {
@@ -276,8 +335,30 @@ const ChatModal = ({
             color: #fff;
           }
           
-          .dot {
-            background-color: #bbb;
+          .voice-mode-container {
+            border-top: 1px solid #333;
+          }
+          
+          .voice-button {
+            background-color: #333;
+            color: #fff;
+          }
+          
+          .voice-button:not(:disabled):hover {
+            background-color: #444;
+          }
+          
+          .voice-button.recording {
+            background-color: #ff4444;
+          }
+          
+          .voice-mode-hint {
+            color: #999;
+          }
+          
+          .error-message {
+            background-color: #442222;
+            color: #ff8888;
           }
         }
       `}</style>

@@ -140,7 +140,7 @@ const ListSelectorModal = ({
                     onClick={() => handleSelectList(listName)}
                   >
                     {listName}
-                    {listName !== 'Today' && listName !== 'My Notes' && (
+                    {listName !== 'Today' && (
                       <button 
                         className="list-delete-btn"
                         onClick={(e) => handleDeleteList(e, listName)}

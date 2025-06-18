@@ -1,12 +1,19 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faComment } from '@fortawesome/free-solid-svg-icons';
+import useMediaQuery from '../hooks/useMediaQuery';
 
 const ChatButton = ({ onClick }) => {
+  const isMobile = useMediaQuery('(max-width: 767px)');
+
   return (
     <button
       onClick={onClick}
       className="chat-button"
+      style={{
+        bottom: isMobile ? '80px' : '20px',
+        zIndex: 1001
+      }}
     >
       <FontAwesomeIcon icon={faComment} />
       
@@ -24,9 +31,7 @@ const ChatButton = ({ onClick }) => {
           align-items: center;
           justify-content: center;
           position: fixed;
-          bottom: 20px;
           right: 20px;
-          z-index: 90;
           transition: all 0.2s;
         }
         

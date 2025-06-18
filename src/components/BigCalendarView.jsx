@@ -774,4 +774,4 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
   );
 };
 
-export default BigCalendarView;
+export default BigCalendarView;  

@@ -28,7 +28,7 @@ const ListSelector = ({ lists, currentList, setCurrentList, addList, deleteList,
         ))}
         <option value="add-new-list">+ Add New List</option>
       </select>
-      {currentList !== 'Today' && currentList !== 'My Notes' && (
+      {currentList !== 'Today' && (
         <button className="remove-list-btn" onClick={() => deleteList(currentList)}>
           <FontAwesomeIcon icon={faTrash} />
         </button>

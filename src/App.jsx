@@ -1,32 +1,22 @@
 // Updated App.jsx
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import Header from './components/Header';
+// import Header from './components/Header';
 import ResponsiveMainContent from './components/ResponsiveMainContent';
 import { useAuth } from './hooks/useAuth';
 import { useTasks } from './hooks/useTasks';
-import { useNotes } from './hooks/useNotes';
-import { useVoiceInput } from './hooks/useVoiceInput';
 import { useHealthTracking } from './hooks/useHealthTracking';
 import SignIn from './SignIn';
 import { initClient } from './services/googleCalendar';
 // PWA registration
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import ChatModal from './components/ChatModal';
+import TabsNavigation from './components/TabsNavigation';
 
 function App() {
   const { user, signOut } = useAuth();
   const { tasks, currentTaskList, setCurrentTaskList, addTaskList, deleteTaskList, updateTaskList } = useTasks(user);
-  const { notes, currentNoteList, setCurrentNoteList, addNoteList, deleteNoteList, updateNoteList } = useNotes(user);
-  const { recognizedText, aiResponse, isLoading, error, handleVoiceInput, setRecognizedText } = useVoiceInput(
-    tasks, 
-    notes, 
-    currentTaskList, 
-    currentNoteList, 
-    updateTaskList, 
-    updateNoteList,
-    user?.uid
-  );
   const [currentTab, setCurrentTab] = useState(0);
   
   // Initialize health tracking
@@ -50,39 +40,30 @@ function App() {
   useEffect(() => {
     console.log('Tasks:', tasks);
     console.log('Current Task List:', currentTaskList);
-    console.log('Notes:', notes);
-    console.log('Current Note List:', currentNoteList);
     if (healthData) {
       console.log('Health Data:', healthData);
     }
-  }, [tasks, currentTaskList, notes, currentNoteList, healthData]);
+  }, [tasks, currentTaskList, healthData]);
 
   // Dit effect zorgt ervoor dat de juiste initiële lijst wordt geselecteerd
   // maar behoudt de huidige lijsten bij tabwisseling
-  const [initialTabsVisited, setInitialTabsVisited] = useState({ 0: false, 1: false });
+  const [initialTabsVisited, setInitialTabsVisited] = useState({ 0: false });
   
   useEffect(() => {
-    if (currentTab === 1 && !initialTabsVisited[1]) { // 1 for 'notes'
-      console.log('App: Eerste bezoek aan notes tab, standaard notelist instellen op "My Notes"');
-      setCurrentNoteList('My Notes');
-      setInitialTabsVisited(prev => ({ ...prev, 1: true }));
-    } else if (currentTab === 0 && !initialTabsVisited[0]) {
+    if (currentTab === 0 && !initialTabsVisited[0]) {
       console.log('App: Eerste bezoek aan tasks tab, standaard tasklist instellen op "Today"');
       setCurrentTaskList('Today');
       setInitialTabsVisited(prev => ({ ...prev, 0: true }));
     }
     // We behouden de huidige lijsten bij terugkeer naar tabs
-  }, [currentTab, setCurrentNoteList, setCurrentTaskList, initialTabsVisited]);
+  }, [currentTab, setCurrentTaskList, initialTabsVisited]);
 
   const handleTabChange = (tab) => {
     if (tab !== currentTab) {
       setCurrentTab(tab);
       
       // Bij eerste navigatie naar elke tab, stel standaardlijsten in
-      if (tab === 1 && !initialTabsVisited[1]) { // 1 voor 'notes'
-        setCurrentNoteList('My Notes');
-        setInitialTabsVisited(prev => ({ ...prev, 1: true }));
-      } else if (tab === 0 && !initialTabsVisited[0]) {
+      if (tab === 0 && !initialTabsVisited[0]) {
         setCurrentTaskList('Today');
         setInitialTabsVisited(prev => ({ ...prev, 0: true }));
       }
@@ -123,37 +104,24 @@ function App() {
     }
   };
 
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+
   if (!user) return <SignIn user={user} />;
 
   return (
     <div className="App">
-      <Header
-        user={user}
-        signOut={signOut}
-        currentTab={currentTab}
-        setCurrentTab={handleTabChange}
-      />
-      
+      {/* Geen header meer */}
+      <div className="navbar-wrapper">
+        <TabsNavigation currentTab={currentTab} onTabChange={handleTabChange} signOut={signOut} />
+      </div>
       <ResponsiveMainContent
         currentTab={currentTab}
         tasks={tasks}
-        notes={notes}
         currentTaskList={currentTaskList}
-        currentNoteList={currentNoteList}
         setCurrentTaskList={setCurrentTaskList}
-        setCurrentNoteList={setCurrentNoteList}
         updateTaskList={updateTaskList}
-        updateNoteList={updateNoteList}
-        recognizedText={recognizedText}
-        aiResponse={aiResponse}
-        isLoading={isLoading}
-        error={error}
-        handleVoiceInput={handleVoiceInput}
-        setRecognizedText={setRecognizedText}
         addTaskList={addTaskList}
-        addNoteList={addNoteList}
         deleteTaskList={deleteTaskList}
-        deleteNoteList={deleteNoteList}
         moveTask={moveTask}
         signOut={signOut}
         user={user}
@@ -172,6 +140,16 @@ function App() {
       
       {/* PWA Install Prompt */}
       <PWAInstallPrompt />
+
+      {/* Chat modal */}
+      <ChatModal 
+        isOpen={isChatModalOpen}
+        onClose={() => setIsChatModalOpen(false)}
+        currentTasks={tasks[currentTaskList] || { items: [] }}
+        updateTaskList={updateTaskList}
+        currentTaskList={currentTaskList}
+        userId={user?.uid}
+      />
     </div>
   );
 }

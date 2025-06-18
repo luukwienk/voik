@@ -3,16 +3,18 @@ import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faTasks, 
-  faStickyNote, 
   faClock, 
   faSearch, 
-  faHeartbeat 
+  faHeartbeat, 
+  faSignOutAlt 
 } from '@fortawesome/free-solid-svg-icons';
+import useMediaQuery from '../hooks/useMediaQuery';
 import '../styles/tabs.css';
 
-const TabsNavigation = ({ currentTab, onTabChange }) => {
+const TabsNavigation = ({ currentTab, onTabChange, signOut }) => {
   // Als currentTab niet wordt doorgegeven, gebruik dan lokale state
   const [value, setValue] = useState(currentTab || 0);
+  const isMobile = useMediaQuery('(max-width: 767px)');
 
   const handleChange = (newValue) => {
     setValue(newValue);
@@ -22,8 +24,23 @@ const TabsNavigation = ({ currentTab, onTabChange }) => {
   };
 
   return (
-    <div className="tabs-navigation">
-      <div className="tabs-container">
+    <div className="tabs-navigation" style={{
+      position: isMobile ? 'fixed' : 'relative',
+      bottom: isMobile ? 0 : 'auto',
+      left: 0,
+      right: 0,
+      backgroundColor: 'white',
+      boxShadow: isMobile ? '0 -2px 10px rgba(0, 0, 0, 0.1)' : 'none',
+      zIndex: 1000,
+      padding: isMobile ? '8px 0' : '0',
+      transition: 'all 0.3s ease',
+      paddingBottom: isMobile ? 'calc(8px + env(safe-area-inset-bottom))' : undefined
+    }}>
+      <div className="tabs-container" style={{
+        maxWidth: isMobile ? '100%' : '1680px',
+        margin: '0 auto',
+        padding: isMobile ? '0 16px' : '0'
+      }}>
         <div
           className={`tab-item ${currentTab === 0 ? 'active' : ''}`}
           onClick={() => handleChange(0)}
@@ -34,27 +51,32 @@ const TabsNavigation = ({ currentTab, onTabChange }) => {
           className={`tab-item ${currentTab === 1 ? 'active' : ''}`}
           onClick={() => handleChange(1)}
         >
-          <FontAwesomeIcon icon={faStickyNote} />
+          <FontAwesomeIcon icon={faClock} />
         </div>
         <div
           className={`tab-item ${currentTab === 2 ? 'active' : ''}`}
           onClick={() => handleChange(2)}
         >
-          <FontAwesomeIcon icon={faClock} />
-        </div>
-        <div
-          className={`tab-item ${currentTab === 3 ? 'active' : ''}`}
-          onClick={() => handleChange(3)}
-        >
           <FontAwesomeIcon icon={faSearch} />
         </div>
         {/* Health tracker tab */}
         <div
-          className={`tab-item ${currentTab === 4 ? 'active' : ''}`}
-          onClick={() => handleChange(4)}
+          className={`tab-item ${currentTab === 3 ? 'active' : ''}`}
+          onClick={() => handleChange(3)}
         >
           <FontAwesomeIcon icon={faHeartbeat} />
         </div>
+        {/* Logout tab alleen op mobiel */}
+        {isMobile && (
+          <div
+            className="tab-item"
+            onClick={signOut}
+            title="Uitloggen"
+            aria-label="Uitloggen"
+          >
+            <FontAwesomeIcon icon={faSignOutAlt} />
+          </div>
+        )}
       </div>
     </div>
   );
