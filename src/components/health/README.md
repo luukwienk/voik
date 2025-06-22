@@ -1,52 +1,51 @@
 # Health Tracking Components
 
-This directory contains components for the health tracking feature of the personal assistant app. The health tracker allows users to monitor their weight, calorie intake, waist measurements, and workout duration over time.
+Deze map bevat componenten voor de gezondheids-tracking functionaliteit van de app. Hiermee kun je gewicht, calorie-inname, taille en training bijhouden.
 
-## Components
+## Componenten
 
-### MinimalistHealthTracker
+### HealthTabNavigator
 
-The main component that provides a clean, minimalist interface for tracking health metrics.
+Het hoofdcomponent dat een moderne tab-navigatie biedt voor invoer en statistieken van gezondheidsdata.
 
 #### Features:
-- Quick entry form for adding daily health measurements
-- Interactive metric cards showing the latest values and averages
-- Progress chart for visualizing trends over time (weekly, monthly, yearly)
-- Responsive design that works well on both desktop and mobile
+- Invoerscherm voor dagelijkse gezondheidsmetingen
+- Statistieken en grafieken van je voortgang
+- Responsive design voor desktop en mobiel
 
 #### Props:
-- `healthData`: Array of health entry objects from the database
-- `healthLoading`: Boolean indicating if health data is being loaded
-- `addHealthEntry`: Function to add a new health entry
-- `updateHealthEntry`: Function to update an existing health entry
-- `deleteHealthEntry`: Function to delete a health entry
-- `getHealthDataByDateRange`: Function to filter health data by date range
-- `getLatestEntry`: Function to get the most recent health entry
-- `calculateWeeklyAverage`: Function to calculate average for a metric
-- `calculateTrend`: Function to calculate the trend for a metric
+- `healthData`: Array van gezondheidsdata uit de database
+- `healthLoading`: Boolean die aangeeft of de data wordt geladen
+- `addHealthEntry`: Functie om een nieuwe invoer toe te voegen
+- `updateHealthEntry`: Functie om een bestaande invoer te wijzigen
+- `deleteHealthEntry`: Functie om een invoer te verwijderen
+- `getHealthDataByDateRange`: Functie om data te filteren op datum
+- `getLatestEntry`: Functie om de meest recente invoer op te halen
+- `calculateWeeklyAverage`: Functie om gemiddelden te berekenen
+- `calculateTrend`: Functie om trends te berekenen
 
-## Data Structure
+## Data structuur
 
-Each health entry object follows this structure:
+Elke gezondheidsinvoer heeft deze structuur:
 
 ```javascript
 {
-  id: string,           // Unique identifier
-  date: Date,           // Date of the entry
-  weight: number,       // Weight in kg (optional)
-  calories: number,     // Calorie intake for the day (optional)
-  waist: number,        // Waist measurement in cm (optional)
-  workout: number,      // Workout duration in minutes (optional)
-  createdAt: Date,      // Creation timestamp
-  updatedAt: Date,      // Last update timestamp
-  userId: string        // ID of the user who created the entry
+  id: string,           // Unieke identifier
+  date: Date,           // Datum van de invoer
+  weight: number,       // Gewicht in kg (optioneel)
+  calories: number,     // Calorie-inname (optioneel)
+  waist: number,        // Taille in cm (optioneel)
+  workout: number,      // Training in minuten (optioneel)
+  createdAt: Date,      // Aanmaakdatum
+  updatedAt: Date,      // Laatst bijgewerkt
+  userId: string        // ID van de gebruiker
 }
 ```
 
-## Usage
+## Gebruik
 
 ```jsx
-import MinimalistHealthTracker from './components/health/MinimalistHealthTracker';
+import HealthTabNavigator from './components/health/HealthTabNavigator';
 import { useHealthTracking } from './hooks/useHealthTracking';
 
 function HealthTrackingPage({ user }) {
@@ -63,7 +62,7 @@ function HealthTrackingPage({ user }) {
   } = useHealthTracking(user);
 
   return (
-    <MinimalistHealthTracker
+    <HealthTabNavigator
       healthData={healthData}
       healthLoading={healthLoading}
       addHealthEntry={addHealthEntry}
@@ -78,21 +77,16 @@ function HealthTrackingPage({ user }) {
 }
 ```
 
-## Future Enhancements
+## Toekomstige uitbreidingen
 
-Potential improvements for the health tracking feature:
+- Meer analyses en inzichten (BMI, calorie-doelen, etc.)
+- Doelen instellen en voortgang volgen
+- Extra metingen toevoegen (vetpercentage, bloeddruk, etc.)
+- Exportfunctie voor gezondheidsdata
+- Integratie met fitness apps/devices
 
-1. Add more detailed analysis and insights (BMI calculation, calorie targets, etc.)
-2. Implement goal setting and progress tracking
-3. Add additional metrics (body fat percentage, blood pressure, etc.)
-4. Create a detailed view for each metric with more comprehensive charts
-5. Add export functionality for health data
-6. Implement integration with fitness tracking devices/apps
+## Afhankelijkheden
 
-## Dependencies
-
-The health tracking components rely on:
-- React for the UI
-- Recharts for data visualization
-- Firebase/Firestore for data storage
-- FontAwesomeIcon for icons
+- React voor de UI
+- Recharts voor grafieken
+- Firebase/Firestore voor dataopslag

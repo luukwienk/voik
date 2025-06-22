@@ -6,6 +6,7 @@ import {
   faClock, 
   faSearch, 
   faHeartbeat, 
+  faTrophy,
   faSignOutAlt 
 } from '@fortawesome/free-solid-svg-icons';
 import useMediaQuery from '../hooks/useMediaQuery';
@@ -65,6 +66,13 @@ const TabsNavigation = ({ currentTab, onTabChange, signOut }) => {
           onClick={() => handleChange(3)}
         >
           <FontAwesomeIcon icon={faHeartbeat} />
+        </div>
+        {/* Success tracker tab */}
+        <div
+          className={`tab-item ${currentTab === 4 ? 'active' : ''}`}
+          onClick={() => handleChange(4)}
+        >
+          <FontAwesomeIcon icon={faTrophy} />
         </div>
         {/* Logout tab alleen op mobiel */}
         {isMobile && (

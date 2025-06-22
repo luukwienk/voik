@@ -262,14 +262,16 @@ export function useRealtimeChat({
           const newTasks = args.tasks.map(taskText => ({
             id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             text: taskText,
-            title: taskText.split('\n')[0].substring(0, 50),
+            title: taskText.split('\\n')[0].substring(0, 50),
             completed: false,
             createdAt: new Date().toISOString()
           }));
           
           const currentItems = currentTasks?.items || [];
+          const updatedItems = [...currentItems, ...newTasks];
+          
           await updateTaskList(currentTaskList, {
-            items: [...newTasks, ...currentItems]
+            items: updatedItems
           });
           
           sendFunctionResult({

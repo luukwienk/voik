@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 // import { Route, Routes, useNavigate } from 'react-router-dom';
 import TaskList from './TaskList';
 import TaskOverviewPage from './TaskOverviewPage';
-import MinimalistHealthTracker from './health/MinimalistHealthTracker';
+import HealthTabNavigator from './health/HealthTabNavigator';
+import SuccessTracker from './success/succesTracker';
 import ChatButton from './ChatButton';
 import ChatModal from './ChatModal';
 import ErrorBoundary from './ErrorBoundary';
@@ -27,6 +28,7 @@ function ResponsiveMainContent({
   signOut,
   // Health tracking props
   healthData,
+  healthLoading,
   addHealthEntry,
   updateHealthEntry,
   deleteHealthEntry,
@@ -68,9 +70,9 @@ function ResponsiveMainContent({
           height: 'calc(100vh - 130px)',
           overflowY: 'auto'
         }}>
-          <MinimalistHealthTracker 
+          <HealthTabNavigator 
             healthData={healthData} 
-            healthLoading={false}
+            healthLoading={healthLoading}
             addHealthEntry={addHealthEntry}
             updateHealthEntry={updateHealthEntry}
             deleteHealthEntry={deleteHealthEntry}
@@ -79,6 +81,39 @@ function ResponsiveMainContent({
             calculateWeeklyAverage={calculateWeeklyAverage || (() => {})}
             calculateTrend={calculateTrend || (() => {})}
           />
+            
+          {/* Chat button */}
+          <div className="chat-button-container">
+            <ChatButton onClick={() => setIsChatModalOpen(true)} />
+          </div>
+            
+          {/* Chat modal */}
+          <ChatModal 
+            isOpen={isChatModalOpen}
+            onClose={() => setIsChatModalOpen(false)}
+            tasks={tasks}
+            currentTasks={tasks[currentTaskList] || { items: [] }}
+            updateTaskList={updateTaskList}
+            currentTaskList={currentTaskList}
+            userId={user?.uid}
+          />
+        </main>
+      </ErrorBoundary>
+    );
+  }
+
+  // Render Success Tracker for tab 4
+  if (currentTab === 4) {
+    return (
+      <ErrorBoundary>
+        <main className={`responsive-container ${!isDesktop ? 'mobile-full-width' : ''}`} style={{ 
+          width: '100%',
+          maxWidth: '100%', 
+          boxSizing: 'border-box',
+          height: 'calc(100vh - 130px)',
+          overflowY: 'auto'
+        }}>
+          <SuccessTracker userId={user?.uid} />
             
           {/* Chat button */}
           <div className="chat-button-container">
@@ -113,6 +148,26 @@ function ResponsiveMainContent({
               currentTaskList={currentTaskList}
               moveTask={moveTask}
             />
+          ) : currentTab === 3 ? (
+            // Health tracker for desktop
+            <div style={{ marginTop: 24 }}>
+              <HealthTabNavigator 
+                healthData={healthData} 
+                healthLoading={healthLoading}
+                addHealthEntry={addHealthEntry}
+                updateHealthEntry={updateHealthEntry}
+                deleteHealthEntry={deleteHealthEntry}
+                getHealthDataByDateRange={getHealthDataByDateRange || (() => {})}
+                getLatestEntry={getLatestEntry || (() => {})}
+                calculateWeeklyAverage={calculateWeeklyAverage || (() => {})}
+                calculateTrend={calculateTrend || (() => {})}
+              />
+            </div>
+          ) : currentTab === 4 ? (
+            // Success tracker for desktop
+            <div style={{ marginTop: 24 }}>
+              <SuccessTracker userId={user?.uid} />
+            </div>
           ) : (
             <>
               {/* Combined calendar and task list view */}
@@ -180,6 +235,26 @@ function ResponsiveMainContent({
           <div style={{padding: '20px', textAlign: 'center'}}>
             <p>Calendar view will be available here soon.</p>
             <p>Please use the desktop version for full calendar functionality.</p>
+          </div>
+        ) : currentTab === 3 ? (
+          // Health tracker for mobile
+          <div style={{ marginTop: 24 }}>
+            <HealthTabNavigator 
+              healthData={healthData} 
+              healthLoading={healthLoading}
+              addHealthEntry={addHealthEntry}
+              updateHealthEntry={updateHealthEntry}
+              deleteHealthEntry={deleteHealthEntry}
+              getHealthDataByDateRange={getHealthDataByDateRange || (() => {})}
+              getLatestEntry={getLatestEntry || (() => {})}
+              calculateWeeklyAverage={calculateWeeklyAverage || (() => {})}
+              calculateTrend={calculateTrend || (() => {})}
+            />
+          </div>
+        ) : currentTab === 4 ? (
+          // Success tracker for mobile
+          <div style={{ marginTop: 24 }}>
+            <SuccessTracker userId={user?.uid} />
           </div>
         ) : (
           <>
