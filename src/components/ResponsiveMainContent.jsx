@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from 'react';
-// Verwijder de react-router-dom import die niet wordt gebruikt
-// import { Route, Routes, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import TaskList from './TaskList';
 import TaskOverviewPage from './TaskOverviewPage';
 import HealthTabNavigator from './health/HealthTabNavigator';
 import SuccessTracker from './success/succesTracker';
 import ChatButton from './ChatButton';
-import ChatModal from './ChatModal';
+import ChatInterface from './ChatInterface';
 import ErrorBoundary from './ErrorBoundary';
 import BigCalendarView from './BigCalendarView';
 import useMediaQuery from '../hooks/useMediaQuery';
@@ -14,6 +12,7 @@ import '../styles/responsive.css';
 import '../styles/centeredLayout.css';
 import ListSelectorModal from './ListSelectorModal';
 import ListSelector from './ListSelector';
+import '../styles/chat.css';
 
 function ResponsiveMainContent({
   currentTab, 
@@ -35,9 +34,12 @@ function ResponsiveMainContent({
   getHealthDataByDateRange,
   getLatestEntry,
   calculateWeeklyAverage,
-  calculateTrend
+  calculateTrend,
+  // Chat props - NEW!
+  chatProps,
+  isChatModalOpen,
+  setIsChatModalOpen
 }) {
-  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
   // Detect if device is an iPad
   const isIPad = /iPad/.test(navigator.userAgent) || 
                 (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document);
@@ -84,19 +86,20 @@ function ResponsiveMainContent({
             
           {/* Chat button */}
           <div className="chat-button-container">
-            <ChatButton onClick={() => setIsChatModalOpen(true)} />
+            {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
           </div>
             
-          {/* Chat modal */}
-          <ChatModal 
-            isOpen={isChatModalOpen}
-            onClose={() => setIsChatModalOpen(false)}
-            tasks={tasks}
-            currentTasks={tasks[currentTaskList] || { items: [] }}
-            updateTaskList={updateTaskList}
-            currentTaskList={currentTaskList}
-            userId={user?.uid}
-          />
+          {/* Chat interface */}
+          {isChatModalOpen && (
+            <div className="chat-modal-overlay">
+              <div className="chat-modal">
+                <ChatInterface 
+                  {...chatProps}
+                  onClose={() => setIsChatModalOpen(false)}
+                />
+              </div>
+            </div>
+          )}
         </main>
       </ErrorBoundary>
     );
@@ -117,19 +120,20 @@ function ResponsiveMainContent({
             
           {/* Chat button */}
           <div className="chat-button-container">
-            <ChatButton onClick={() => setIsChatModalOpen(true)} />
+            {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
           </div>
             
-          {/* Chat modal */}
-          <ChatModal 
-            isOpen={isChatModalOpen}
-            onClose={() => setIsChatModalOpen(false)}
-            tasks={tasks}
-            currentTasks={tasks[currentTaskList] || { items: [] }}
-            updateTaskList={updateTaskList}
-            currentTaskList={currentTaskList}
-            userId={user?.uid}
-          />
+          {/* Chat interface */}
+          {isChatModalOpen && (
+            <div className="chat-modal-overlay">
+              <div className="chat-modal">
+                <ChatInterface 
+                  {...chatProps}
+                  onClose={() => setIsChatModalOpen(false)}
+                />
+              </div>
+            </div>
+          )}
         </main>
       </ErrorBoundary>
     );
@@ -185,41 +189,25 @@ function ResponsiveMainContent({
                   </div>
                   {/* Task list on the right, 37% width */}
                   <div className="tasklist-container" style={{ marginTop: 24 }}>
-                    <TaskList
-                      tasks={tasks[currentTaskList]}
-                      currentList={currentTaskList}
-                      lists={tasks}
-                      moveTask={moveTask}
-                      hideTitleHeader={true}
-                      setCurrentList={setCurrentTaskList}
-                      addList={addTaskList}
-                      deleteList={deleteTaskList}
-                      updateList={(updatedData) => {
-                        if (updatedData.id && updatedData.list) {
-                          updateTaskList(updatedData);
-                        } else {
-                          updateTaskList(currentTaskList, updatedData);
-                        }
-                      }}
-                      signOut={signOut}
-                    />
-                  </div>
+  <TaskList
+    tasks={tasks[currentTaskList]}
+    currentList={currentTaskList}
+    lists={tasks}
+    moveTask={moveTask}
+    hideTitleHeader={true}
+    setCurrentList={setCurrentTaskList}
+    addList={addTaskList}
+    deleteList={deleteTaskList}
+    updateList={(updatedData) => updateTaskList(currentTaskList, updatedData)}
+    signOut={signOut}
+  />
+</div>
                 </div>
               ) : null}
               {/* Chat button */}
               <div className="chat-button-container">
-                <ChatButton onClick={() => setIsChatModalOpen(true)} />
+                {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
               </div>
-              {/* Chat modal */}
-              <ChatModal 
-                isOpen={isChatModalOpen}
-                onClose={() => setIsChatModalOpen(false)}
-                tasks={tasks}
-                currentTasks={tasks[currentTaskList] || { items: [] }}
-                updateTaskList={updateTaskList}
-                currentTaskList={currentTaskList}
-                userId={user?.uid}
-              />
             </>
           )}
         </main>
@@ -284,18 +272,18 @@ function ResponsiveMainContent({
         )}
         {/* Chat button for all mobile views */}
         <div className="chat-button-container">
-          <ChatButton onClick={() => setIsChatModalOpen(true)} />
+          {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
         </div>
-        {/* Chat modal */}
-        <ChatModal 
-          isOpen={isChatModalOpen}
-          onClose={() => setIsChatModalOpen(false)}
-          tasks={tasks}
-          currentTasks={tasks[currentTaskList] || { items: [] }}
-          updateTaskList={updateTaskList}
-          currentTaskList={currentTaskList}
-          userId={user?.uid}
-        />
+        {isChatModalOpen && (
+          <div className="chat-modal-overlay">
+            <div className="chat-modal">
+              <ChatInterface 
+                {...chatProps}
+                onClose={() => setIsChatModalOpen(false)}
+              />
+            </div>
+          </div>
+        )}
       </main>
     );
   }

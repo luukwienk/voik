@@ -97,7 +97,7 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
   
   // Combine Google events
   useEffect(() => {
-    console.log('Google events received:', googleEvents);
+    // console.log('Google events received:', googleEvents);
     setAllEvents([...googleEvents]);
   }, [googleEvents]);
   
@@ -135,11 +135,11 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
       // Get dropped task data
       const data = e.dataTransfer.getData('text/plain');
       if (!data || !calendarRef.current) {
-        console.log("No data or calendar ref found");
+        // console.log("No data or calendar ref found");
         return;
       }
       
-      console.log("Drop data:", data);
+      // console.log("Drop data:", data);
       
       let taskData;
       try {
@@ -150,7 +150,7 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
       }
       
       if (!taskData || !taskData.title) {
-        console.log("Invalid task data", taskData);
+        // console.log("Invalid task data", taskData);
         return;
       }
       
@@ -196,7 +196,7 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
       const eventEnd = new Date(eventStart);
       eventEnd.setHours(eventStart.getHours() + 1);
       
-      console.log("Creating event at:", eventStart.toLocaleString(), "to", eventEnd.toLocaleString());
+      // console.log("Creating event at:", eventStart.toLocaleString(), "to", eventEnd.toLocaleString());
       
       // Format the time for display
       const timeFormat = new Intl.DateTimeFormat(navigator.language, {
@@ -221,12 +221,12 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
         }
       };
       
-      console.log("New event:", newEvent);
+      // console.log("New event:", newEvent);
       
       // Add to Google Calendar
       addEvent(newEvent)
         .then((createdEvent) => {
-          console.log("Event successfully added:", createdEvent);
+          // console.log("Event successfully added:", createdEvent);
           
           // Show success notification
           setSuccessMessage(`Task "${taskData.title}" scheduled for ${timeFormat.format(eventStart)}`);
@@ -293,7 +293,7 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
   
   // Handle event resize and drag
   const handleEventResize = ({ event, start, end }) => {
-    console.log("Event resize completed:", { event, start, end });
+    // console.log("Event resize completed:", { event, start, end });
     
     try {
       // Create updated event
@@ -304,7 +304,7 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
         allDay: event.allDay
       };
   
-      console.log("Updated event to send to Google Calendar:", updatedEvent);
+      // console.log("Updated event to send to Google Calendar:", updatedEvent);
   
       // Update the event
       updateEvent(updatedEvent).catch(error => {
@@ -318,7 +318,7 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
   };
   
   const handleEventDrop = ({ event, start, end, allDay }) => {
-    console.log("Event drag completed:", { event, start, end, allDay });
+    // console.log("Event drag completed:", { event, start, end, allDay });
     
     try {
       // Create updated event
@@ -329,7 +329,7 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
         allDay: allDay !== undefined ? allDay : event.allDay
       };
   
-      console.log("Updated event to send to Google Calendar:", updatedEvent);
+      // console.log("Updated event to send to Google Calendar:", updatedEvent);
   
       // Update the event
       updateEvent(updatedEvent).catch(error => {
@@ -344,7 +344,7 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
   
   // Create a new event by clicking on the calendar
   const handleSelectSlot = ({ start, end }) => {
-    console.log('Slot selected:', { start, end });
+    // console.log('Slot selected:', { start, end });
     const eventTitle = prompt('Enter event name:');
     
     if (eventTitle && eventTitle.trim()) {
@@ -356,12 +356,12 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
         allDay: !start.getHours() && !end.getHours()
       };
       
-      console.log('Creating new event:', newEvent);
+      // console.log('Creating new event:', newEvent);
       
       // Add to Google Calendar
       addEvent(newEvent)
         .then(createdEvent => {
-          console.log('Event successfully created:', createdEvent);
+          // console.log('Event successfully created:', createdEvent);
           // Event will be added to the view via the useEffect hook that listens to googleEvents
         })
         .catch(error => {
@@ -375,7 +375,7 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
   const handleDeleteEvent = () => {
     if (!selectedEvent) return;
     
-    console.log('Attempting to delete event:', selectedEvent);
+    // console.log('Attempting to delete event:', selectedEvent);
     
     // Check if we have an ID to delete
     const eventId = selectedEvent.id;
@@ -390,11 +390,11 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
                        selectedEvent.originalEvent?.calendarId || 
                        'primary';
     
-    console.log(`Deleting event ${eventId} from calendar ${calendarId}`);
+    // console.log(`Deleting event ${eventId} from calendar ${calendarId}`);
     
     deleteEvent(eventId, calendarId)
       .then(() => {
-        console.log('Event successfully deleted');
+        // console.log('Event successfully deleted');
         // Remove from local state (this is now handled in the hook)
         setSelectedEvent(null);
       })
@@ -441,11 +441,11 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
     return mapEventsForBigCalendar(allEvents);
   }, [allEvents, mapEventsForBigCalendar]);
   
-  console.log('Events for React Big Calendar:', calendarEvents);
+  // console.log('Events for React Big Calendar:', calendarEvents);
   
   // Custom event component for React Big Calendar
   const EventComponent = ({ event }) => {
-    console.log('Rendering event in EventComponent:', event);
+    // console.log('Rendering event in EventComponent:', event);
     const isCompleted = event.resource?.isTask && event.resource?.taskData?.completed;
     const color = event.resource?.color || event.originalEvent?.color || '#3498db';
     

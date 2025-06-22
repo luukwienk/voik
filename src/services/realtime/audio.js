@@ -1,5 +1,7 @@
 // src/services/realtime/audio.js
 export class AudioProcessor {
+  static workletRegistered = false; // Track of worklet al geregistreerd is
+  
   constructor() {
     this.mediaRecorder = null;
     this.audioContext = null;
@@ -11,10 +13,15 @@ export class AudioProcessor {
   }
 
   async initializeAudioContext() {
-    if (!this.audioContext) {
+    if (!this.audioContext || this.audioContext.state === 'closed') {
       this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
         sampleRate: 24000, // Match OpenAI's expected sample rate
       });
+    }
+    
+    // Resume if suspended
+    if (this.audioContext.state === 'suspended') {
+      await this.audioContext.resume();
     }
   }
 
@@ -37,57 +44,69 @@ export class AudioProcessor {
         } 
       });
       
+      // Double-check audio context is ready
+      if (!this.audioContext || this.audioContext.state === 'closed') {
+        throw new Error('Audio context is not initialized');
+      }
+      
       // Create audio source
       const source = this.audioContext.createMediaStreamSource(this.stream);
       
       // Use AudioWorkletNode if available, fallback to ScriptProcessor
       if (this.audioContext.audioWorklet && typeof AudioWorkletNode !== 'undefined') {
         try {
-          // First, we need to create and register the worklet processor
-          const processorCode = `
-            class AudioProcessor extends AudioWorkletProcessor {
-              constructor() {
-                super();
-                this.bufferSize = 2048;
-                this.buffer = new Float32Array(this.bufferSize);
-                this.bufferIndex = 0;
-              }
-              
-              process(inputs, outputs, parameters) {
-                const input = inputs[0];
-                if (input.length > 0) {
-                  const inputData = input[0];
-                  
-                  for (let i = 0; i < inputData.length; i++) {
-                    this.buffer[this.bufferIndex++] = inputData[i];
+          // Check of we de worklet al hebben geregistreerd
+          if (!AudioProcessor.workletRegistered) {
+            // First, we need to create and register the worklet processor
+            const processorCode = `
+              class AudioProcessor extends AudioWorkletProcessor {
+                constructor() {
+                  super();
+                  this.bufferSize = 2048;
+                  this.buffer = new Float32Array(this.bufferSize);
+                  this.bufferIndex = 0;
+                }
+                
+                process(inputs, outputs, parameters) {
+                  const input = inputs[0];
+                  if (input.length > 0) {
+                    const inputData = input[0];
                     
-                    if (this.bufferIndex >= this.bufferSize) {
-                      // Convert to PCM16 and send
-                      const pcm16 = new Int16Array(this.bufferSize);
-                      for (let j = 0; j < this.bufferSize; j++) {
-                        const s = Math.max(-1, Math.min(1, this.buffer[j]));
-                        pcm16[j] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                    for (let i = 0; i < inputData.length; i++) {
+                      this.buffer[this.bufferIndex++] = inputData[i];
+                      
+                      if (this.bufferIndex >= this.bufferSize) {
+                        // Convert to PCM16 and send
+                        const pcm16 = new Int16Array(this.bufferSize);
+                        for (let j = 0; j < this.bufferSize; j++) {
+                          const s = Math.max(-1, Math.min(1, this.buffer[j]));
+                          pcm16[j] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                        }
+                        
+                        this.port.postMessage({
+                          type: 'audio',
+                          buffer: pcm16.buffer
+                        }, [pcm16.buffer]);
+                        
+                        this.bufferIndex = 0;
                       }
-                      
-                      this.port.postMessage({
-                        type: 'audio',
-                        buffer: pcm16.buffer
-                      }, [pcm16.buffer]);
-                      
-                      this.bufferIndex = 0;
                     }
                   }
+                  return true;
                 }
-                return true;
               }
-            }
-            registerProcessor('audio-processor', AudioProcessor);
-          `;
+              registerProcessor('audio-processor', AudioProcessor);
+            `;
+            
+            const blob = new Blob([processorCode], { type: 'application/javascript' });
+            const workletUrl = URL.createObjectURL(blob);
+            await this.audioContext.audioWorklet.addModule(workletUrl);
+            URL.revokeObjectURL(workletUrl);
+            
+            AudioProcessor.workletRegistered = true; // Markeer als geregistreerd
+          }
           
-          const blob = new Blob([processorCode], { type: 'application/javascript' });
-          const workletUrl = URL.createObjectURL(blob);
-          await this.audioContext.audioWorklet.addModule(workletUrl);
-          
+          // Maak de node aan (dit kan wel meerdere keren)
           this.audioWorkletNode = new AudioWorkletNode(this.audioContext, 'audio-processor');
           
           this.audioWorkletNode.port.onmessage = (e) => {
@@ -101,8 +120,6 @@ export class AudioProcessor {
           
           source.connect(this.audioWorkletNode);
           this.audioWorkletNode.connect(this.audioContext.destination);
-          
-          URL.revokeObjectURL(workletUrl);
         } catch (error) {
           console.warn('AudioWorklet failed, falling back to ScriptProcessor:', error);
           this.setupScriptProcessor(source);
@@ -177,7 +194,7 @@ export class AudioProcessor {
   // Improved playAudio for OpenAI Realtime API PCM16 format
   async playAudio(base64Audio) {
     try {
-      console.log('Playing audio chunk, length:', base64Audio.length);
+      // console.log('Playing audio chunk, length:', base64Audio.length); // Debug log verwijderd
       
       // Initialize audio context if needed
       await this.initializeAudioContext();

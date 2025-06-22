@@ -23,33 +23,41 @@ export function useGoogleCalendar() {
 
   // Initialize Google Calendar client
   useEffect(() => {
-    const initialize = async () => {
+    const initializeGoogleCalendar = async () => {
       try {
-        await initClient();
-        setIsInitialized(true);
-        console.log('Google Calendar API initialized successfully');
+        await gapi.client.init({
+          apiKey: import.meta.env.VITE_GOOGLE_API_KEY,
+          clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+          discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
+          scope: 'https://www.googleapis.com/auth/calendar'
+        });
+
+        // console.log('Google Calendar API initialized successfully');
         
-        // Na initialisatie meteen agenda's ophalen
-        if (isGoogleClientReady()) {
-          const calendars = await fetchAvailableCalendars();
-          
-          // Automatisch alle zichtbare agenda's selecteren
-          const visibleCalendars = calendars
-            .filter(cal => cal.selected) // Alleen agenda's die in Google als 'selected' zijn gemarkeerd
-            .map(cal => cal.id);
-          
-          console.log('Automatically selecting visible calendars:', visibleCalendars);
-          setSelectedCalendars(visibleCalendars.length > 0 ? visibleCalendars : ['primary']);
+        // Set up auth state listener
+        gapi.auth2.getAuthInstance().isSignedIn.listen((isSignedIn) => {
+          setIsAuthenticated(isSignedIn);
+          if (isSignedIn) {
+            fetchAvailableCalendars();
+          }
+        });
+
+        // Check if already signed in
+        const isSignedIn = gapi.auth2.getAuthInstance().isSignedIn.get();
+        setIsAuthenticated(isSignedIn);
+        
+        if (isSignedIn) {
+          fetchAvailableCalendars();
         }
       } catch (error) {
-        console.error("Failed to initialize Google API client:", error);
-        setError("Failed to connect to Google Calendar.");
-      } finally {
-        setIsLoading(false);
+        console.error('Error initializing Google Calendar:', error);
+        setError('Failed to initialize Google Calendar');
       }
     };
 
-    initialize();
+    if (gapi && gapi.client) {
+      initializeGoogleCalendar();
+    }
   }, []);
 
   // Fetch available calendars
@@ -69,7 +77,7 @@ export function useGoogleCalendar() {
       }
 
       const calendars = await listAvailableCalendars();
-      console.log("Fetched available calendars:", calendars);
+      // console.log("Fetched available calendars:", calendars);
       setAvailableCalendars(calendars);
       
       // Hier automatisch alle zichtbare agenda's selecteren
@@ -79,7 +87,7 @@ export function useGoogleCalendar() {
       
       // Alleen updaten als er daadwerkelijk zichtbare agenda's zijn
       if (visibleCalendars.length > 0) {
-        console.log('Setting visible calendars:', visibleCalendars);
+        // console.log('Setting visible calendars:', visibleCalendars);
         setSelectedCalendars(visibleCalendars);
       } else if (selectedCalendars.length === 0) {
         // Als er geen zichtbare agenda's zijn, val terug op 'primary'
@@ -122,7 +130,7 @@ export function useGoogleCalendar() {
     }
 
     try {
-      console.log(`Fetching Google Calendar events from ${timeMin} to ${timeMax} for calendars:`, selectedCalendars);
+      // console.log(`Fetching Google Calendar events from ${timeMin} to ${timeMax} for calendars:`, selectedCalendars);
       
       if (!isGoogleClientReady()) {
         console.log("Google client not ready, attempting authentication");
@@ -134,9 +142,9 @@ export function useGoogleCalendar() {
       
       for (const calendarId of selectedCalendars) {
         try {
-          console.log(`Fetching events for calendar: ${calendarId}`);
+          // console.log(`Fetching events for calendar: ${calendarId}`);
           const calendarEvents = await fetchGoogleCalendarEvents(timeMin, timeMax, calendarId);
-          console.log(`Fetched ${calendarEvents.length} events from calendar ${calendarId}:`, calendarEvents);
+          // console.log(`Fetched ${calendarEvents.length} events from calendar ${calendarId}:`, calendarEvents);
           
           // Add calendarId to each event for tracking the source
           const eventsWithSource = calendarEvents.map(event => ({
@@ -151,14 +159,14 @@ export function useGoogleCalendar() {
         }
       }
       
-      console.log("Fetched a total of", allEvents.length, "events from all calendars");
+      // console.log("Fetched a total of", allEvents.length, "events from all calendars");
       
       // Debug the raw Google Calendar events
-      console.log("Raw Google Calendar events:", allEvents);
+      // console.log("Raw Google Calendar events:", allEvents);
       
       // Convert Google events to React Big Calendar format
       const rbcEvents = googleEventsToRbcEvents(allEvents);
-      console.log("Converted to", rbcEvents.length, "React Big Calendar events:", rbcEvents);
+      // console.log("Converted to", rbcEvents.length, "React Big Calendar events:", rbcEvents);
       
       // Store the events in the right format for React Big Calendar
       const formattedEvents = rbcEvents.map(event => ({
@@ -170,7 +178,7 @@ export function useGoogleCalendar() {
         resource: event.resource
       }));
       
-      console.log("Final formatted events for RBC:", formattedEvents);
+      // console.log("Final formatted events for RBC:", formattedEvents);
       
       setEvents(formattedEvents);
       return formattedEvents;
@@ -197,7 +205,7 @@ export function useGoogleCalendar() {
     setError(null);
 
     try {
-      console.log("Adding event to Google Calendar:", event, "in calendar:", calendarId);
+      // console.log("Adding event to Google Calendar:", event, "in calendar:", calendarId);
       
       if (!isGoogleClientReady()) {
         console.log("Google client not ready, attempting authentication");
@@ -206,10 +214,10 @@ export function useGoogleCalendar() {
 
       // Convert React Big Calendar event to Google Calendar format
       const googleEvent = rbcEventToGoogleEvent(event);
-      console.log("Converted event to Google format:", googleEvent);
+      // console.log("Converted event to Google format:", googleEvent);
 
       const response = await addEventToCalendar(googleEvent, calendarId);
-      console.log("Google Calendar response:", response);
+      // console.log("Google Calendar response:", response);
       
       if (!response || !response.result) {
         throw new Error("Invalid response from Google Calendar API");
@@ -238,7 +246,7 @@ export function useGoogleCalendar() {
         }
       };
       
-      console.log("Adding new event to local state:", newEvent);
+      // console.log("Adding new event to local state:", newEvent);
       setEvents(prev => [...prev, newEvent]);
       return newEvent;
     } catch (error) {
@@ -257,7 +265,7 @@ export function useGoogleCalendar() {
 
   // Update existing event
   const updateEvent = useCallback(async (event) => {
-    console.log("Starting event update process for:", event);
+    // console.log("Starting event update process for:", event);
     
     if (!event || !event.id) {
       console.error("Cannot update event without ID");
@@ -277,7 +285,7 @@ export function useGoogleCalendar() {
         await handleGoogleCalendarAuth();
       }
 
-      console.log("Updating event in Google Calendar:", event, "in calendar:", calendarId);
+      // console.log("Updating event in Google Calendar:", event, "in calendar:", calendarId);
 
       // Convert React Big Calendar event to Google Calendar format
       const googleEvent = rbcEventToGoogleEvent(event);
@@ -285,10 +293,10 @@ export function useGoogleCalendar() {
       // Ensure the updated event has the correct ID
       googleEvent.id = event.id;
       
-      console.log("Sending event update to Google Calendar:", googleEvent);
+      // console.log("Sending event update to Google Calendar:", googleEvent);
 
       const response = await updateEventInCalendar(event.id, googleEvent, calendarId);
-      console.log("Update successful, Google response:", response.result);
+      // console.log("Update successful, Google response:", response.result);
       
       // Get the updated event from the response
       const updatedEvent = {
@@ -308,7 +316,7 @@ export function useGoogleCalendar() {
       // Update local events state
       setEvents(prev => {
         const updated = prev.map(e => e.id === event.id ? updatedEvent : e);
-        console.log("Updated local event state after Google update");
+        // console.log("Updated local event state after Google update");
         return updated;
       });
       
@@ -344,24 +352,24 @@ export function useGoogleCalendar() {
         await handleGoogleCalendarAuth();
       }
 
-      console.log(`Attempting to delete event ${eventId} from calendar ${calendarId}`);
+      // console.log(`Attempting to delete event ${eventId} from calendar ${calendarId}`);
       
       // Find the event to get its calendar ID if not provided
       if (calendarId === 'primary') {
         const eventToDelete = events.find(e => e.id === eventId);
         if (eventToDelete?.resource?.calendarId) {
           calendarId = eventToDelete.resource.calendarId;
-          console.log(`Found calendar ID in event: ${calendarId}`);
+          // console.log(`Found calendar ID in event: ${calendarId}`);
         }
       }
 
       await deleteEventFromCalendar(eventId, calendarId);
-      console.log(`Successfully deleted event ${eventId} from calendar ${calendarId}`);
+      // console.log(`Successfully deleted event ${eventId} from calendar ${calendarId}`);
       
       // Update local events state
       setEvents(prev => {
         const filtered = prev.filter(e => e.id !== eventId);
-        console.log(`Removed event from local state. Events count before: ${prev.length}, after: ${filtered.length}`);
+        // console.log(`Removed event from local state. Events count before: ${prev.length}, after: ${filtered.length}`);
         return filtered;
       });
       

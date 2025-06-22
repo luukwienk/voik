@@ -20,7 +20,7 @@ export class RealtimeClient {
     this.pingInterval = null;
     this.sessionUrl = null;
     this.recordingStartTime = null;
-    this.audioPlaybackEnabled = true; // Control audio playback
+    this.audioDataSent = false;
     
     this.sessionConfig = {
       model: 'gpt-4o-realtime-preview-2024-12-17',
@@ -174,7 +174,17 @@ export class RealtimeClient {
   }
 
   handleServerEvent(event) {
-    console.log('Server event:', event.type);
+    console.log('Server event:', event.type, event); // Log het hele event object
+    
+    // Log ALLE events die "transcript" bevatten
+    if (JSON.stringify(event).includes('transcript') && !event.type.includes('response')) {
+      console.log('POSSIBLE USER TRANSCRIPT EVENT:', event);
+    }
+    
+    // Voeg deze case toe voor andere mogelijke transcriptie events:
+    if (event.type.includes('transcription') || event.type.includes('audio')) {
+      console.log('Audio/Transcription related event:', event);
+    }
     
     switch (event.type) {
       case 'error':
@@ -192,8 +202,55 @@ export class RealtimeClient {
         this.emit('session.updated', event.session);
         break;
         
+      case 'response.content_part.added':
+        // Check if this contains transcription
+        if (event.part?.transcript) {
+          this.emit('conversation.item.input_audio_transcription.completed', {
+            transcript: event.part.transcript,
+            item_id: event.item_id
+          });
+        }
+        break;
+
+      case 'response.audio_transcript.delta':
+        // Another possible transcription event
+        if (event.transcript) {
+          this.emit('conversation.item.input_audio_transcription.completed', {
+            transcript: event.transcript,
+            item_id: event.item_id
+          });
+        }
+        break;
+        
+      case 'response.audio_transcript.done':
+        // Dit is het transcriptie event voor de ASSISTANT (niet de user)
+        if (event.transcript) {
+          console.log('Assistant audio transcript:', event.transcript);
+          // VOEG DIT TOE - emit als assistant message
+          this.emit('assistant.message', {
+            id: event.item_id || `assistant-transcript-${Date.now()}`,
+            content: event.transcript
+          });
+        }
+        break;
+        
       case 'conversation.item.created':
-        if (event.item.role === 'assistant' && event.item.content?.[0]?.text) {
+        console.log('FULL conversation item:', event.item);
+        
+        // Check voor user audio transcripties in conversation items
+        if (event.item?.role === 'user' && event.item?.content) {
+          // Loop door content array voor audio transcripties
+          const audioContent = event.item.content.find(c => c.type === 'input_audio' && c.transcript);
+          if (audioContent) {
+            this.emit('conversation.item.input_audio_transcription.completed', {
+              transcript: audioContent.transcript,
+              item_id: event.item.id
+            });
+          }
+        }
+        
+        // Handle assistant messages
+        if (event.item?.role === 'assistant' && event.item?.content?.[0]?.text) {
           this.emit('assistant.message', {
             id: event.item.id,
             content: event.item.content[0].text
@@ -202,20 +259,16 @@ export class RealtimeClient {
         break;
         
       case 'response.audio.delta':
-        console.log('Received audio delta, playback enabled:', this.audioPlaybackEnabled);
         if (event.delta) {
-          // Emit the event so the hook can decide what to do
+          // Always emit the event, let the hook decide what to do
           this.emit('response.audio.delta', event.delta);
-          
-          // Only play audio if enabled
-          if (this.audioPlaybackEnabled) {
-            this.audioProcessor.playAudio(event.delta);
-          }
+          // Audio playback is now controlled by the hook based on modality
         }
         break;
         
       case 'response.audio.done':
         this.emit('audio.done');
+        this.emit('response.complete', event);
         break;
         
       case 'response.text.delta':
@@ -251,25 +304,22 @@ export class RealtimeClient {
       case 'rate_limits.updated':
         console.log('Rate limits:', event.rate_limits);
         break;
-    }
-  }
-
-  // Enable or disable audio playback
-  setAudioPlayback(enabled) {
-    this.audioPlaybackEnabled = enabled;
-    console.log('Audio playback set to:', enabled);
-    
-    // If disabling, stop any current playback
-    if (!enabled) {
-      this.audioProcessor.stopPlayback();
+        
+      default:
+        console.warn(`Unknown server event: ${event.type}`);
     }
   }
 
   sendAudio(base64Audio) {
-    this.send({
-      type: 'input_audio_buffer.append',
-      audio: base64Audio
-    });
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({
+        type: 'input_audio_buffer.append',
+        audio: base64Audio
+      }));
+      this.audioDataSent = true;
+    } else {
+      console.warn('WebSocket not ready for sending:', { type: 'input_audio_buffer.append', audio: base64Audio });
+    }
   }
 
   send(data) {
@@ -282,6 +332,7 @@ export class RealtimeClient {
 
   async startRecording() {
     try {
+      this.audioDataSent = false; // Reset flag bij start
       await this.audioProcessor.startRecording();
       this.recordingStartTime = Date.now();
       this.emit('recording.started');
@@ -295,10 +346,10 @@ export class RealtimeClient {
   stopRecording() {
     this.audioProcessor.stopRecording();
     
-    // Only commit if we have been recording for a minimum time
-    if (this.recordingStartTime) {
+    // Check of we überhaupt audio data hebben verzonden
+    if (this.recordingStartTime && this.audioDataSent) {
       const recordingDuration = Date.now() - this.recordingStartTime;
-      console.log(`Recording duration: ${recordingDuration}ms`);
+      // console.log(`Recording duration: ${recordingDuration}ms`); // Debug log verwijderd
       
       if (recordingDuration > 500) {
         this.send({ type: 'input_audio_buffer.commit' });
@@ -307,11 +358,12 @@ export class RealtimeClient {
         this.send({ type: 'input_audio_buffer.clear' });
       }
     } else {
-      console.log('No recording start time found');
+      console.log('No audio data sent - clearing buffer');
       this.send({ type: 'input_audio_buffer.clear' });
     }
     
     this.recordingStartTime = null;
+    this.audioDataSent = false; // reset flag
     this.emit('recording.stopped');
   }
 
@@ -355,6 +407,7 @@ export class RealtimeClient {
   cancelResponse() {
     this.send({ type: 'response.cancel' });
     this.audioProcessor.stopPlayback();
+    this.emit('response.cancelled');
   }
 
   disconnect() {
@@ -402,7 +455,7 @@ export class RealtimeClient {
     this.pingInterval = setInterval(() => {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
         // Connection is still open, do nothing
-        console.log('WebSocket connection is alive');
+        // console.log('WebSocket connection is alive'); // Debug log verwijderd
       } else if (this.ws) {
         console.log('WebSocket connection lost');
         this.stopPingInterval();

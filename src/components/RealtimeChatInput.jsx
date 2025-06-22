@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPaperPlane, faSpinner, faMicrophone, faKeyboard } from '@fortawesome/free-solid-svg-icons';
+import { faPaperPlane, faSpinner, faMicrophone } from '@fortawesome/free-solid-svg-icons';
 
 const RealtimeChatInput = ({ 
   onSendText, 
-  onToggleMode,
-  inputMode = 'text',
+  onVoiceClick,
+  isRecording = false,
   isProcessing = false,
   disabled = false 
 }) => {
@@ -23,12 +23,11 @@ const RealtimeChatInput = ({
     }
   };
 
-  // Focus input when switching to text mode
   useEffect(() => {
-    if (inputMode === 'text' && inputRef.current) {
+    if (inputRef.current) {
       inputRef.current.focus();
     }
-  }, [inputMode]);
+  }, []);
 
   // Auto-resize when text changes
   useEffect(() => {
@@ -51,9 +50,9 @@ const RealtimeChatInput = ({
     }
   };
 
-  const handleModeToggle = () => {
+  const handleVoiceButtonClick = () => {
     if (!disabled) {
-      onToggleMode();
+      onVoiceClick();
     }
   };
 
@@ -65,49 +64,36 @@ const RealtimeChatInput = ({
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Type een bericht..."
-          disabled={isProcessing || disabled || inputMode !== 'text'}
+          placeholder="Stel een vraag of geef een commando..."
+          disabled={isProcessing || disabled || isRecording}
           rows={1}
-          className={`input-textarea ${isProcessing ? 'processing' : ''}`}
-          style={{ 
-            height: `${inputHeight}px`,
-            display: inputMode === 'text' ? 'block' : 'none'
-          }}
+          className={`input-textarea ${isProcessing || isRecording ? 'processing' : ''}`}
+          style={{ height: `${inputHeight}px` }}
         />
-        
-        {inputMode === 'voice' && (
-          <div className="voice-mode-placeholder">
-            <span className="voice-mode-text">Voice modus actief</span>
-          </div>
-        )}
         
         <div className="input-actions">
           <button
             type="button"
-            onClick={handleModeToggle}
-            className={`mode-toggle-btn ${inputMode === 'voice' ? 'active' : ''}`}
+            onClick={handleVoiceButtonClick}
+            className={`voice-btn ${isRecording ? 'recording' : ''}`}
             disabled={disabled}
-            title={inputMode === 'text' ? 'Schakel naar voice' : 'Schakel naar tekst'}
+            title={isRecording ? 'Stop opname' : 'Start opname'}
           >
-            <FontAwesomeIcon 
-              icon={inputMode === 'text' ? faMicrophone : faKeyboard} 
-            />
+            <FontAwesomeIcon icon={faMicrophone} />
           </button>
           
-          {inputMode === 'text' && (
-            <button 
-              type="submit"
-              className="send-btn"
-              disabled={!inputText.trim() || isProcessing || disabled}
-              title="Verstuur bericht"
-            >
-              {isProcessing ? (
-                <FontAwesomeIcon icon={faSpinner} spin />
-              ) : (
-                <FontAwesomeIcon icon={faPaperPlane} />
-              )}
-            </button>
-          )}
+          <button 
+            type="submit"
+            className="send-btn"
+            disabled={!inputText.trim() || isProcessing || disabled || isRecording}
+            title="Verstuur bericht"
+          >
+            {isProcessing ? (
+              <FontAwesomeIcon icon={faSpinner} spin />
+            ) : (
+              <FontAwesomeIcon icon={faPaperPlane} />
+            )}
+          </button>
         </div>
       </form>
       
@@ -148,23 +134,7 @@ const RealtimeChatInput = ({
         .input-textarea.processing {
           opacity: 0.7;
           cursor: not-allowed;
-        }
-        
-        .voice-mode-placeholder {
-          flex: 1;
-          height: 44px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background-color: #f5f5f5;
-          border-radius: 20px;
-          padding: 0 16px;
-        }
-        
-        .voice-mode-text {
-          color: #666;
-          font-size: 14px;
-          font-style: italic;
+          background-color: #f8f8f8;
         }
         
         .input-actions {
@@ -173,7 +143,7 @@ const RealtimeChatInput = ({
           align-items: center;
         }
         
-        .mode-toggle-btn, .send-btn {
+        .voice-btn, .send-btn {
           background: none;
           border: none;
           width: 40px;
@@ -187,14 +157,14 @@ const RealtimeChatInput = ({
           color: #666;
         }
         
-        .mode-toggle-btn:hover:not(:disabled) {
+        .voice-btn:hover:not(:disabled) {
           background-color: #f0f0f0;
           color: #222;
         }
         
-        .mode-toggle-btn.active {
-          background-color: #e3f2fd;
-          color: #2196F3;
+        .voice-btn.recording {
+          background-color: #ffdddd;
+          color: #d32f2f;
         }
         
         .send-btn {
@@ -228,38 +198,26 @@ const RealtimeChatInput = ({
             box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
           }
           
-          .voice-mode-placeholder {
-            background-color: #2c2c2c;
-          }
-          
-          .voice-mode-text {
-            color: #999;
-          }
-          
-          .mode-toggle-btn, .send-btn {
+           .input-textarea.processing {
+             background-color: #252525;
+           }
+
+          .voice-btn, .send-btn {
             color: #bbb;
           }
           
-          .mode-toggle-btn:hover:not(:disabled) {
+          .voice-btn:hover:not(:disabled) {
             background-color: #333;
             color: #fff;
           }
           
-          .mode-toggle-btn.active {
-            background-color: #1a2733;
-            color: #64b5f6;
-          }
-          
-          .send-btn {
-            color: #64b5f6;
+          .voice-btn.recording {
+            background-color: #4d2323;
+            color: #ff8a80;
           }
           
           .send-btn:hover:not(:disabled) {
             background-color: #1a2733;
-          }
-          
-          .send-btn:disabled {
-            color: #555;
           }
         }
       `}</style>

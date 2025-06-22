@@ -109,16 +109,6 @@ export const realtimeFunctions = [
     },
     {
       type: "function",
-      name: "list_all_tasks",
-      description: "Toon alle taken uit alle lijsten",
-      parameters: {
-        type: "object",
-        properties: {},
-        required: []
-      }
-    },
-    {
-      type: "function",
       name: "switch_task_list",
       description: "Wissel naar een andere takenlijst",
       parameters: {

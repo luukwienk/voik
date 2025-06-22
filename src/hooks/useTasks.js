@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db, collection, getDocs, setDoc, doc, deleteDoc } from '../firebase';
+import { debugLog, debugError } from '../utils/debug';
 
 export function useTasks(user) {
   const [tasks, setTasks] = useState({});
@@ -28,7 +29,7 @@ export function useTasks(user) {
 
   const loadTasks = async (userId) => {
     try {
-      console.log('Loading tasks for user:', userId);
+      debugLog('Loading tasks for user:', userId);
       const tasksCollection = collection(db, 'users', userId, 'tasks');
       const tasksSnapshot = await getDocs(tasksCollection);
       const loadedTasks = {};
@@ -48,46 +49,47 @@ export function useTasks(user) {
         loadedTasks[doc.id] = {
           items: updatedItems
         };
-        console.log(`Loaded task list "${doc.id}":`, updatedItems);
+        debugLog(`Loaded task list "${doc.id}":`, updatedItems);
       });
       
       // Zorg ervoor dat er altijd een 'Today' lijst is
       if (!loadedTasks['Today']) {
         loadedTasks['Today'] = { items: [] };
-        console.log('Created missing "Today" task list');
+        debugLog('Created missing "Today" task list');
         await saveTasks(userId, loadedTasks);
       }
       
       if (Object.keys(loadedTasks).length === 0) {
         loadedTasks['Today'] = { items: [] };
-        console.log('Created default "Today" task list');
+        debugLog('Created default "Today" task list');
         await saveTasks(userId, loadedTasks);
       }
       
-      console.log('All loaded tasks:', loadedTasks);
+      debugLog('All loaded tasks:', loadedTasks);
       setTasks(loadedTasks);
       
       // Altijd 'Today' selecteren als standaard, ongeacht welke lijsten er zijn
       setCurrentTaskList('Today');
       setTasksLoaded(true);
+      debugLog('🔍 DEBUG: Tasks loading completed, tasksLoaded set to true');
     } catch (error) {
-      console.error('Error loading tasks:', error);
+      debugError('Error loading tasks:', error);
     }
   };
 
   const saveTasks = async (userId, tasksToSave) => {
     if (!tasksLoaded) return;
     try {
-      console.log('Saving tasks for user:', userId);
+      debugLog('Saving tasks for user:', userId);
       const tasksCollection = collection(db, 'users', userId, 'tasks');
       for (const listName in tasksToSave) {
         await setDoc(doc(tasksCollection, listName), { 
           items: tasksToSave[listName].items 
         });
       }
-      console.log('Tasks saved');
+      debugLog('Tasks saved');
     } catch (error) {
-      console.error('Error saving tasks:', error);
+      debugError('Error saving tasks:', error);
     }
   };
 
@@ -122,9 +124,9 @@ export function useTasks(user) {
     try {
       const taskDoc = doc(db, 'users', userId, 'tasks', listName);
       await deleteDoc(taskDoc);
-      console.log(`Task list "${listName}" deleted from database`);
+      debugLog(`Task list "${listName}" deleted from database`);
     } catch (error) {
-      console.error('Error deleting task list:', error);
+      debugError('Error deleting task list:', error);
     }
   };
 
@@ -132,12 +134,12 @@ export function useTasks(user) {
     try {
       // Detecteer of we een task object krijgen
       if (typeof listName === 'object' && listName !== null) {
-        console.log('Received task object instead of listName');
+        debugLog('Received task object instead of listName');
         const task = listName;
         const taskList = task.list;
         
         if (!taskList) {
-          console.error('Missing list property in task:', task);
+          debugError('Missing list property in task:', task);
           return;
         }
         
@@ -164,30 +166,30 @@ export function useTasks(user) {
       }
 
       // Originele code vanaf hier...
-      console.log('UpdateTaskList called with:', {
+      debugLog('UpdateTaskList called with:', {
         listName,
         newListData
       });
   
       // Controleer de basis structuur
       if (!newListData || !listName) {
-        console.error('Missing required data:', { listName, newListData });
+        debugError('Missing required data:', { listName, newListData });
         throw new Error('Missing required task list data');
       }
   
       // Zorg ervoor dat we een items array hebben
       if (!newListData.items) {
-        console.log('Items array missing, creating empty array for:', listName);
+        debugLog('Items array missing, creating empty array for:', listName);
         newListData.items = [];
       } else if (!Array.isArray(newListData.items)) {
-        console.error('Invalid items structure:', listName);
+        debugError('Invalid items structure:', listName);
         newListData.items = [];
       }
   
       // Valideer elk item in de array en voeg title toe als het ontbreekt
       const validatedItems = newListData.items.map(item => {
         if (!item || typeof item !== 'object') {
-          console.error('Invalid item:', item);
+          debugError('Invalid item:', item);
           return {
             id: `task-${Date.now()}-${Math.random()}`,
             title: 'Nieuwe taak',
@@ -220,7 +222,7 @@ export function useTasks(user) {
       // Update in Firebase
       if (user) {
         const taskDoc = doc(db, 'users', user.uid, 'tasks', listName);
-        console.log('Saving to Firebase:', {
+        debugLog('Saving to Firebase:', {
           listName,
           validatedData
         });
@@ -228,7 +230,7 @@ export function useTasks(user) {
       }
   
     } catch (error) {
-      console.error('Error in updateTaskList:', error);
+      debugError('Error in updateTaskList:', error);
       throw error;
     }
   };
