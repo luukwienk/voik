@@ -48,6 +48,23 @@ function ResponsiveMainContent({
   // Consider iPad as mobile for our layout
   const isDesktop = useMediaQuery('(min-width: 768px)') && !isIPad;
 
+  const handleTasksExtracted = (tasks) => {
+    if (tasks && tasks.length > 0) {
+      const newTasks = tasks.map(text => ({
+        id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        text: text,
+        title: text.split('\n')[0].substring(0, 50),
+        completed: false,
+        createdAt: new Date().toISOString()
+      }));
+      
+      const currentItems = tasks[currentTaskList]?.items || [];
+      updateTaskList(currentTaskList, {
+        items: [...currentItems, ...newTasks]
+      });
+    }
+  };
+
   // Render TaskOverviewPage for tab 2
   if (currentTab === 2) {
     return (
@@ -117,7 +134,7 @@ function ResponsiveMainContent({
           height: 'calc(100vh - 130px)',
           overflowY: 'auto'
         }}>
-          <TranscriptionTab user={user} />
+          <TranscriptionTab user={user} onTasksExtracted={handleTasksExtracted} />
             
           {/* Chat button */}
           <div className="chat-button-container">
@@ -205,7 +222,7 @@ function ResponsiveMainContent({
           ) : currentTab === 4 ? (
             // Transcription tab for desktop
             <div style={{ marginTop: 24 }}>
-              <TranscriptionTab user={user} />
+              <TranscriptionTab user={user} onTasksExtracted={handleTasksExtracted} />
             </div>
           ) : currentTab === 5 ? (
             // Success tracker for desktop
@@ -272,7 +289,7 @@ function ResponsiveMainContent({
         ) : currentTab === 4 ? (
           // Transcription tab for mobile
           <div style={{ marginTop: 24 }}>
-            <TranscriptionTab user={user} />
+            <TranscriptionTab user={user} onTasksExtracted={handleTasksExtracted} />
           </div>
         ) : currentTab === 5 ? (
           // Success tracker for mobile

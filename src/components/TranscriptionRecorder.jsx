@@ -4,6 +4,19 @@ import { useAudioRecording } from '../hooks/useAudioRecording';
 import { useTranscriptions } from '../hooks/useTranscriptions';
 import { TranscriptionService } from '../services/transcription';
 import '../styles/TranscriptionRecorder.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faMicrophone,
+  faPause,
+  faPlay,
+  faStop,
+  faSave,
+  faTimes,
+  faCheck,
+  faTrash,
+  faFileAlt,
+  faExclamationTriangle
+} from '@fortawesome/free-solid-svg-icons';
 
 function TranscriptionRecorder({ user, onSaved }) {
   const {
@@ -117,7 +130,7 @@ function TranscriptionRecorder({ user, onSaved }) {
               className="recorder-btn primary"
               onClick={startRecording}
             >
-              🎙️ Start Opname
+              <FontAwesomeIcon icon={faMicrophone} /> Start Opname
             </button>
           )}
 
@@ -127,13 +140,13 @@ function TranscriptionRecorder({ user, onSaved }) {
                 className="recorder-btn secondary"
                 onClick={isPaused ? resumeRecording : pauseRecording}
               >
-                {isPaused ? '▶️ Hervat' : '⏸️ Pauzeer'}
+                <FontAwesomeIcon icon={isPaused ? faPlay : faPause} /> {isPaused ? 'Hervat' : 'Pauzeer'}
               </button>
               <button 
                 className="recorder-btn danger"
                 onClick={stopRecording}
               >
-                ⏹️ Stop
+                <FontAwesomeIcon icon={faStop} /> Stop
               </button>
             </>
           )}
@@ -145,13 +158,13 @@ function TranscriptionRecorder({ user, onSaved }) {
                 onClick={handleTranscribe}
                 disabled={isTranscribing}
               >
-                {isTranscribing ? 'Transcriberen...' : '📝 Transcribeer'}
+                <FontAwesomeIcon icon={faFileAlt} /> {isTranscribing ? 'Transcriberen...' : 'Transcribeer'}
               </button>
               <button 
                 className="recorder-btn secondary"
                 onClick={resetRecording}
               >
-                🗑️ Nieuwe Opname
+                <FontAwesomeIcon icon={faTrash} /> Nieuwe Opname
               </button>
             </>
           )}
@@ -180,7 +193,7 @@ function TranscriptionRecorder({ user, onSaved }) {
 
         {error && (
           <div className="error-message">
-            ⚠️ {error}
+            <FontAwesomeIcon icon={faExclamationTriangle} /> {error}
           </div>
         )}
       </div>
@@ -229,13 +242,13 @@ function TranscriptionRecorder({ user, onSaved }) {
               className="btn secondary"
               onClick={handleCancel}
             >
-              Annuleer
+              <FontAwesomeIcon icon={faTimes} /> Annuleer
             </button>
             <button 
               className="btn primary"
               onClick={handleSave}
             >
-              💾 Opslaan
+              <FontAwesomeIcon icon={faSave} /> Opslaan
             </button>
           </div>
         </div>

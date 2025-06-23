@@ -1,9 +1,26 @@
 // components/TranscriptionList.jsx
 import React, { useState, useMemo } from 'react';
 import { useTranscriptions } from '../hooks/useTranscriptions';
+import TranscriptionAIActions from './TranscriptionAIActions';
 import '../styles/TranscriptionList.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faCalendar,
+  faClock,
+  faTag,
+  faPen,
+  faDownload,
+  faTrash,
+  faTimes,
+  faCheck,
+  faLanguage,
+  faMoneyBill,
+  faPlus,
+  faExclamationTriangle,
+  faSearch
+} from '@fortawesome/free-solid-svg-icons';
 
-function TranscriptionList({ user }) {
+function TranscriptionList({ user, onTasksExtracted }) {
   const {
     transcriptions,
     isLoading,
@@ -99,10 +116,14 @@ function TranscriptionList({ user }) {
         <div className="search-box">
           <input
             type="text"
-            placeholder="🔍 Zoek in transcripties..."
+            placeholder=""
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ paddingLeft: '32px' }}
           />
+          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#bbb', pointerEvents: 'none' }}>
+            <FontAwesomeIcon icon={faSearch} />
+          </span>
         </div>
       </div>
 
@@ -136,8 +157,8 @@ function TranscriptionList({ user }) {
                       }}
                       autoFocus
                     />
-                    <button onClick={(e) => { e.stopPropagation(); handleSaveEdit(); }}>✓</button>
-                    <button onClick={(e) => { e.stopPropagation(); handleCancelEdit(); }}>✗</button>
+                    <button onClick={(e) => { e.stopPropagation(); handleSaveEdit(); }}><FontAwesomeIcon icon={faCheck} /></button>
+                    <button onClick={(e) => { e.stopPropagation(); handleCancelEdit(); }}><FontAwesomeIcon icon={faTimes} /></button>
                   </div>
                 ) : (
                   <h3>{transcription.title}</h3>
@@ -151,7 +172,7 @@ function TranscriptionList({ user }) {
                     }}
                     title="Bewerk titel"
                   >
-                    ✏️
+                    <FontAwesomeIcon icon={faPen} />
                   </button>
                   <button
                     className="action-btn"
@@ -161,7 +182,7 @@ function TranscriptionList({ user }) {
                     }}
                     title="Download als tekst"
                   >
-                    📥
+                    <FontAwesomeIcon icon={faDownload} />
                   </button>
                   <button
                     className="action-btn danger"
@@ -171,22 +192,22 @@ function TranscriptionList({ user }) {
                     }}
                     title="Verwijder"
                   >
-                    🗑️
+                    <FontAwesomeIcon icon={faTrash} />
                   </button>
                 </div>
               </div>
 
               <div className="card-meta">
                 <span className="meta-item">
-                  📅 {formatDate(transcription.createdAt)}
+                  <FontAwesomeIcon icon={faCalendar} /> {formatDate(transcription.createdAt)}
                 </span>
                 <span className="meta-item">
-                  ⏱️ {formatDuration(transcription.duration)}
+                  <FontAwesomeIcon icon={faClock} /> {formatDuration(transcription.duration)}
                 </span>
                 {transcription.tags?.length > 0 && (
                   <div className="tags">
                     {transcription.tags.map((tag, index) => (
-                      <span key={index} className="tag">#{tag}</span>
+                      <span key={index} className="tag"><FontAwesomeIcon icon={faTag} /> {tag}</span>
                     ))}
                   </div>
                 )}
@@ -204,13 +225,13 @@ function TranscriptionList({ user }) {
                       className="btn danger"
                       onClick={() => handleDelete(transcription.id)}
                     >
-                      Verwijder
+                      <FontAwesomeIcon icon={faTrash} /> Verwijder
                     </button>
                     <button
                       className="btn secondary"
                       onClick={() => setShowDeleteConfirm(null)}
                     >
-                      Annuleer
+                      <FontAwesomeIcon icon={faTimes} /> Annuleer
                     </button>
                   </div>
                 </div>
@@ -229,23 +250,23 @@ function TranscriptionList({ user }) {
                 className="close-btn"
                 onClick={() => setSelectedTranscription(null)}
               >
-                ✕
+                <FontAwesomeIcon icon={faTimes} />
               </button>
             </div>
 
             <div className="detail-meta">
-              <span>📅 {formatDate(selectedTranscription.createdAt)}</span>
-              <span>⏱️ {formatDuration(selectedTranscription.duration)}</span>
-              <span>🌐 {selectedTranscription.language?.toUpperCase() || 'NL'}</span>
+              <span><FontAwesomeIcon icon={faCalendar} /> {formatDate(selectedTranscription.createdAt)}</span>
+              <span><FontAwesomeIcon icon={faClock} /> {formatDuration(selectedTranscription.duration)}</span>
+              <span><FontAwesomeIcon icon={faLanguage} /> {selectedTranscription.language?.toUpperCase() || 'NL'}</span>
               {selectedTranscription.cost && (
-                <span>💰 ${selectedTranscription.cost.toFixed(3)}</span>
+                <span><FontAwesomeIcon icon={faMoneyBill} /> ${selectedTranscription.cost.toFixed(3)}</span>
               )}
             </div>
 
             {selectedTranscription.tags?.length > 0 && (
               <div className="detail-tags">
                 {selectedTranscription.tags.map((tag, index) => (
-                  <span key={index} className="tag">#{tag}</span>
+                  <span key={index} className="tag"><FontAwesomeIcon icon={faTag} /> {tag}</span>
                 ))}
               </div>
             )}
@@ -259,14 +280,19 @@ function TranscriptionList({ user }) {
                 className="btn primary"
                 onClick={() => exportTranscription(selectedTranscription, 'txt')}
               >
-                📥 Download TXT
+                <FontAwesomeIcon icon={faDownload} /> Download TXT
               </button>
               <button
                 className="btn secondary"
                 onClick={() => exportTranscription(selectedTranscription, 'json')}
               >
-                📥 Download JSON
+                <FontAwesomeIcon icon={faDownload} /> Download JSON
               </button>
+              {/* AI Actions Component direct onder de downloadknoppen, binnen detail-actions */}
+              <TranscriptionAIActions 
+                transcription={selectedTranscription}
+                onTasksExtracted={onTasksExtracted}
+              />
             </div>
           </div>
         </div>
