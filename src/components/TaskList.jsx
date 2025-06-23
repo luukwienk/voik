@@ -394,7 +394,16 @@ const TaskList = ({
           task={{ ...selectedTask, list: currentList }}
           onClose={() => setSelectedTask(null)}
           updateTaskList={(updatedTask) => {
-            updateList(updatedTask);
+            // Zoek de juiste lijst en update alleen de betreffende taak
+            const currentItems = tasks?.items || [];
+            const updatedItems = currentItems.map(t =>
+              t.id === updatedTask.id ? { ...t, ...updatedTask } : t
+            );
+            if (updateList.length === 1) {
+              updateList({ items: updatedItems });
+            } else {
+              updateList(currentList, { items: updatedItems });
+            }
             setSelectedTask(null);
           }}
         />

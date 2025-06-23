@@ -182,6 +182,11 @@ function App() {
         setInitialTabsVisited(prev => ({ ...prev, 0: true }));
       }
       
+      // Transcriptie tab initialisatie
+      if (tab === 4 && !initialTabsVisited[4]) {
+        setInitialTabsVisited(prev => ({ ...prev, 4: true }));
+      }
+      
       // We behouden de geselecteerde lijsten bij tabwisseling
     }
   };

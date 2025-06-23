@@ -6,6 +6,7 @@ import {
   faClock, 
   faSearch, 
   faHeartbeat, 
+  faMicrophone,
   faTrophy,
   faSignOutAlt 
 } from '@fortawesome/free-solid-svg-icons';
@@ -67,10 +68,17 @@ const TabsNavigation = ({ currentTab, onTabChange, signOut }) => {
         >
           <FontAwesomeIcon icon={faHeartbeat} />
         </div>
-        {/* Success tracker tab */}
+        {/* Transcription tab */}
         <div
           className={`tab-item ${currentTab === 4 ? 'active' : ''}`}
           onClick={() => handleChange(4)}
+        >
+          <FontAwesomeIcon icon={faMicrophone} />
+        </div>
+        {/* Success tracker tab */}
+        <div
+          className={`tab-item ${currentTab === 5 ? 'active' : ''}`}
+          onClick={() => handleChange(5)}
         >
           <FontAwesomeIcon icon={faTrophy} />
         </div>

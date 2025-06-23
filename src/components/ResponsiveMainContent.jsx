@@ -3,6 +3,7 @@ import TaskList from './TaskList';
 import TaskOverviewPage from './TaskOverviewPage';
 import HealthTabNavigator from './health/HealthTabNavigator';
 import SuccessTracker from './success/succesTracker';
+import TranscriptionTab from './TranscriptionTab';
 import ChatButton from './ChatButton';
 import ChatInterface from './ChatInterface';
 import ErrorBoundary from './ErrorBoundary';
@@ -105,8 +106,42 @@ function ResponsiveMainContent({
     );
   }
 
-  // Render Success Tracker for tab 4
+  // Render Transcription Tab for tab 4
   if (currentTab === 4) {
+    return (
+      <ErrorBoundary>
+        <main className={`responsive-container ${!isDesktop ? 'mobile-full-width' : ''}`} style={{ 
+          width: '100%',
+          maxWidth: '100%', 
+          boxSizing: 'border-box',
+          height: 'calc(100vh - 130px)',
+          overflowY: 'auto'
+        }}>
+          <TranscriptionTab user={user} />
+            
+          {/* Chat button */}
+          <div className="chat-button-container">
+            {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
+          </div>
+            
+          {/* Chat interface */}
+          {isChatModalOpen && (
+            <div className="chat-modal-overlay">
+              <div className="chat-modal">
+                <ChatInterface 
+                  {...chatProps}
+                  onClose={() => setIsChatModalOpen(false)}
+                />
+              </div>
+            </div>
+          )}
+        </main>
+      </ErrorBoundary>
+    );
+  }
+
+  // Render Success Tracker for tab 5
+  if (currentTab === 5) {
     return (
       <ErrorBoundary>
         <main className={`responsive-container ${!isDesktop ? 'mobile-full-width' : ''}`} style={{ 
@@ -168,6 +203,11 @@ function ResponsiveMainContent({
               />
             </div>
           ) : currentTab === 4 ? (
+            // Transcription tab for desktop
+            <div style={{ marginTop: 24 }}>
+              <TranscriptionTab user={user} />
+            </div>
+          ) : currentTab === 5 ? (
             // Success tracker for desktop
             <div style={{ marginTop: 24 }}>
               <SuccessTracker userId={user?.uid} />
@@ -177,31 +217,21 @@ function ResponsiveMainContent({
               {/* Combined calendar and task list view */}
               {currentTab === 0 ? (
                 <div className="desktop-flex-row">
-                  {/* Calendar on the left, 63% width */}
-                  <div className="calendar-container">
-                    <ErrorBoundary>
-                      <BigCalendarView 
-                        tasks={tasks}
-                        currentTaskList={currentTaskList}
-                        moveTask={moveTask}
-                      />
-                    </ErrorBoundary>
+                  {/* Task list only - calendar temporarily removed */}
+                  <div className="tasklist-container" style={{ marginTop: 24, width: '100%' }}>
+                    <TaskList
+                      tasks={tasks[currentTaskList]}
+                      currentList={currentTaskList}
+                      lists={tasks}
+                      moveTask={moveTask}
+                      hideTitleHeader={true}
+                      setCurrentList={setCurrentTaskList}
+                      addList={addTaskList}
+                      deleteList={deleteTaskList}
+                      updateList={(updatedData) => updateTaskList(currentTaskList, updatedData)}
+                      signOut={signOut}
+                    />
                   </div>
-                  {/* Task list on the right, 37% width */}
-                  <div className="tasklist-container" style={{ marginTop: 24 }}>
-  <TaskList
-    tasks={tasks[currentTaskList]}
-    currentList={currentTaskList}
-    lists={tasks}
-    moveTask={moveTask}
-    hideTitleHeader={true}
-    setCurrentList={setCurrentTaskList}
-    addList={addTaskList}
-    deleteList={deleteTaskList}
-    updateList={(updatedData) => updateTaskList(currentTaskList, updatedData)}
-    signOut={signOut}
-  />
-</div>
                 </div>
               ) : null}
               {/* Chat button */}
@@ -240,6 +270,11 @@ function ResponsiveMainContent({
             />
           </div>
         ) : currentTab === 4 ? (
+          // Transcription tab for mobile
+          <div style={{ marginTop: 24 }}>
+            <TranscriptionTab user={user} />
+          </div>
+        ) : currentTab === 5 ? (
           // Success tracker for mobile
           <div style={{ marginTop: 24 }}>
             <SuccessTracker userId={user?.uid} />
