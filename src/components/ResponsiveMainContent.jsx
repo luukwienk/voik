@@ -48,20 +48,18 @@ function ResponsiveMainContent({
   // Consider iPad as mobile for our layout
   const isDesktop = useMediaQuery('(min-width: 768px)') && !isIPad;
 
-  const handleTasksExtracted = (tasks) => {
-    if (tasks && tasks.length > 0) {
-      const newTasks = tasks.map(text => ({
+  const handleTasksExtracted = (tasksToAdd) => {
+    if (tasksToAdd && tasksToAdd.length > 0) {
+      const currentItems = tasks[currentTaskList]?.items || [];
+      const newTasks = tasksToAdd.map(text => ({
         id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         text: text,
         title: text.split('\n')[0].substring(0, 50),
         completed: false,
         createdAt: new Date().toISOString()
       }));
-      
-      const currentItems = tasks[currentTaskList]?.items || [];
-      updateTaskList(currentTaskList, {
-        items: [...currentItems, ...newTasks]
-      });
+      const updatedItems = [...currentItems, ...newTasks];
+      updateTaskList(currentTaskList, { items: updatedItems });
     }
   };
 
