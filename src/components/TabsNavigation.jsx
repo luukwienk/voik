@@ -82,17 +82,18 @@ const TabsNavigation = ({ currentTab, onTabChange, signOut }) => {
         >
           <FontAwesomeIcon icon={faTrophy} />
         </div>
-        {/* Logout tab alleen op mobiel */}
-        {isMobile && (
-          <div
-            className="tab-item"
-            onClick={signOut}
-            title="Uitloggen"
-            aria-label="Uitloggen"
-          >
-            <FontAwesomeIcon icon={faSignOutAlt} />
-          </div>
-        )}
+        {/* Visuele scheiding voor logout */}
+        <div style={{ flex: '0 0 16px' }} />
+        {/* Logout tab altijd zichtbaar */}
+        <div
+          className="tab-item"
+          onClick={signOut}
+          title="Uitloggen"
+          aria-label="Uitloggen"
+          style={{ color: '#2196F3' }}
+        >
+          <FontAwesomeIcon icon={faSignOutAlt} />
+        </div>
       </div>
     </div>
   );

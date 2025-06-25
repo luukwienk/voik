@@ -109,6 +109,33 @@ const TaskOverviewPage = ({ tasks, updateTaskList }) => {
     // Geen alert hier, dit gebeurt al in de TaskTable component
   };
   
+  // Functie om gefilterde taken te exporteren als Markdown
+  const handleExport = () => {
+    if (!filteredTasks.length) {
+      alert('Geen taken om te exporteren.');
+      return;
+    }
+    const markdown = filteredTasks.map(task => {
+      const status = task.completed ? 'x' : ' ';
+      // Titel of eerste regel van de tekst
+      let title = task.title || '';
+      if (!title && task.text) {
+        try {
+          const parsed = JSON.parse(task.text);
+          if (parsed.blocks && parsed.blocks.length > 0) {
+            title = parsed.blocks[0].text;
+          }
+        } catch {
+          title = task.text.split(/\r?\n/)[0];
+        }
+      }
+      return `- [${status}] ${title} (${task.list})`;
+    }).join('\n');
+    navigator.clipboard.writeText(markdown).then(() => {
+      alert('Taken gekopieerd als Markdown!');
+    });
+  };
+  
   return (
     <div className="task-overview-page" style={{ 
       padding: '20px',
@@ -117,6 +144,23 @@ const TaskOverviewPage = ({ tasks, updateTaskList }) => {
       flexDirection: 'column',
       overflow: 'hidden'
     }}>
+      {/* Exportknop alleen zichtbaar op desktop */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+        <button className="hide-on-mobile" onClick={handleExport} style={{
+          background: '#f5f7fa',
+          border: '1px solid #e0e7ef',
+          borderRadius: '4px',
+          padding: '6px 16px',
+          color: '#2196F3',
+          fontWeight: 500,
+          cursor: 'pointer',
+          fontSize: '15px',
+          boxShadow: 'none',
+          opacity: 0.85
+        }} title="Taken exporteren als Markdown">
+          📤 Exporteren
+        </button>
+      </div>
       {/* Filter component */}
       <TaskFilters 
         searchTerm={searchTerm}
@@ -151,6 +195,13 @@ const TaskOverviewPage = ({ tasks, updateTaskList }) => {
           }}
         />
       )}
+      {/* CSS voor hide-on-mobile */}
+      <style>{`
+        .hide-on-mobile { display: inline-block; }
+        @media (max-width: 768px) {
+          .hide-on-mobile { display: none !important; }
+        }
+      `}</style>
     </div>
   );
 };
