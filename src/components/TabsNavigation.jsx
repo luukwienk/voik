@@ -8,6 +8,7 @@ import {
   faHeartbeat, 
   faMicrophone,
   faTrophy,
+  faCog,
   faSignOutAlt 
 } from '@fortawesome/free-solid-svg-icons';
 import useMediaQuery from '../hooks/useMediaQuery';
@@ -81,6 +82,13 @@ const TabsNavigation = ({ currentTab, onTabChange, signOut }) => {
           onClick={() => handleChange(5)}
         >
           <FontAwesomeIcon icon={faTrophy} />
+        </div>
+        {/* Settings tab */}
+        <div
+          className={`tab-item ${currentTab === 6 ? 'active' : ''}`}
+          onClick={() => handleChange(6)}
+        >
+          <FontAwesomeIcon icon={faCog} />
         </div>
         {/* Visuele scheiding voor logout */}
         <div style={{ flex: '0 0 16px' }} />

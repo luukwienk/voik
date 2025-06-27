@@ -8,6 +8,7 @@ import ChatButton from './ChatButton';
 import ChatInterface from './ChatInterface';
 import ErrorBoundary from './ErrorBoundary';
 import BigCalendarView from './BigCalendarView';
+import Settings from './settings/Settings';
 import useMediaQuery from '../hooks/useMediaQuery';
 import '../styles/responsive.css';
 import '../styles/centeredLayout.css';
@@ -189,6 +190,40 @@ function ResponsiveMainContent({
     );
   }
 
+  // Render Settings for tab 6
+  if (currentTab === 6) {
+    return (
+      <ErrorBoundary>
+        <main className={`responsive-container ${!isDesktop ? 'mobile-full-width' : ''}`} style={{ 
+          width: '100%',
+          maxWidth: '100%', 
+          boxSizing: 'border-box',
+          height: 'calc(100vh - 130px)',
+          overflowY: 'auto'
+        }}>
+          <Settings user={user} />
+            
+          {/* Chat button */}
+          <div className="chat-button-container">
+            {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
+          </div>
+            
+          {/* Chat interface */}
+          {isChatModalOpen && (
+            <div className="chat-modal-overlay">
+              <div className="chat-modal">
+                <ChatInterface 
+                  {...chatProps}
+                  onClose={() => setIsChatModalOpen(false)}
+                />
+              </div>
+            </div>
+          )}
+        </main>
+      </ErrorBoundary>
+    );
+  }
+
   // Render Desktop or Mobile layout based on screen size
   if (isDesktop) {
     // Desktop Layout (calendar + task list)
@@ -226,6 +261,11 @@ function ResponsiveMainContent({
             // Success tracker for desktop
             <div style={{ marginTop: 24 }}>
               <SuccessTracker userId={user?.uid} />
+            </div>
+          ) : currentTab === 6 ? (
+            // Settings for desktop
+            <div style={{ marginTop: 24 }}>
+              <Settings user={user} />
             </div>
           ) : (
             <>
@@ -293,6 +333,11 @@ function ResponsiveMainContent({
           // Success tracker for mobile
           <div style={{ marginTop: 24 }}>
             <SuccessTracker userId={user?.uid} />
+          </div>
+        ) : currentTab === 6 ? (
+          // Settings for mobile
+          <div style={{ marginTop: 24 }}>
+            <Settings user={user} />
           </div>
         ) : (
           <>

@@ -1,0 +1,93 @@
+/* Settings Container */
+.settings-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.settings-title {
+  font-size: 28px;
+  margin-bottom: 30px;
+  color: #333;
+}
+
+/* Settings Tabs */
+.settings-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.settings-tab {
+  background: none;
+  border: none;
+  padding: 12px 20px;
+  font-size: 16px;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+}
+
+.settings-tab:hover {
+  color: #2196F3;
+}
+
+.settings-tab.active {
+  color: #2196F3;
+  border-bottom-color: #2196F3;
+  font-weight: 500;
+}
+
+.settings-tab svg {
+  margin-right: 8px;
+}
+
+/* Settings Content */
+.settings-content {
+  background: white;
+  border-radius: 8px;
+  padding: 30px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.settings-section h2 {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+/* Profile Section */
+.profile-info p {
+  margin: 10px 0;
+  font-size: 16px;
+  color: #555;
+}
+
+.profile-info strong {
+  color: #333;
+  margin-right: 10px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .settings-container {
+    padding: 10px;
+  }
+
+  .settings-tabs {
+    flex-wrap: wrap;
+  }
+
+  .settings-tab {
+    flex: 1;
+    min-width: 120px;
+    font-size: 14px;
+    padding: 10px;
+  }
+
+  .settings-content {
+    padding: 20px;
+  }
+}
