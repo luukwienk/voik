@@ -97,17 +97,7 @@ function ResponsiveMainContent({
             {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
           </div>
           
-          {/* Chat interface */}
-          {isChatModalOpen && (
-            <div className="chat-modal-overlay">
-              <div className="chat-modal">
-                <ChatInterface 
-                  {...chatProps}
-                  onClose={() => setIsChatModalOpen(false)}
-                />
-              </div>
-            </div>
-          )}
+          {/* Chat interface moved to App.jsx (single global modal) */}
         </main>
       </ErrorBoundary>
     );
@@ -141,17 +131,7 @@ function ResponsiveMainContent({
             {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
           </div>
             
-          {/* Chat interface */}
-          {isChatModalOpen && (
-            <div className="chat-modal-overlay">
-              <div className="chat-modal">
-                <ChatInterface 
-                  {...chatProps}
-                  onClose={() => setIsChatModalOpen(false)}
-                />
-              </div>
-            </div>
-          )}
+          {/* Chat interface moved to App.jsx (single global modal) */}
         </main>
       </ErrorBoundary>
     );
@@ -175,17 +155,7 @@ function ResponsiveMainContent({
             {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
           </div>
             
-          {/* Chat interface */}
-          {isChatModalOpen && (
-            <div className="chat-modal-overlay">
-              <div className="chat-modal">
-                <ChatInterface 
-                  {...chatProps}
-                  onClose={() => setIsChatModalOpen(false)}
-                />
-              </div>
-            </div>
-          )}
+          {/* Chat interface moved to App.jsx (single global modal) */}
         </main>
       </ErrorBoundary>
     );
@@ -209,17 +179,7 @@ function ResponsiveMainContent({
             {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
           </div>
             
-          {/* Chat interface */}
-          {isChatModalOpen && (
-            <div className="chat-modal-overlay">
-              <div className="chat-modal">
-                <ChatInterface 
-                  {...chatProps}
-                  onClose={() => setIsChatModalOpen(false)}
-                />
-              </div>
-            </div>
-          )}
+          {/* Chat interface moved to App.jsx (single global modal) */}
         </main>
       </ErrorBoundary>
     );
@@ -243,17 +203,7 @@ function ResponsiveMainContent({
             {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
           </div>
             
-          {/* Chat interface */}
-          {isChatModalOpen && (
-            <div className="chat-modal-overlay">
-              <div className="chat-modal">
-                <ChatInterface 
-                  {...chatProps}
-                  onClose={() => setIsChatModalOpen(false)}
-                />
-              </div>
-            </div>
-          )}
+          {/* Chat interface moved to App.jsx (single global modal) */}
         </main>
       </ErrorBoundary>
     );
@@ -404,16 +354,7 @@ function ResponsiveMainContent({
         <div className="chat-button-container">
           {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
         </div>
-        {isChatModalOpen && (
-          <div className="chat-modal-overlay">
-            <div className="chat-modal">
-              <ChatInterface 
-                {...chatProps}
-                onClose={() => setIsChatModalOpen(false)}
-              />
-            </div>
-          </div>
-        )}
+        {/* Chat interface moved to App.jsx (single global modal) */}
       </main>
     );
   }
