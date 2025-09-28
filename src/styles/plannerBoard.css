@@ -51,18 +51,19 @@
 
 .pb-board {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   overflow-x: auto;
   overflow-y: hidden;
-  padding-bottom: 8px;
+  padding: 8px 8px 12px;
+  justify-content: center;
 }
 
 .pb-column {
   background: var(--pb-surface);
   border: 1px solid var(--pb-border);
   border-radius: 8px;
-  min-width: 280px;
-  width: 280px;
+  min-width: 320px;
+  width: 320px;
   display: flex;
   flex-direction: column;
   box-shadow: var(--pb-shadow);
@@ -92,7 +93,7 @@
   padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   max-height: calc(100vh - 240px);
   overflow-y: auto;
 }
@@ -100,8 +101,8 @@
 .pb-task {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: 10px;
+  padding: 8px 12px;
   border: 1px solid var(--pb-border);
   border-radius: 6px;
   background: #fff;
@@ -129,6 +130,60 @@
   white-space: nowrap;
 }
 
+/* Add task inline form */
+.pb-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-bottom: 1px solid var(--pb-border);
+}
+
+.pb-add-input {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 6px 8px;
+  border: 1px solid var(--pb-border);
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+}
+
+.pb-add-btn {
+  height: 32px;
+  min-width: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--pb-border);
+  background: #f5f7fa;
+  color: var(--pb-accent);
+  border-radius: 6px;
+}
+
+/* Tooltip on task hover */
+.pb-task { position: relative; }
+.pb-task-tooltip {
+  position: absolute;
+  left: 12px;
+  top: -36px;
+  transform: translateY(-4px);
+  background: var(--pb-surface);
+  color: var(--pb-text);
+  border: 1px solid var(--pb-border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+  box-shadow: var(--pb-shadow);
+  white-space: nowrap;
+  max-width: 480px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .12s ease;
+}
+.pb-task:hover .pb-task-tooltip { opacity: 1; }
+
 .pb-task-delete {
   border: none;
   background: transparent;
@@ -145,7 +200,7 @@
 }
 
 @media (max-width: 768px) {
-  .pb-column { min-width: 260px; width: 260px; }
+  .pb-column { min-width: 300px; width: 300px; }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -160,4 +215,3 @@
   .pb-task { background: #171a22; }
   .pb-task:hover { background: #1a1e27; }
 }
-

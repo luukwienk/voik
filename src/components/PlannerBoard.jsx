@@ -72,6 +72,7 @@ const PlannerBoard = ({ tasks, updateTaskList, moveTask }) => {
   const selectedOptions = columns;
 
   const [selectedTask, setSelectedTask] = useState(null);
+  const [newTaskByList, setNewTaskByList] = useState({});
 
   // Persist columns to localStorage whenever they change
   useEffect(() => {
@@ -101,6 +102,18 @@ const PlannerBoard = ({ tasks, updateTaskList, moveTask }) => {
 
     const next = columns.filter((c) => !removed.includes(c)).concat(added);
     setColumns(next);
+  };
+
+  const handleAddTask = (listName) => {
+    const text = (newTaskByList[listName] || '').trim();
+    if (!text) return;
+    const id = `task-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    const title = text.split(/\r?\n/)[0].substring(0, 100);
+    const newTask = { id, title, text, completed: false, createdAt: new Date().toISOString() };
+    const current = Array.from(tasks[listName]?.items || []);
+    const items = [newTask, ...current];
+    updateTaskList(listName, { items });
+    setNewTaskByList((prev) => ({ ...prev, [listName]: '' }));
   };
 
   const onDragEnd = (result) => {
@@ -158,6 +171,16 @@ const PlannerBoard = ({ tasks, updateTaskList, moveTask }) => {
     };
     const title = task.title || getTitle(task.text) || 'Taak';
 
+    // Full text for tooltip (first line full length)
+    const getFullTitle = (html) => {
+      if (!html) return '';
+      const div = document.createElement('div');
+      div.innerHTML = html;
+      const text = div.textContent || div.innerText || '';
+      return text.split(/\r?\n/)[0];
+    };
+    const fullTitle = task.title || getFullTitle(task.text) || '';
+
     const toggleComplete = (e) => {
       e.stopPropagation();
       const items = (tasks[listName]?.items || []).map((t) =>
@@ -190,7 +213,8 @@ const PlannerBoard = ({ tasks, updateTaskList, moveTask }) => {
               onChange={toggleComplete}
               onClick={(e) => e.stopPropagation()}
             />
-            <div className="pb-task-title" title={title}>{title}</div>
+            <div className="pb-task-title" title={fullTitle}>{title}</div>
+            <div className="pb-task-tooltip">{fullTitle}</div>
             <button className="pb-task-delete" onClick={deleteTask} title="Verwijderen" aria-label="Verwijderen">×</button>
           </div>
         )}
@@ -237,6 +261,22 @@ const PlannerBoard = ({ tasks, updateTaskList, moveTask }) => {
                     >
                       <div className="pb-column-header" {...colProvided.dragHandleProps}>
                         <span className="pb-column-title" title={listName}>{listName}</span>
+                      </div>
+                      <div className="pb-add">
+                        <input
+                          className="pb-add-input"
+                          type="text"
+                          value={newTaskByList[listName] || ''}
+                          placeholder="Add task..."
+                          onChange={(e) => setNewTaskByList((prev) => ({ ...prev, [listName]: e.target.value }))}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddTask(listName);
+                            }
+                          }}
+                        />
+                        <button className="pb-add-btn" onClick={() => handleAddTask(listName)} title="Add">+</button>
                       </div>
                       {/* Tasks droppable */}
                       <StrictModeDroppable droppableId={`list-${listName}`} type="TASK">
