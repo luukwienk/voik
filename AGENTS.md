@@ -1,0 +1,62 @@
+﻿# Repository Guidelines
+
+## Project Structure & Module Organization
+The Vite/React app lives in `src/`. Feature surfaces are composed from `src/components/` with shared state encapsulated in `src/hooks/`. External integrations (Firebase auth, Google Calendar, OpenAI) reside in `src/services/`, while cross-cutting utilities such as logging live in `src/utils/`. Styling is split between `App.css`, global `index.css`, and scoped resources in `src/styles/`. Static assets belong in `src/assets/` and `public/`. Production builds are emitted to `dist/`; never commit the contents. Deployment-specific settings live in `.netlify/`.
+
+## Build, Test, and Development Commands
+Install dependencies with `npm install`. Use `npm run dev` for the Vite dev server (default on `http://localhost:5173`). Run `npm run build` to create an optimized bundle in `dist/`, and `npm run preview` to smoke-test that bundle locally. Quality-gate code with `npm run lint`, which applies the root ESLint rules before opening a pull request.
+
+## Coding Style & Naming Conventions
+ESLint enforces the React 18 recommendations, so resolve lint warnings rather than disable rules. Stick to 2-space indentation, single quotes, and trailing commas where ESLint expects them. Components and hooks ship as functional components; name component files and exports in `PascalCase`, hooks in `camelCase` prefixed with `use`, and utilities in lower camel case. Keep side effects inside hooks and favor pure render functions for components.
+
+## Testing Guidelines
+A formal test harness is not yet wired in. When adding functionality, co-locate future `*.test.jsx` or `*.test.js` files beside the modules they cover and target Vitest or Jest for compatibility with Vite. Until automated coverage exists, verify critical flows manually: create and edit tasks, exercise voice transcription, calendar sync, and PWA install prompts via `npm run preview`. Document any QA steps in the pull request.
+
+## Commit & Pull Request Guidelines
+Recent commits (`progress tracker 2.0`, `export tasks`) show concise, lowercase summaries; follow that pattern with present-tense imperatives under 72 characters. Reference issues using `#123` when applicable and group related changes per commit. Pull requests should describe scope, call out environment or migration steps, attach UI screenshots for visual tweaks, and confirm that `npm run lint` and manual smoke tests passed.
+
+## Configuration & Secrets
+Copy `.env.example` to `.env` and supply valid Firebase, Google, and OpenAI credentials—Vite exposes keys prefixed with `VITE_`. Never commit populated `.env` files or share secrets in tickets. Review `.netlify/` before deploying to ensure redirects and headers align with new routes.
+
+## Planner Board Guidelines
+
+- Data model & storage
+  - Tasks are stored per list in Firestore at `users/{uid}/tasks/{listName}` with `{ items: Task[] }`.
+  - Task shape: `{ id, title, text (HTML from TipTap), completed, ... }`. When `title` is missing, derive it from the first line of `text` (implemented in `useTasks`).
+
+- Update contracts (do not break)
+  - Bulk update: `updateTaskList(listName, { items })` to replace or reorder a list’s items.
+  - Single item update: call `updateTaskList(taskObjectWith.list)` (the hook detects an object and updates that task in place).
+
+- Board behaviour (columns as lists)
+  - Columns represent list names; user can select up to 5 columns. Selection and order are persisted in `localStorage` under key `voik_planner_columns`. Default includes `Today` when available.
+  - Drag-and-drop uses react-beautiful-dnd with a React 18 StrictMode wrapper. Do not remove the wrapper pattern used in `PlannerBoard`.
+  - Droppable ids: `list-{listName}`. Draggable ids for tasks: `{listName}::{task.id}` (avoid collisions across columns).
+  - Within-column reorder: compute new array and call `updateTaskList(list, { items })`.
+  - Cross-column move: remove from source, insert into destination at `destination.index`, then call `updateTaskList(source, { items })` and `updateTaskList(dest, { items })`.
+
+- Calendar drag vs board drag
+  - Board uses react-beautiful-dnd only. Calendar drag remains native HTML5 in `DraggableTaskItem` for the regular TaskList. Do not mix native DnD into the Board subtree.
+
+- Navigation wiring
+  - Board has its own tab (id `7`) in `TabsNavigation.jsx` and is handled in `ResponsiveMainContent.jsx`. Keep this id stable unless all usages are updated.
+
+- Styling & theming
+  - Board styles live in `src/styles/plannerBoard.css` and use CSS variables for light/dark theming. Prefer CSS classes over inline styles for new board code.
+  - Cards are compact; column headers are sticky; on mobile, columns scroll horizontally.
+
+- Safety & performance
+  - Do not write to Firestore before tasks have loaded (respect `tasksLoaded` state in hooks).
+  - Use immutable updates when reordering/moving items.
+
+- QA checklist (manual)
+  - Reorder tasks within a column; move tasks across columns; refresh and verify persistence.
+  - Reorder columns; verify selection and order persist via localStorage.
+  - Open and save a task via `TaskEditorModal` from the board.
+  - Mobile: horizontal scroll of columns; drag within the viewport.
+
+- Commits & PRs
+  - Keep commits focused (e.g., board-only changes). Follow the existing style: concise, lowercase, imperative; include `npm run lint` and manual QA notes in PR.
+
+- Line endings / diffs (optional)
+  - To avoid Windows line-ending churn, consider a repo-level `.gitattributes` that normalizes LF for `*.js, *.jsx, *.css, *.json, *.md, *.html, *.yml`. Propose this in a separate PR to keep feature diffs clean.

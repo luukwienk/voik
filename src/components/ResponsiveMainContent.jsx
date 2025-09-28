@@ -15,6 +15,7 @@ import '../styles/centeredLayout.css';
 import ListSelectorModal from './ListSelectorModal';
 import ListSelector from './ListSelector';
 import '../styles/chat.css';
+import PlannerBoard from './PlannerBoard';
 
 function ResponsiveMainContent({
   currentTab, 
@@ -74,6 +75,40 @@ function ResponsiveMainContent({
           updateTaskList={updateTaskList}
           moveTask={moveTask}
         />
+      </ErrorBoundary>
+    );
+  }
+
+  // Render Planner Board for tab 7
+  if (currentTab === 7) {
+    return (
+      <ErrorBoundary>
+        <main className={`responsive-container ${!isDesktop ? 'mobile-full-width' : ''}`} style={{ 
+          width: '100%',
+          maxWidth: '100%', 
+          boxSizing: 'border-box',
+          height: 'calc(100vh - 130px)',
+          overflowY: 'hidden'
+        }}>
+          <PlannerBoard tasks={tasks} updateTaskList={updateTaskList} moveTask={moveTask} />
+
+          {/* Chat button */}
+          <div className="chat-button-container">
+            {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
+          </div>
+          
+          {/* Chat interface */}
+          {isChatModalOpen && (
+            <div className="chat-modal-overlay">
+              <div className="chat-modal">
+                <ChatInterface 
+                  {...chatProps}
+                  onClose={() => setIsChatModalOpen(false)}
+                />
+              </div>
+            </div>
+          )}
+        </main>
       </ErrorBoundary>
     );
   }

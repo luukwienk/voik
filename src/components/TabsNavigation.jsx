@@ -9,7 +9,8 @@ import {
   faMicrophone,
   faTrophy,
   faCog,
-  faSignOutAlt 
+  faSignOutAlt,
+  faColumns
 } from '@fortawesome/free-solid-svg-icons';
 import useMediaQuery from '../hooks/useMediaQuery';
 import '../styles/tabs.css';
@@ -61,6 +62,14 @@ const TabsNavigation = ({ currentTab, onTabChange, signOut }) => {
           onClick={() => handleChange(2)}
         >
           <FontAwesomeIcon icon={faSearch} />
+        </div>
+        {/* Board tab */}
+        <div
+          className={`tab-item ${currentTab === 7 ? 'active' : ''}`}
+          onClick={() => handleChange(7)}
+          title="Board"
+        >
+          <FontAwesomeIcon icon={faColumns} />
         </div>
         {/* Health tracker tab */}
         <div

@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import TaskFilters from './TaskFilters';
 import TaskTable from './TaskTable';
 import TaskEditorModal from './TaskEditorModal';
+import PlannerBoard from './PlannerBoard';
 
-const TaskOverviewPage = ({ tasks, updateTaskList }) => {
+const TaskOverviewPage = ({ tasks, updateTaskList, moveTask }) => {
   // State voor zoeken en filteren
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLists, setSelectedLists] = useState(['All Lists']);
   const [selectedTask, setSelectedTask] = useState(null);
   const [filteredTasks, setFilteredTasks] = useState([]);
+  const [view, setView] = useState('table'); // 'table' | 'board'
   
   // Alle beschikbare lijstnamen voor de filter
   const availableLists = ['All Lists', ...Object.keys(tasks)];
@@ -144,41 +146,83 @@ const TaskOverviewPage = ({ tasks, updateTaskList }) => {
       flexDirection: 'column',
       overflow: 'hidden'
     }}>
-      {/* Exportknop alleen zichtbaar op desktop */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
-        <button className="hide-on-mobile" onClick={handleExport} style={{
-          background: '#f5f7fa',
-          border: '1px solid #e0e7ef',
-          borderRadius: '4px',
-          padding: '6px 16px',
-          color: '#2196F3',
-          fontWeight: 500,
-          cursor: 'pointer',
-          fontSize: '15px',
-          boxShadow: 'none',
-          opacity: 0.85
-        }} title="Taken exporteren als Markdown">
-          📤 Exporteren
-        </button>
+      {/* View toggle */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => setView('table')}
+            style={{
+              background: view === 'table' ? '#2196F3' : '#f5f7fa',
+              color: view === 'table' ? '#fff' : '#2196F3',
+              border: '1px solid #e0e7ef',
+              borderRadius: 6,
+              padding: '6px 12px',
+              boxShadow: 'none',
+              fontSize: 14
+            }}
+          >
+            Tabel
+          </button>
+          <button
+            onClick={() => setView('board')}
+            style={{
+              background: view === 'board' ? '#2196F3' : '#f5f7fa',
+              color: view === 'board' ? '#fff' : '#2196F3',
+              border: '1px solid #e0e7ef',
+              borderRadius: 6,
+              padding: '6px 12px',
+              boxShadow: 'none',
+              fontSize: 14
+            }}
+          >
+            Board
+          </button>
+        </div>
+        {/* Exportknop alleen zichtbaar op desktop en alleen in Tabel view */}
+        {view === 'table' && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button className="hide-on-mobile" onClick={handleExport} style={{
+              background: '#f5f7fa',
+              border: '1px solid #e0e7ef',
+              borderRadius: '4px',
+              padding: '6px 16px',
+              color: '#2196F3',
+              fontWeight: 500,
+              cursor: 'pointer',
+              fontSize: '15px',
+              boxShadow: 'none',
+              opacity: 0.85
+            }} title="Taken exporteren als Markdown">
+              📤 Exporteren
+            </button>
+          </div>
+        )}
       </div>
-      {/* Filter component */}
-      <TaskFilters 
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        availableLists={availableLists}
-        selectedLists={selectedLists}
-        setSelectedLists={setSelectedLists}
-      />
-      
-      {/* Tabel component */}
-      <TaskTable 
-        tasks={filteredTasks}
-        availableLists={Object.keys(tasks)}
-        onSelectTask={setSelectedTask}
-        onToggleCompletion={handleToggleCompletion}
-        onDeleteTask={handleDeleteTask}
-        onMoveTasksToList={handleMoveTasksToList}
-      />
+      {view === 'table' ? (
+        <>
+          {/* Filter component */}
+          <TaskFilters 
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            availableLists={availableLists}
+            selectedLists={selectedLists}
+            setSelectedLists={setSelectedLists}
+          />
+          {/* Tabel component */}
+          <TaskTable 
+            tasks={filteredTasks}
+            availableLists={Object.keys(tasks)}
+            onSelectTask={setSelectedTask}
+            onToggleCompletion={handleToggleCompletion}
+            onDeleteTask={handleDeleteTask}
+            onMoveTasksToList={handleMoveTasksToList}
+          />
+        </>
+      ) : (
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <PlannerBoard tasks={tasks} updateTaskList={updateTaskList} moveTask={moveTask} />
+        </div>
+      )}
       
       {/* Modal component */}
       {selectedTask && (
