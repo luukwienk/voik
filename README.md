@@ -4,9 +4,10 @@ Voik is a voice-activated task management application that allows users to creat
 
 ## Features
 
-- Voice-activated task creation
-- Task list management
-- Google Calendar integration for scheduling tasks
+- Planner Board (columns = lists): select up to 5 lists, drag to reorder columns and tasks, add tasks per column.
+- Task lists and overview: rich editor (TipTap), search/table view with filters and bulk actions.
+- Realtime chat assistant: text and voice modes (OpenAI Realtime) for tasks and calendar.
+- Google Calendar integration: schedule tasks and manage events.
 
 ## Prerequisites
 
@@ -21,7 +22,7 @@ To install Voik, follow these steps:
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/voik.git
+   git clone https://github.com/luukwienk/voik.git
    ```
 2. Navigate to the project directory:
    ```
@@ -46,7 +47,7 @@ To install Voik, follow these steps:
    VITE_FIREBASE_STORAGE_BUCKET=your-firebase-storage-bucket
    VITE_FIREBASE_MESSAGING_SENDER_ID=your-firebase-messaging-sender-id
    VITE_FIREBASE_APP_ID=your-firebase-app-id
-   VITE_FIREBASE_MEASUREMENTID=your-firebase-measurement-id
+   VITE_FIREBASE_MEASUREMENT_ID=your-firebase-measurement-id
    VITE_OPENAI_API_KEY=your-openai-api-key
    VITE_GOOGLE_CLIENT_ID=your-google-client-id
    VITE_GOOGLE_API_KEY=your-google-api-key
@@ -61,7 +62,20 @@ To use Voik, follow these steps:
    ```
    npm run dev
    ```
-2. Open your web browser and navigate to `http://localhost:3000` (or the port specified in the console)
+2. Open your web browser and navigate to `http://localhost:5173`
+
+### Planner Board
+- Open the Board tab (columns icon in the navbar).
+- Use the dropdown to select up to 5 lists as columns (persisted in `localStorage` under `voik_planner_columns`).
+- Drag to reorder columns; drag tasks within or across columns (tasks land where you drop them).
+- Add a task per column using the inline Add field.
+
+### Chat Assistant
+- Click the floating chat button to open the assistant.
+- Type a message or click the mic to start/stop voice. Allow mic permission and set `VITE_OPENAI_API_KEY` in `.env`.
+
+### Calendar
+- Drag a task from the Task List to the calendar (desktop) to create an event.
 
 ## Contributing to Voik
 
@@ -74,6 +88,8 @@ To contribute to Voik, follow these steps:
 5. Create the pull request.
 
 Alternatively, see the GitHub documentation on [creating a pull request](https://help.github.com/articles/creating-a-pull-request/).
+
+Before opening a PR, run `npm run lint` and manually smoke‑test: create/edit tasks, Board drag/drop, Chat (text + voice), calendar sync, and PWA via `npm run preview`.
 
 ## Contact
 
