@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import MultiSelectDropdown from './MultiSelectDropdown';
 import TaskEditorModal from './TaskEditorModal';
@@ -197,27 +198,30 @@ const PlannerBoard = ({ tasks, updateTaskList, moveTask }) => {
 
     return (
       <Draggable draggableId={`${listName}::${String(task.id)}`} index={index}>
-        {(provided) => (
-          <div
-            className={`pb-task ${task.completed ? 'is-completed' : ''}`}
-            ref={provided.innerRef}
-            {...provided.draggableProps}
-            {...provided.dragHandleProps}
-            style={provided.draggableProps.style}
-            onClick={() => setSelectedTask({ ...task, list: listName })}
-          >
-            <input
-              className="pb-task-checkbox"
-              type="checkbox"
-              checked={!!task.completed}
-              onChange={toggleComplete}
-              onClick={(e) => e.stopPropagation()}
-            />
-            <div className="pb-task-title" title={fullTitle}>{title}</div>
-            <div className="pb-task-tooltip">{fullTitle}</div>
-            <button className="pb-task-delete" onClick={deleteTask} title="Verwijderen" aria-label="Verwijderen">×</button>
-          </div>
-        )}
+        {(provided, snapshot) => {
+          const content = (
+            <div
+              className={`pb-task ${task.completed ? 'is-completed' : ''} ${snapshot.isDragging ? 'is-dragging' : ''}`}
+              ref={provided.innerRef}
+              {...provided.draggableProps}
+              {...provided.dragHandleProps}
+              style={provided.draggableProps.style}
+              onClick={() => setSelectedTask({ ...task, list: listName })}
+            >
+              <input
+                className="pb-task-checkbox"
+                type="checkbox"
+                checked={!!task.completed}
+                onChange={toggleComplete}
+                onClick={(e) => e.stopPropagation()}
+              />
+              <div className="pb-task-title" title={fullTitle}>{title}</div>
+              <div className="pb-task-tooltip">{fullTitle}</div>
+              <button className="pb-task-delete" onClick={deleteTask} title="Verwijderen" aria-label="Verwijderen">×</button>
+            </div>
+          );
+          return snapshot.isDragging ? createPortal(content, document.body) : content;
+        }}
       </Draggable>
     );
   };
