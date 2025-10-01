@@ -164,6 +164,13 @@ function TranscriptionList({ user, onTasksExtracted }) {
                   <h3>{transcription.title}</h3>
                 )}
                 <div className="card-actions">
+                  {transcription.processingStatus && transcription.processingStatus !== 'completed' && (
+                    <span className={`status-chip ${transcription.processingStatus}`} title="Achtergrondverwerking">
+                      {transcription.processingStatus === 'queued' && 'Wachtend'}
+                      {transcription.processingStatus === 'processing' && 'Bezig'}
+                      {transcription.processingStatus === 'error' && 'Fout'}
+                    </span>
+                  )}
                   <button
                     className="action-btn"
                     onClick={(e) => {
@@ -214,7 +221,11 @@ function TranscriptionList({ user, onTasksExtracted }) {
               </div>
 
               <div className="card-preview">
-                {transcription.text.substring(0, 150)}...
+                {transcription.text 
+                  ? `${transcription.text.substring(0, 150)}...`
+                  : (transcription.processingStatus === 'error' 
+                      ? 'Verwerking mislukt. Probeer opnieuw of neem contact op.' 
+                      : 'Transcriptie wordt verwerkt...')}
               </div>
 
               {showDeleteConfirm === transcription.id && (

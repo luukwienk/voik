@@ -2,6 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { debugLog } from './utils/debug';
 
 const firebaseConfig = {
@@ -21,6 +22,7 @@ const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app);
 const provider = new GoogleAuthProvider();
 
 provider.setCustomParameters({
@@ -35,4 +37,22 @@ const signOutUser = () => {
   return signOut(auth);
 };
 
-export { auth, db, signInWithGoogle, signOutUser, onAuthStateChanged, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc };
+export { 
+  auth, 
+  db, 
+  storage,
+  signInWithGoogle, 
+  signOutUser, 
+  onAuthStateChanged, 
+  collection, 
+  getDocs, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  setDoc,
+  // storage helpers
+  storageRef, 
+  uploadBytesResumable, 
+  getDownloadURL
+};

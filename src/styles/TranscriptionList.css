@@ -118,6 +118,18 @@
   color: #e74c3c;
 }
 
+/* Status chip for background processing */
+.status-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  margin-right: 8px;
+}
+.status-chip.queued { background: #fff7e6; color: #b26a00; }
+.status-chip.processing { background: #e8f4fd; color: #1b6fa8; }
+.status-chip.error { background: #fee; color: #e74c3c; }
+
 .edit-title {
   display: flex;
   gap: 8px;

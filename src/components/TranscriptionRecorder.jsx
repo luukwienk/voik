@@ -2,6 +2,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { useAudioRecording } from '../hooks/useAudioRecording';
 import { useTranscriptions } from '../hooks/useTranscriptions';
+import { useTranscriptionUpload } from '../hooks/useTranscriptionUpload';
 import { TranscriptionService } from '../services/transcription';
 import '../styles/TranscriptionRecorder.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -22,6 +23,7 @@ function TranscriptionRecorder({ user, onSaved }) {
   const {
     isRecording,
     isPaused,
+    duration,
     formattedDuration,
     audioBlob,
     audioUrl,
@@ -36,6 +38,7 @@ function TranscriptionRecorder({ user, onSaved }) {
   } = useAudioRecording();
 
   const { saveTranscription } = useTranscriptions(user);
+  const { uploading, progress, error: uploadError, uploadAndQueueTranscription } = useTranscriptionUpload(user);
   
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcriptionResult, setTranscriptionResult] = useState(null);
@@ -110,6 +113,32 @@ function TranscriptionRecorder({ user, onSaved }) {
   }, []);
 
   const error = recordingError || transcriptionError;
+  const combinedError = error || uploadError;
+
+  const handleUploadBackground = useCallback(async () => {
+    if (!audioBlob) return;
+    try {
+      await uploadAndQueueTranscription({
+        audioBlob,
+        title,
+        tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+        language: 'nl',
+        durationSec: duration,
+        formattedDuration,
+        mimeType: audioBlob.type || 'audio/webm'
+      });
+
+      // After successful upload, clear recording and optionally navigate to list
+      resetRecording();
+      setTitle('');
+      setTags('');
+      setTranscriptionResult(null);
+      setShowSaveDialog(false);
+      if (onSaved) onSaved();
+    } catch (_) {
+      // Error is surfaced via uploadError state
+    }
+  }, [audioBlob, title, tags, duration, formattedDuration, uploadAndQueueTranscription, resetRecording, onSaved]);
 
   return (
     <div className="transcription-recorder">
@@ -155,10 +184,10 @@ function TranscriptionRecorder({ user, onSaved }) {
             <>
               <button 
                 className="recorder-btn primary"
-                onClick={handleTranscribe}
-                disabled={isTranscribing}
+                onClick={handleUploadBackground}
+                disabled={uploading}
               >
-                <FontAwesomeIcon icon={faFileAlt} /> {isTranscribing ? 'Transcriberen...' : 'Transcribeer'}
+                <FontAwesomeIcon icon={faFileAlt} /> {uploading ? `Uploaden... ${progress}%` : 'Upload & Transcribe (achtergrond)'}
               </button>
               <button 
                 className="recorder-btn secondary"
@@ -181,6 +210,16 @@ function TranscriptionRecorder({ user, onSaved }) {
                 <span className="info-label">Geschatte kosten:</span>
                 <span className="info-value">{estimatedCost.formattedCost}</span>
               </div>
+              {uploading && (
+                <div className="info-item">
+                  <span className="info-label">Upload:</span>
+                  <span className="info-value">{progress}% 
+                    <span style={{ marginLeft: 8, color: '#888' }}>
+                      (verwerking start na upload)
+                    </span>
+                  </span>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -191,9 +230,9 @@ function TranscriptionRecorder({ user, onSaved }) {
           </div>
         )}
 
-        {error && (
+        {(combinedError) && (
           <div className="error-message">
-            <FontAwesomeIcon icon={faExclamationTriangle} /> {error}
+            <FontAwesomeIcon icon={faExclamationTriangle} /> {combinedError}
           </div>
         )}
       </div>

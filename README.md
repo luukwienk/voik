@@ -77,6 +77,16 @@ To use Voik, follow these steps:
 ### Calendar
 - Drag a task from the Task List to the calendar (desktop) to create an event.
 
+## Transcription (Background, Long Recordings)
+
+- After stopping a recording, click "Upload & Transcribe (achtergrond)" to upload audio and process it in the background.
+- The audio is uploaded to Firebase Storage and a Cloud Function transcribes it in chunks. Status appears in the list as "Wachtend" or "Bezig" until completion.
+- Very long meetings are supported; you can navigate away while it processes.
+
+Deployment notes:
+- Backend function lives in `functions/` and requires `OPENAI_API_KEY` as an environment variable/secret.
+- The function triggers on uploads to `transcriptions/{uid}/{docId}.webm` and writes results to Firestore at `users/{uid}/transcriptions/{docId}`.
+
 ## Contributing to Voik
 
 To contribute to Voik, follow these steps:
