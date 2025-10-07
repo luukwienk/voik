@@ -1,5 +1,5 @@
 // components/TranscriptionRecorder.jsx
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useAudioRecording } from '../hooks/useAudioRecording';
 import { useTranscriptions } from '../hooks/useTranscriptions';
 import { useTranscriptionUpload } from '../hooks/useTranscriptionUpload';
@@ -39,13 +39,14 @@ function TranscriptionRecorder({ user, onSaved }) {
 
   const { saveTranscription } = useTranscriptions(user);
   const { uploading, progress, error: uploadError, uploadAndQueueTranscription } = useTranscriptionUpload(user);
-  
+
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcriptionResult, setTranscriptionResult] = useState(null);
   const [transcriptionError, setTranscriptionError] = useState(null);
   const [title, setTitle] = useState('');
   const [tags, setTags] = useState('');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [showLongRecordingWarning, setShowLongRecordingWarning] = useState(false);
   
   const audioRef = useRef(null);
   const transcriptionService = useRef(
@@ -112,6 +113,30 @@ function TranscriptionRecorder({ user, onSaved }) {
     setTranscriptionResult(null);
   }, []);
 
+  // Warning for long recordings (>30 minutes)
+  useEffect(() => {
+    if (isRecording && duration >= 1800 && !showLongRecordingWarning) {
+      setShowLongRecordingWarning(true);
+    }
+    if (!isRecording) {
+      setShowLongRecordingWarning(false);
+    }
+  }, [duration, isRecording, showLongRecordingWarning]);
+
+  // Prevent closing with unsaved recording
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if ((isRecording || hasRecording) && !uploading) {
+        e.preventDefault();
+        e.returnValue = 'Je hebt een opname die nog niet is geüpload. Weet je zeker dat je wilt sluiten?';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isRecording, hasRecording, uploading]);
+
   const error = recordingError || transcriptionError;
   const combinedError = error || uploadError;
 
@@ -155,9 +180,10 @@ function TranscriptionRecorder({ user, onSaved }) {
 
         <div className="recorder-controls">
           {!isRecording && !hasRecording && (
-            <button 
+            <button
               className="recorder-btn primary"
               onClick={startRecording}
+              title="Opnames tot 30 min zijn veilig. Langere opnames: verhoogd risico op dataverlies bij browser crash of netwerkproblemen."
             >
               <FontAwesomeIcon icon={faMicrophone} /> Start Opname
             </button>
@@ -199,6 +225,26 @@ function TranscriptionRecorder({ user, onSaved }) {
           )}
         </div>
 
+        {showLongRecordingWarning && (
+          <div className="warning-message" style={{
+            backgroundColor: '#fff3cd',
+            color: '#856404',
+            padding: '12px',
+            margin: '12px 0',
+            borderRadius: '4px',
+            border: '1px solid #ffc107',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <FontAwesomeIcon icon={faExclamationTriangle} />
+            <span>
+              <strong>Opname &gt;30 minuten:</strong> Verhoogd risico op dataverlies.
+              Upload regelmatig om je opname veilig te stellen.
+            </span>
+          </div>
+        )}
+
         <div className="recorder-info">
           {(isRecording || hasRecording) && (
             <>
@@ -213,7 +259,7 @@ function TranscriptionRecorder({ user, onSaved }) {
               {uploading && (
                 <div className="info-item">
                   <span className="info-label">Upload:</span>
-                  <span className="info-value">{progress}% 
+                  <span className="info-value">{progress}%
                     <span style={{ marginLeft: 8, color: '#888' }}>
                       (verwerking start na upload)
                     </span>
