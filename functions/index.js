@@ -92,7 +92,7 @@ async function transcribeChunk(filePath, apiKey, { language = 'nl' } = {}) {
 
 export const onAudioUploaded = functions
   .region(process.env.FUNCTION_REGION || 'us-central1')
-  .runWith({ memory: '1GiB', timeoutSeconds: 540, secrets: [OPENAI_API_KEY] })
+  .runWith({ memory: '1GB', timeoutSeconds: 540, secrets: [OPENAI_API_KEY] })
   .storage.object().onFinalize(async (object) => {
   const { bucket, name, contentType, metadata = {} } = object;
   if (!name) return;
