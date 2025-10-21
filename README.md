@@ -75,7 +75,20 @@ To use Voik, follow these steps:
 - Type a message or click the mic to start/stop voice. Allow mic permission and set `VITE_OPENAI_API_KEY` in `.env`.
 
 ### Calendar
-- Drag a task from the Task List to the calendar (desktop) to create an event.
+- Desktop split view: on desktop, the Task List appears on the left and the Google Calendar on the right. On mobile, you’ll see just one surface at a time.
+- Drag tasks to calendar: grab a task card (not the reorder grip) and drop it onto a time slot to create a Google Calendar event.
+- Reorder vs. schedule: use the grip icon (⋮) on a task to reorder within the list; drag the card body itself to schedule it on the calendar.
+- Default calendar: open Calendar Settings (gear button on the calendar) to pick a default target calendar for new events. Stored in `localStorage`.
+- Opens in Google: clicking a calendar event opens the native Google Calendar event page (Meet links, notes, etc.) in a new tab.
+- Day view + scroll to now: the calendar defaults to Day view on Today and auto‑scrolls to the current time.
+- Full day scroll: time range spans 00:00–23:59.
+- Smart deduplication: events from multiple calendars with the same invite (iCalUID) are grouped so you don’t see duplicates. The app prefers your default calendar (or a selected one) as the displayed source.
+- Subtle source label: calendar cards show a small label with the agenda name.
+
+Tips
+- If drag doesn’t create events, confirm you authenticated Google with write access (owner/writer) for the selected/default calendar.
+- If you see duplicates after changes, use the Refresh button in Calendar Settings; dedupe happens on iCalUID and title+time.
+- On iPad the app behaves like mobile for layout purposes.
 
 ## Transcription (Background, Long Recordings)
 
@@ -104,6 +117,20 @@ Before opening a PR, run `npm run lint` and manually smoke‑test: create/edit t
 ## Contact
 
 If you want to contact me, you can reach me at `<luukwienk@gmail.com>`.
+
+## MCP Integration
+
+Voik (TaskBuddy) has a **Model Context Protocol (MCP) server** that allows Claude Desktop to access and manage your tasks.
+
+See [MCP_INTEGRATION.md](./MCP_INTEGRATION.md) for:
+- TaskBuddy MCP setup and usage
+- RAG Knowledge Base MCP integration
+- Combined workflows (task management + knowledge search)
+- Claude Desktop configuration
+
+**Quick Start:**
+- TaskBuddy MCP: `C:\Projects\taskbuddy-mcp\`
+- RAG MCP: `C:\Projects\rag-mcp\`
 
 ## License
 
