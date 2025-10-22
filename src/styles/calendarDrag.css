@@ -54,6 +54,11 @@
   .rbc-event {
     z-index: 4 !important; /* Ensure events are above other elements */
   }
+
+  /* Hide default time label at top to avoid duplicate times */
+  .rbc-event-label {
+    display: none !important;
+  }
   
   /* Add drop target highlight for time slots */
   .calendar-drop-target {

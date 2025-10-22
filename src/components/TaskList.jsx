@@ -337,7 +337,6 @@ const TaskList = ({
                       <li
                         ref={provided.innerRef}
                         {...provided.draggableProps}
-                        {...provided.dragHandleProps}
                         style={{
                           ...provided.draggableProps.style,
                           listStyle: 'none',
@@ -355,6 +354,7 @@ const TaskList = ({
                           handleTaskClick={(t) => setSelectedTask(t)}
                           onDragStart={() => setIsTaskDragging(true)}
                           onDragEnd={() => setIsTaskDragging(false)}
+                          dragHandleProps={provided.dragHandleProps}
                         />
                       </li>
                     )}

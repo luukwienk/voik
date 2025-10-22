@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faArrowRight } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faArrowRight, faGripVertical } from '@fortawesome/free-solid-svg-icons';
 
 // Compleet gestripte task item zonder drag handles
 const DraggableTaskItem = ({ 
@@ -10,8 +10,10 @@ const DraggableTaskItem = ({
   setMovingTaskId, 
   handleTaskClick,
   onDragStart,
-  onDragEnd
+  onDragEnd,
+  dragHandleProps
 }) => {
+  const [isReordering, setIsReordering] = useState(false);
   // Extract clean text from HTML task content
   const getTaskTitle = (html) => {
     if (!html) return { title: '', hasMoreText: false };
@@ -31,6 +33,11 @@ const DraggableTaskItem = ({
 
   // Extreem vereenvoudigde drag handlers
   const handleDragStart = (e) => {
+    if (isReordering) {
+      // Disable native drag when reordering within the list
+      e.preventDefault();
+      return;
+    }
     if (onDragStart) onDragStart();
     
     // Minimale data transfer om drag-drop te laten werken
@@ -41,10 +48,12 @@ const DraggableTaskItem = ({
     };
     
     e.dataTransfer.setData('text/plain', JSON.stringify(taskData));
+    try { window.__voikDragTask = taskData; } catch {}
   };
 
   const handleDragEnd = (e) => {
     if (onDragEnd) onDragEnd();
+    try { delete window.__voikDragTask; } catch {}
   };
 
   // Gebruik de titel eigenschap als het bestaat, anders haal het uit de tekst
@@ -54,7 +63,7 @@ const DraggableTaskItem = ({
   return (
     <div
       className="task-item"
-      draggable="true" 
+      draggable={!isReordering}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onClick={(e) => {
@@ -73,6 +82,52 @@ const DraggableTaskItem = ({
         width: '100%'
       }}
     >
+      {/* Reorder handle for react-beautiful-dnd (prevents conflict with native HTML5 drag) */}
+      <div
+        className="drag-handle-wrap"
+        style={{
+          position: 'relative',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 16,
+          height: '100%',
+          marginRight: 10,
+          userSelect: 'none'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 16,
+            color: '#999',
+            pointerEvents: 'none'
+          }}
+        >
+          <FontAwesomeIcon icon={faGripVertical} />
+        </span>
+        {/* Invisible enlarged hit area for reordering handle */}
+        <span
+          {...(dragHandleProps || {})}
+          onMouseDown={() => setIsReordering(true)}
+          onMouseUp={() => setIsReordering(false)}
+          onMouseLeave={() => setIsReordering(false)}
+          draggable={false}
+          aria-label="Reorder"
+          style={{
+            position: 'absolute',
+            top: -8,
+            bottom: -8,
+            left: -12,
+            right: -12,
+            cursor: 'grab',
+            background: 'transparent'
+          }}
+        />
+      </div>
       <div style={{ display: 'flex', alignItems: 'center', marginRight: '10px' }}>
         <input
           type="checkbox"

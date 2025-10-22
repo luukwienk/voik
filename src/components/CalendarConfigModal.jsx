@@ -18,7 +18,9 @@ const CalendarConfigModal = ({
   selectedCalendars = [], 
   toggleCalendar, 
   fetchAvailableCalendars,
-  isLoading
+  isLoading,
+  defaultCalendarId,
+  setDefaultCalendarId
 }) => {
   const [newCalendarName, setNewCalendarName] = useState('');
   const [shareEmail, setShareEmail] = useState('');
@@ -319,6 +321,56 @@ const CalendarConfigModal = ({
                 <p style={{ margin: '0' }}>
                   Als je een agenda mist, controleer dan of deze zichtbaar is in je Google Calendar instellingen.
                 </p>
+              </div>
+            </div>
+
+            {/* Default calendar selection */}
+            <div style={{
+              border: '1px solid #eee',
+              borderRadius: '8px',
+              padding: '12px',
+              marginBottom: '16px',
+              background: '#fafafa'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <strong>Standaard agenda voor nieuwe events</strong>
+                <button
+                  onClick={() => {
+                    const primary = availableCalendars.find(c => c.primary);
+                    if (primary) setDefaultCalendarId(primary.id);
+                  }}
+                  style={{
+                    border: '1px solid #ddd',
+                    background: 'white',
+                    borderRadius: 4,
+                    padding: '4px 8px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Gebruik primary
+                </button>
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <select
+                  value={defaultCalendarId || ''}
+                  onChange={(e) => setDefaultCalendarId(e.target.value)}
+                  style={{
+                    flex: 1,
+                    padding: '8px',
+                    borderRadius: 4,
+                    border: '1px solid #ddd'
+                  }}
+                >
+                  <option value=''>— Kies standaard agenda —</option>
+                  {availableCalendars.map(cal => (
+                    <option key={cal.id} value={cal.id}>
+                      {cal.summary} {cal.primary ? '(primary)' : ''} [{cal.accessRole}]
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ marginTop: 8, fontSize: 12, color: '#777' }}>
+                Let op: kies een agenda met schrijfrechten (owner/writer). Anders valt de app terug op een beschikbare agenda.
               </div>
             </div>
             

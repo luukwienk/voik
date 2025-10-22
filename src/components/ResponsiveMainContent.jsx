@@ -257,8 +257,8 @@ function ResponsiveMainContent({
               {/* Combined calendar and task list view */}
               {currentTab === 0 ? (
                 <div className="desktop-flex-row">
-                  {/* Task list only - calendar temporarily removed */}
-                  <div className="tasklist-container" style={{ marginTop: 24, width: '100%' }}>
+                  {/* Task list (left) */}
+                  <div className="tasklist-container" style={{ marginTop: 24 }}>
                     <TaskList
                       tasks={tasks[currentTaskList]}
                       currentList={currentTaskList}
@@ -272,6 +272,12 @@ function ResponsiveMainContent({
                       signOut={signOut}
                     />
                   </div>
+                  {/* Calendar (right) */}
+                  <BigCalendarView
+                    tasks={tasks}
+                    currentTaskList={currentTaskList}
+                    moveTask={moveTask}
+                  />
                 </div>
               ) : null}
               {/* Chat button */}

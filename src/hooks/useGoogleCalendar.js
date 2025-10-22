@@ -21,43 +21,21 @@ export function useGoogleCalendar() {
   // Start met lege lijst, zullen we automatisch vullen met zichtbare agenda's
   const [selectedCalendars, setSelectedCalendars] = useState([]); 
 
-  // Initialize Google Calendar client
+  // Initialize Google Calendar client (via service helper)
   useEffect(() => {
-    const initializeGoogleCalendar = async () => {
+    let cancelled = false;
+    (async () => {
       try {
-        await gapi.client.init({
-          apiKey: import.meta.env.VITE_GOOGLE_API_KEY,
-          clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-          discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
-          scope: 'https://www.googleapis.com/auth/calendar'
-        });
-
-        // console.log('Google Calendar API initialized successfully');
-        
-        // Set up auth state listener
-        gapi.auth2.getAuthInstance().isSignedIn.listen((isSignedIn) => {
-          setIsAuthenticated(isSignedIn);
-          if (isSignedIn) {
-            fetchAvailableCalendars();
-          }
-        });
-
-        // Check if already signed in
-        const isSignedIn = gapi.auth2.getAuthInstance().isSignedIn.get();
-        setIsAuthenticated(isSignedIn);
-        
-        if (isSignedIn) {
-          fetchAvailableCalendars();
+        await initClient();
+        if (!cancelled) {
+          setIsInitialized(true);
         }
       } catch (error) {
         console.error('Error initializing Google Calendar:', error);
-        setError('Failed to initialize Google Calendar');
+        if (!cancelled) setError('Failed to initialize Google Calendar');
       }
-    };
-
-    if (gapi && gapi.client) {
-      initializeGoogleCalendar();
-    }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   // Fetch available calendars
@@ -168,20 +146,49 @@ export function useGoogleCalendar() {
       const rbcEvents = googleEventsToRbcEvents(allEvents);
       // console.log("Converted to", rbcEvents.length, "React Big Calendar events:", rbcEvents);
       
-      // Store the events in the right format for React Big Calendar
-      const formattedEvents = rbcEvents.map(event => ({
-        id: event.id,
-        title: event.title,
-        start: event.start,
-        end: event.end,
-        allDay: event.allDay,
-        resource: event.resource
-      }));
-      
-      // console.log("Final formatted events for RBC:", formattedEvents);
-      
-      setEvents(formattedEvents);
-      return formattedEvents;
+      // Normalize and group by iCalUID (stable across calendars); fallback to title+time
+      const normalizeTitle = (t) => (t || '').trim().replace(/\s+/g, ' ').toLowerCase();
+      const toMinute = (d) => {
+        const x = new Date(d);
+        x.setSeconds(0, 0);
+        return x.getTime();
+      };
+
+      const grouped = new Map();
+      for (const ev of rbcEvents) {
+        const ical = ev?.resource?.originalEvent?.iCalUID || '';
+        const fallback = `${toMinute(ev.start)}|${toMinute(ev.end)}|${normalizeTitle(ev.title)}`;
+        const key = ical || fallback;
+        if (!grouped.has(key)) grouped.set(key, []);
+        grouped.get(key).push({
+          id: ev.id,
+          title: ev.title,
+          start: ev.start,
+          end: ev.end,
+          allDay: ev.allDay,
+          resource: ev.resource
+        });
+      }
+
+      // From each group, pick a single representative, preferring selected calendars
+      const chosen = [];
+      for (const [, arr] of grouped) {
+        let pick = null;
+        // Prefer first selected calendar
+        for (const sel of selectedCalendars) {
+          pick = arr.find(e => e.resource?.calendarId === sel);
+          if (pick) break;
+        }
+        // Fallback to any primary
+        if (!pick) {
+          pick = arr.find(e => e.resource?.calendarId === 'primary');
+        }
+        // Else pick first
+        chosen.push(pick || arr[0]);
+      }
+
+      setEvents(chosen);
+      return chosen;
     } catch (error) {
       console.error("Error loading events:", error);
       // More informative error message
@@ -247,7 +254,22 @@ export function useGoogleCalendar() {
       };
       
       // console.log("Adding new event to local state:", newEvent);
-      setEvents(prev => [...prev, newEvent]);
+      setEvents(prev => {
+        const ical = newEvent?.resource?.originalEvent?.iCalUID;
+        const normTitle = (t) => (t || '').trim().replace(/\s+/g, ' ').toLowerCase();
+        const toMinute = (d) => { const x = new Date(d); x.setSeconds(0,0); return x.getTime(); };
+        const sameGroup = (ev) => {
+          const evIcal = ev?.resource?.originalEvent?.iCalUID;
+          if (ical && evIcal) return evIcal === ical;
+          return (
+            toMinute(ev.start) === toMinute(newEvent.start) &&
+            toMinute(ev.end) === toMinute(newEvent.end) &&
+            normTitle(ev.title) === normTitle(newEvent.title)
+          );
+        };
+        const filtered = prev.filter(ev => !sameGroup(ev));
+        return [...filtered, newEvent];
+      });
       return newEvent;
     } catch (error) {
       console.error("Error adding event:", error);
