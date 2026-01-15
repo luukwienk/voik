@@ -15,6 +15,7 @@ import TabsNavigation from './components/TabsNavigation';
 import ChatInterface from './components/ChatInterface';
 import { useRealtimeChat } from './hooks/useRealtimeChat';
 import { debugLog, debugError } from './utils/debug';
+import MeetImport from './components/MeetImport';
 
 function App() {
   // console.log('🔄 App component re-rendered at:', new Date().toISOString());
@@ -23,6 +24,7 @@ function App() {
   const { tasks, currentTaskList, setCurrentTaskList, addTaskList, deleteTaskList, updateTaskList } = useTasks(user);
   const [currentTab, setCurrentTab] = useState(0);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+  const [showMeetImport, setShowMeetImport] = useState(false);
   
   // Initialize health tracking
   const { 
@@ -141,6 +143,52 @@ function App() {
   useEffect(() => {
     initClient().catch(error => debugError("Failed to initialize Google API client:", error));
   }, []);
+
+  // Detecteer Meet import URL parameter
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('import') === 'meet' && user) {
+      setShowMeetImport(true);
+      // Verwijder parameter uit URL zonder pagina reload
+      const url = new URL(window.location.href);
+      url.searchParams.delete('import');
+      window.history.replaceState({}, '', url.pathname);
+      // Ga naar transcriptie tab
+      setCurrentTab(4);
+    }
+  }, [user]);
+
+  // Deel Firebase config met Chrome extension voor directe uploads
+  useEffect(() => {
+    async function shareFirebaseConfig() {
+      if (!user) return;
+
+      try {
+        // Haal fresh auth token op
+        const token = await user.getIdToken(true);
+
+        // Stuur naar extension via postMessage (bridge luistert)
+        window.postMessage({
+          type: 'VOIK_SET_FIREBASE_CONFIG',
+          projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+          storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+          authToken: token,
+          userId: user.uid
+        }, '*');
+
+        debugLog('[App] Firebase config gedeeld met extension');
+      } catch (err) {
+        debugError('[App] Kon Firebase config niet delen:', err);
+      }
+    }
+
+    shareFirebaseConfig();
+
+    // Refresh token elke 30 minuten (tokens verlopen na 1 uur)
+    const tokenRefreshInterval = setInterval(shareFirebaseConfig, 30 * 60 * 1000);
+
+    return () => clearInterval(tokenRefreshInterval);
+  }, [user]);
 
   useEffect(() => {
     console.log('Tasks:', tasks);
@@ -266,12 +314,24 @@ function App() {
       {isChatModalOpen && (
         <div className="chat-modal-overlay">
           <div className="chat-modal">
-            <ChatInterface 
+            <ChatInterface
               {...chatProps}
               onClose={() => setIsChatModalOpen(false)}
             />
           </div>
         </div>
+      )}
+
+      {/* Meet Import Modal */}
+      {showMeetImport && (
+        <MeetImport
+          user={user}
+          onClose={() => setShowMeetImport(false)}
+          onSuccess={() => {
+            setShowMeetImport(false);
+            // Optioneel: refresh transcripties lijst
+          }}
+        />
       )}
     </div>
   );

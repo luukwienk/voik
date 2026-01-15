@@ -53,6 +53,49 @@ function transcodeToWavMono16k(srcPath, destPath) {
   });
 }
 
+// Extract left channel (index 0) to mono wav
+function extractLeftChannel(srcPath, destPath) {
+  return new Promise((resolve, reject) => {
+    ffmpeg(srcPath)
+      .outputOptions([
+        '-af', 'pan=mono|c0=c0',
+        '-ar 16000',
+        '-f wav'
+      ])
+      .output(destPath)
+      .on('end', resolve)
+      .on('error', reject)
+      .run();
+  });
+}
+
+// Extract right channel (index 1) to mono wav
+function extractRightChannel(srcPath, destPath) {
+  return new Promise((resolve, reject) => {
+    ffmpeg(srcPath)
+      .outputOptions([
+        '-af', 'pan=mono|c0=c1',
+        '-ar 16000',
+        '-f wav'
+      ])
+      .output(destPath)
+      .on('end', resolve)
+      .on('error', reject)
+      .run();
+  });
+}
+
+// Probe number of audio channels
+function probeChannels(filePath) {
+  return new Promise((resolve, reject) => {
+    ffmpeg.ffprobe(filePath, (err, data) => {
+      if (err) return reject(err);
+      const audioStream = data?.streams?.find(s => s.codec_type === 'audio');
+      resolve(audioStream?.channels || 1);
+    });
+  });
+}
+
 function createChunk(srcPath, startSec, durationSec, destPath) {
   return new Promise((resolve, reject) => {
     ffmpeg(srcPath)
@@ -112,59 +155,191 @@ export const onAudioUploaded = functions
     if (!apiKey) {
       throw new Error('OPENAI_API_KEY not set. Configure functions secret.');
     }
+
+    console.log(`[Transcription] Starting processing for doc ${docId}, user ${uid}`);
+    console.log(`[Transcription] File: ${name}, contentType: ${contentType}`);
+
     await docRef.set({ processingStatus: 'processing', storagePath: name, updatedAt: new Date() }, { merge: true });
 
     const tmpDir = os.tmpdir();
     const localInput = path.join(tmpDir, `${docId}.webm`);
-    const localWav = path.join(tmpDir, `${docId}.wav`);
 
     await downloadFile(bucket, name, localInput);
+    console.log(`[Transcription] Downloaded file to ${localInput}`);
 
-    // Transcode to mono 16k wav for stable chunking
-    await transcodeToWavMono16k(localInput, localWav);
+    // Check for stereo channels (Meet extension recordings)
+    const docSnap = await docRef.get();
+    const docData = docSnap.data() || {};
+    const stereoChannels = docData.stereoChannels;
+    const numChannels = await probeChannels(localInput);
 
-    // Determine duration
-    const durationSec = Math.ceil(await probeDuration(localWav));
+    console.log(`[Transcription] Document data:`, JSON.stringify(docData, null, 2));
+    console.log(`[Transcription] stereoChannels field:`, stereoChannels);
+    console.log(`[Transcription] Audio channels detected: ${numChannels}`);
 
-    // Create chunks
-    const chunks = [];
-    let start = 0;
-    while (start < durationSec) {
-      const effectiveStart = Math.max(0, start - (start > 0 ? CHUNK_OVERLAP_SECONDS : 0));
-      const remaining = durationSec - effectiveStart;
-      const dur = Math.min(CHUNK_SECONDS + (start > 0 ? CHUNK_OVERLAP_SECONDS : 0), remaining);
-      const chunkPath = path.join(tmpDir, `${docId}-${chunks.length}.wav`);
-      // eslint-disable-next-line no-await-in-loop
-      await createChunk(localWav, effectiveStart, dur, chunkPath);
-      chunks.push({ path: chunkPath, startSec: effectiveStart, durationSec: dur });
-      start += CHUNK_SECONDS;
+    const isStereoMeet = stereoChannels && numChannels >= 2;
+    console.log(`[Transcription] Processing as stereo Meet: ${isStereoMeet}`);
+
+    let text;
+    let durationSec;
+    let chunkCount = 0;
+    const tempFiles = [localInput];
+
+    if (isStereoMeet) {
+      // Process stereo Meet recording with speaker labels
+      const leftLabel = stereoChannels.left || 'Ik';
+      const rightLabel = stereoChannels.right || 'Anderen';
+      console.log(`[Transcription] STEREO MODE - Left: "${leftLabel}", Right: "${rightLabel}"`);
+
+      const localLeft = path.join(tmpDir, `${docId}-left.wav`);
+      const localRight = path.join(tmpDir, `${docId}-right.wav`);
+      tempFiles.push(localLeft, localRight);
+
+      // Extract channels
+      await extractLeftChannel(localInput, localLeft);
+      await extractRightChannel(localInput, localRight);
+
+      durationSec = Math.ceil(await probeDuration(localLeft));
+
+      // Transcribe both channels
+      const transcribeChannel = async (wavPath, label) => {
+        const chunks = [];
+        let start = 0;
+        while (start < durationSec) {
+          const effectiveStart = Math.max(0, start - (start > 0 ? CHUNK_OVERLAP_SECONDS : 0));
+          const remaining = durationSec - effectiveStart;
+          const dur = Math.min(CHUNK_SECONDS + (start > 0 ? CHUNK_OVERLAP_SECONDS : 0), remaining);
+          const chunkPath = path.join(tmpDir, `${docId}-${label}-${chunks.length}.wav`);
+          tempFiles.push(chunkPath);
+          await createChunk(wavPath, effectiveStart, dur, chunkPath);
+          chunks.push({ path: chunkPath, startSec: effectiveStart, durationSec: dur });
+          start += CHUNK_SECONDS;
+        }
+
+        const parts = [];
+        for (const chunk of chunks) {
+          const result = await transcribeChunk(chunk.path, apiKey, { language: metadata?.language || 'nl' });
+          // Get segments with timestamps from verbose_json response
+          const segments = result.segments || [];
+          parts.push({
+            startSec: chunk.startSec,
+            text: (result.text || '').trim(),
+            segments: segments.map(s => ({
+              start: chunk.startSec + s.start,
+              end: chunk.startSec + s.end,
+              text: s.text
+            }))
+          });
+        }
+        return parts;
+      };
+
+      console.log(`[Transcription] Transcribing both channels in parallel...`);
+      const [leftParts, rightParts] = await Promise.all([
+        transcribeChannel(localLeft, 'left'),
+        transcribeChannel(localRight, 'right')
+      ]);
+
+      console.log(`[Transcription] Left channel segments: ${leftParts.reduce((sum, p) => sum + p.segments.length, 0)}`);
+      console.log(`[Transcription] Right channel segments: ${rightParts.reduce((sum, p) => sum + p.segments.length, 0)}`);
+
+      chunkCount = leftParts.length + rightParts.length;
+
+      // Merge transcripts with speaker labels based on segments
+      const allSegments = [];
+
+      for (const part of leftParts) {
+        for (const seg of part.segments) {
+          if (seg.text.trim()) {
+            allSegments.push({ ...seg, speaker: leftLabel });
+          }
+        }
+      }
+      for (const part of rightParts) {
+        for (const seg of part.segments) {
+          if (seg.text.trim()) {
+            allSegments.push({ ...seg, speaker: rightLabel });
+          }
+        }
+      }
+
+      // Sort by start time
+      allSegments.sort((a, b) => a.start - b.start);
+
+      // Build formatted text with speaker labels
+      // Group consecutive segments by speaker
+      const lines = [];
+      let currentSpeaker = null;
+      let currentTexts = [];
+
+      for (const seg of allSegments) {
+        if (seg.speaker !== currentSpeaker) {
+          if (currentTexts.length > 0) {
+            lines.push(`[${currentSpeaker}]: ${currentTexts.join(' ')}`);
+          }
+          currentSpeaker = seg.speaker;
+          currentTexts = [seg.text.trim()];
+        } else {
+          currentTexts.push(seg.text.trim());
+        }
+      }
+      if (currentTexts.length > 0 && currentSpeaker) {
+        lines.push(`[${currentSpeaker}]: ${currentTexts.join(' ')}`);
+      }
+
+      text = lines.join('\n\n');
+
+    } else {
+      // Standard mono processing
+      console.log(`[Transcription] MONO MODE - standard processing`);
+      const localWav = path.join(tmpDir, `${docId}.wav`);
+      tempFiles.push(localWav);
+
+      await transcodeToWavMono16k(localInput, localWav);
+      durationSec = Math.ceil(await probeDuration(localWav));
+
+      const chunks = [];
+      let start = 0;
+      while (start < durationSec) {
+        const effectiveStart = Math.max(0, start - (start > 0 ? CHUNK_OVERLAP_SECONDS : 0));
+        const remaining = durationSec - effectiveStart;
+        const dur = Math.min(CHUNK_SECONDS + (start > 0 ? CHUNK_OVERLAP_SECONDS : 0), remaining);
+        const chunkPath = path.join(tmpDir, `${docId}-${chunks.length}.wav`);
+        tempFiles.push(chunkPath);
+        await createChunk(localWav, effectiveStart, dur, chunkPath);
+        chunks.push({ path: chunkPath, startSec: effectiveStart, durationSec: dur });
+        start += CHUNK_SECONDS;
+      }
+
+      const parts = [];
+      for (const chunk of chunks) {
+        const result = await transcribeChunk(chunk.path, apiKey, { language: metadata?.language || 'nl' });
+        parts.push({ startSec: chunk.startSec, result });
+      }
+
+      chunkCount = parts.length;
+      text = parts.map(p => (p.result?.text || '').trim()).join('\n');
     }
 
-    // Transcribe chunks sequentially (can be parallelized if needed)
-    const parts = [];
-    for (const chunk of chunks) {
-      // eslint-disable-next-line no-await-in-loop
-      const result = await transcribeChunk(chunk.path, apiKey, { language: metadata?.language || 'nl' });
-      parts.push({ startSec: chunk.startSec, result });
-    }
-
-    // Naive stitch: concatenate texts with newline
-    const text = parts.map(p => (p.result?.text || '').trim()).join('\n');
+    console.log(`[Transcription] Completed - duration: ${durationSec}s, chunks: ${chunkCount}`);
+    console.log(`[Transcription] Result text (first 500 chars):`, text?.substring(0, 500));
 
     await docRef.set({
       text,
       language: metadata?.language || 'nl',
       duration: durationSec,
-      chunkCount: parts.length,
+      chunkCount,
       model: MODEL,
       processingStatus: 'completed',
       updatedAt: new Date()
     }, { merge: true });
 
+    console.log(`[Transcription] Document updated successfully`);
+
     // Cleanup tmp files
-    try { fs.unlinkSync(localInput); } catch {}
-    try { fs.unlinkSync(localWav); } catch {}
-    for (const c of chunks) { try { fs.unlinkSync(c.path); } catch {} }
+    for (const f of tempFiles) {
+      try { fs.unlinkSync(f); } catch {}
+    }
 
   } catch (err) {
     console.error('Background transcription failed:', err);
