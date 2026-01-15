@@ -48,7 +48,8 @@
         "http://localhost/*",
         "http://localhost:5173/*",
         "http://127.0.0.1/*",
-        "https://voik.app/*"
+        "https://voik.app/*",
+        "https://voik.netlify.app/*"
       ],
       "js": ["voik-bridge.js"],
       "run_at": "document_start"

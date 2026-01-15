@@ -262,7 +262,7 @@ async function uploadToVoik() {
           size: audioBlob.size
         }
       });
-      window.open('http://localhost:5173?import=meet', '_blank');
+      window.open('https://voik.netlify.app?import=meet', '_blank');
       return;
     }
 
@@ -288,7 +288,7 @@ async function uploadToVoik() {
 
     setStatus('ready', 'Upload voltooid!');
     setTimeout(() => {
-      window.open('http://localhost:5173', '_blank');
+      window.open('https://voik.netlify.app', '_blank');
     }, 1000);
 
   } catch (err) {
