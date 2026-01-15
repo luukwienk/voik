@@ -153,8 +153,8 @@ function App() {
       const url = new URL(window.location.href);
       url.searchParams.delete('import');
       window.history.replaceState({}, '', url.pathname);
-      // Ga naar transcriptie tab
-      setCurrentTab(4);
+      // Ga naar transcriptie tab (now index 1)
+      setCurrentTab(1);
     }
   }, [user]);
 
@@ -209,13 +209,15 @@ function App() {
 
   // Dit effect zorgt ervoor dat de juiste initiële lijst wordt geselecteerd
   // maar behoudt de huidige lijsten bij tabwisseling
-  const [initialTabsVisited, setInitialTabsVisited] = useState({ 0: false });
-  
+  // New tab indices: 0=Board, 1=Transcriptions, 2=Tasks, 3=Calendar, 4=Search, 5=Health, 6=Success
+  const [initialTabsVisited, setInitialTabsVisited] = useState({ 2: false });
+
   useEffect(() => {
-    if (currentTab === 0 && !initialTabsVisited[0]) {
+    // Tab 2 is now Tasks - set default list on first visit
+    if (currentTab === 2 && !initialTabsVisited[2]) {
       debugLog('App: Eerste bezoek aan tasks tab, standaard tasklist instellen op "Today"');
       setCurrentTaskList('Today');
-      setInitialTabsVisited(prev => ({ ...prev, 0: true }));
+      setInitialTabsVisited(prev => ({ ...prev, 2: true }));
     }
     // We behouden de huidige lijsten bij terugkeer naar tabs
   }, [currentTab, setCurrentTaskList, initialTabsVisited]);
@@ -223,18 +225,13 @@ function App() {
   const handleTabChange = (tab) => {
     if (tab !== currentTab) {
       setCurrentTab(tab);
-      
-      // Bij eerste navigatie naar elke tab, stel standaardlijsten in
-      if (tab === 0 && !initialTabsVisited[0]) {
+
+      // Bij eerste navigatie naar Tasks tab (now index 2), stel standaardlijsten in
+      if (tab === 2 && !initialTabsVisited[2]) {
         setCurrentTaskList('Today');
-        setInitialTabsVisited(prev => ({ ...prev, 0: true }));
+        setInitialTabsVisited(prev => ({ ...prev, 2: true }));
       }
-      
-      // Transcriptie tab initialisatie
-      if (tab === 4 && !initialTabsVisited[4]) {
-        setInitialTabsVisited(prev => ({ ...prev, 4: true }));
-      }
-      
+
       // We behouden de geselecteerde lijsten bij tabwisseling
     }
   };

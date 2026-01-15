@@ -1,24 +1,29 @@
-import React, { useState } from 'react';
+// ResponsiveMainContent.jsx - Updated tab indices for Board-first layout
 import TaskList from './TaskList';
 import TaskOverviewPage from './TaskOverviewPage';
 import HealthTabNavigator from './health/HealthTabNavigator';
 import SuccessTracker from './success/succesTracker';
 import TranscriptionTab from './TranscriptionTab';
 import ChatButton from './ChatButton';
-import ChatInterface from './ChatInterface';
 import ErrorBoundary from './ErrorBoundary';
 import BigCalendarView from './BigCalendarView';
-import Settings from './settings/Settings';
 import useMediaQuery from '../hooks/useMediaQuery';
 import '../styles/responsive.css';
 import '../styles/centeredLayout.css';
-import ListSelectorModal from './ListSelectorModal';
-import ListSelector from './ListSelector';
 import '../styles/chat.css';
 import PlannerBoard from './PlannerBoard';
 
+// New tab indices:
+// 0 = Board (main view)
+// 1 = Transcriptions
+// 2 = Tasks
+// 3 = Calendar
+// 4 = Search
+// 5 = Health
+// 6 = Success
+
 function ResponsiveMainContent({
-  currentTab, 
+  currentTab,
   tasks,
   currentTaskList,
   setCurrentTaskList,
@@ -38,15 +43,15 @@ function ResponsiveMainContent({
   getLatestEntry,
   calculateWeeklyAverage,
   calculateTrend,
-  // Chat props - NEW!
+  // Chat props
   chatProps,
   isChatModalOpen,
   setIsChatModalOpen
 }) {
   // Detect if device is an iPad
-  const isIPad = /iPad/.test(navigator.userAgent) || 
+  const isIPad = /iPad/.test(navigator.userAgent) ||
                 (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document);
-  
+
   // Consider iPad as mobile for our layout
   const isDesktop = useMediaQuery('(min-width: 768px)') && !isIPad;
 
@@ -65,12 +70,120 @@ function ResponsiveMainContent({
     }
   };
 
-  // Render TaskOverviewPage for tab 2
+  const mainStyle = {
+    width: '100%',
+    maxWidth: '100%',
+    boxSizing: 'border-box',
+    height: 'calc(100vh - 130px)',
+    overflowY: 'auto'
+  };
+
+  // Tab 0: Board (main view)
+  if (currentTab === 0) {
+    return (
+      <ErrorBoundary>
+        <main className={`responsive-container ${!isDesktop ? 'mobile-full-width' : ''}`} style={{
+          ...mainStyle,
+          overflowY: 'hidden'
+        }}>
+          <PlannerBoard
+            tasks={tasks}
+            updateTaskList={updateTaskList}
+            addTaskList={addTaskList}
+            moveTask={moveTask}
+            user={user}
+          />
+
+          {/* Chat button */}
+          <div className="chat-button-container">
+            {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
+          </div>
+        </main>
+      </ErrorBoundary>
+    );
+  }
+
+  // Tab 1: Transcriptions
+  if (currentTab === 1) {
+    return (
+      <ErrorBoundary>
+        <main className={`responsive-container ${!isDesktop ? 'mobile-full-width' : ''}`} style={mainStyle}>
+          <TranscriptionTab user={user} onTasksExtracted={handleTasksExtracted} />
+
+          <div className="chat-button-container">
+            {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
+          </div>
+        </main>
+      </ErrorBoundary>
+    );
+  }
+
+  // Tab 2: Tasks
   if (currentTab === 2) {
     return (
       <ErrorBoundary>
-        <TaskOverviewPage 
-          tasks={tasks} 
+        <main className={`responsive-container ${!isDesktop ? 'mobile-full-width' : ''}`} style={mainStyle}>
+          <div style={{ marginTop: 24 }}>
+            <TaskList
+              tasks={tasks[currentTaskList]}
+              currentList={currentTaskList}
+              lists={tasks}
+              moveTask={moveTask}
+              hideTitleHeader={false}
+              setCurrentList={setCurrentTaskList}
+              addList={addTaskList}
+              deleteList={deleteTaskList}
+              updateList={(updatedData) => {
+                if (updatedData.id && updatedData.list) {
+                  updateTaskList(updatedData);
+                } else {
+                  updateTaskList(currentTaskList, updatedData);
+                }
+              }}
+              signOut={signOut}
+            />
+          </div>
+
+          <div className="chat-button-container">
+            {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
+          </div>
+        </main>
+      </ErrorBoundary>
+    );
+  }
+
+  // Tab 3: Calendar
+  if (currentTab === 3) {
+    return (
+      <ErrorBoundary>
+        <main className={`responsive-container ${!isDesktop ? 'mobile-full-width' : ''}`} style={mainStyle}>
+          {isDesktop ? (
+            <BigCalendarView
+              tasks={tasks}
+              currentTaskList={currentTaskList}
+              moveTask={moveTask}
+            />
+          ) : (
+            <div style={{padding: '20px', textAlign: 'center'}}>
+              <p>Calendar view is optimized for desktop.</p>
+              <p>Please use the desktop version for full calendar functionality.</p>
+            </div>
+          )}
+
+          <div className="chat-button-container">
+            {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
+          </div>
+        </main>
+      </ErrorBoundary>
+    );
+  }
+
+  // Tab 4: Search
+  if (currentTab === 4) {
+    return (
+      <ErrorBoundary>
+        <TaskOverviewPage
+          tasks={tasks}
           currentTaskList={currentTaskList}
           updateTaskList={updateTaskList}
           moveTask={moveTask}
@@ -79,43 +192,13 @@ function ResponsiveMainContent({
     );
   }
 
-  // Render Planner Board for tab 7
-  if (currentTab === 7) {
+  // Tab 5: Health
+  if (currentTab === 5) {
     return (
       <ErrorBoundary>
-        <main className={`responsive-container ${!isDesktop ? 'mobile-full-width' : ''}`} style={{ 
-          width: '100%',
-          maxWidth: '100%', 
-          boxSizing: 'border-box',
-          height: 'calc(100vh - 130px)',
-          overflowY: 'hidden'
-        }}>
-          <PlannerBoard tasks={tasks} updateTaskList={updateTaskList} moveTask={moveTask} />
-
-          {/* Chat button */}
-          <div className="chat-button-container">
-            {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
-          </div>
-          
-          {/* Chat interface moved to App.jsx (single global modal) */}
-        </main>
-      </ErrorBoundary>
-    );
-  }
-
-  // Render Health Tracker for tab 3
-  if (currentTab === 3) {
-    return (
-      <ErrorBoundary>
-        <main className={`responsive-container ${!isDesktop ? 'mobile-full-width' : ''}`} style={{ 
-          width: '100%',
-          maxWidth: '100%', 
-          boxSizing: 'border-box',
-          height: 'calc(100vh - 130px)',
-          overflowY: 'auto'
-        }}>
-          <HealthTabNavigator 
-            healthData={healthData} 
+        <main className={`responsive-container ${!isDesktop ? 'mobile-full-width' : ''}`} style={mainStyle}>
+          <HealthTabNavigator
+            healthData={healthData}
             healthLoading={healthLoading}
             addHealthEntry={addHealthEntry}
             updateHealthEntry={updateHealthEntry}
@@ -125,245 +208,51 @@ function ResponsiveMainContent({
             calculateWeeklyAverage={calculateWeeklyAverage || (() => {})}
             calculateTrend={calculateTrend || (() => {})}
           />
-            
-          {/* Chat button */}
+
           <div className="chat-button-container">
             {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
           </div>
-            
-          {/* Chat interface moved to App.jsx (single global modal) */}
         </main>
       </ErrorBoundary>
     );
   }
 
-  // Render Transcription Tab for tab 4
-  if (currentTab === 4) {
-    return (
-      <ErrorBoundary>
-        <main className={`responsive-container ${!isDesktop ? 'mobile-full-width' : ''}`} style={{ 
-          width: '100%',
-          maxWidth: '100%', 
-          boxSizing: 'border-box',
-          height: 'calc(100vh - 130px)',
-          overflowY: 'auto'
-        }}>
-          <TranscriptionTab user={user} onTasksExtracted={handleTasksExtracted} />
-            
-          {/* Chat button */}
-          <div className="chat-button-container">
-            {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
-          </div>
-            
-          {/* Chat interface moved to App.jsx (single global modal) */}
-        </main>
-      </ErrorBoundary>
-    );
-  }
-
-  // Render Success Tracker for tab 5
-  if (currentTab === 5) {
-    return (
-      <ErrorBoundary>
-        <main className={`responsive-container ${!isDesktop ? 'mobile-full-width' : ''}`} style={{ 
-          width: '100%',
-          maxWidth: '100%', 
-          boxSizing: 'border-box',
-          height: 'calc(100vh - 130px)',
-          overflowY: 'auto'
-        }}>
-          <SuccessTracker userId={user?.uid} />
-            
-          {/* Chat button */}
-          <div className="chat-button-container">
-            {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
-          </div>
-            
-          {/* Chat interface moved to App.jsx (single global modal) */}
-        </main>
-      </ErrorBoundary>
-    );
-  }
-
-  // Render Settings for tab 6
+  // Tab 6: Success
   if (currentTab === 6) {
     return (
       <ErrorBoundary>
-        <main className={`responsive-container ${!isDesktop ? 'mobile-full-width' : ''}`} style={{ 
-          width: '100%',
-          maxWidth: '100%', 
-          boxSizing: 'border-box',
-          height: 'calc(100vh - 130px)',
-          overflowY: 'auto'
-        }}>
-          <Settings user={user} />
-            
-          {/* Chat button */}
+        <main className={`responsive-container ${!isDesktop ? 'mobile-full-width' : ''}`} style={mainStyle}>
+          <SuccessTracker userId={user?.uid} />
+
           <div className="chat-button-container">
             {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
           </div>
-            
-          {/* Chat interface moved to App.jsx (single global modal) */}
         </main>
       </ErrorBoundary>
     );
   }
 
-  // Render Desktop or Mobile layout based on screen size
-  if (isDesktop) {
-    // Desktop Layout (calendar + task list)
-    return (
-      <ErrorBoundary>
-        <main className="responsive-container">
-          {currentTab === 1 ? (
-            // For calendar tab, use the BigCalendarView
-            <BigCalendarView
-              tasks={tasks}
-              currentTaskList={currentTaskList}
-              moveTask={moveTask}
-            />
-          ) : currentTab === 3 ? (
-            // Health tracker for desktop
-            <div style={{ marginTop: 24 }}>
-              <HealthTabNavigator 
-                healthData={healthData} 
-                healthLoading={healthLoading}
-                addHealthEntry={addHealthEntry}
-                updateHealthEntry={updateHealthEntry}
-                deleteHealthEntry={deleteHealthEntry}
-                getHealthDataByDateRange={getHealthDataByDateRange || (() => {})}
-                getLatestEntry={getLatestEntry || (() => {})}
-                calculateWeeklyAverage={calculateWeeklyAverage || (() => {})}
-                calculateTrend={calculateTrend || (() => {})}
-              />
-            </div>
-          ) : currentTab === 4 ? (
-            // Transcription tab for desktop
-            <div style={{ marginTop: 24 }}>
-              <TranscriptionTab user={user} onTasksExtracted={handleTasksExtracted} />
-            </div>
-          ) : currentTab === 5 ? (
-            // Success tracker for desktop
-            <div style={{ marginTop: 24 }}>
-              <SuccessTracker userId={user?.uid} />
-            </div>
-          ) : currentTab === 6 ? (
-            // Settings for desktop
-            <div style={{ marginTop: 24 }}>
-              <Settings user={user} />
-            </div>
-          ) : (
-            <>
-              {/* Combined calendar and task list view */}
-              {currentTab === 0 ? (
-                <div className="desktop-flex-row">
-                  {/* Task list (left) */}
-                  <div className="tasklist-container" style={{ marginTop: 24 }}>
-                    <TaskList
-                      tasks={tasks[currentTaskList]}
-                      currentList={currentTaskList}
-                      lists={tasks}
-                      moveTask={moveTask}
-                      hideTitleHeader={true}
-                      setCurrentList={setCurrentTaskList}
-                      addList={addTaskList}
-                      deleteList={deleteTaskList}
-                      updateList={(updatedData) => updateTaskList(currentTaskList, updatedData)}
-                      signOut={signOut}
-                    />
-                  </div>
-                  {/* Calendar (right) */}
-                  <BigCalendarView
-                    tasks={tasks}
-                    currentTaskList={currentTaskList}
-                    moveTask={moveTask}
-                  />
-                </div>
-              ) : null}
-              {/* Chat button */}
-              <div className="chat-button-container">
-                {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
-              </div>
-            </>
-          )}
-        </main>
-      </ErrorBoundary>
-    );
-  } else {
-    // Mobile Layout (task list only with chat button)
-    return (
-      <main className="responsive-container mobile-full-width">
-        {currentTab === 1 ? (
-          // For calendar tab, we'll show a simplified calendar view on mobile
-          // You can implement a mobile-friendly calendar here later
-          <div style={{padding: '20px', textAlign: 'center'}}>
-            <p>Calendar view will be available here soon.</p>
-            <p>Please use the desktop version for full calendar functionality.</p>
-          </div>
-        ) : currentTab === 3 ? (
-          // Health tracker for mobile
-          <div style={{ marginTop: 24 }}>
-            <HealthTabNavigator 
-              healthData={healthData} 
-              healthLoading={healthLoading}
-              addHealthEntry={addHealthEntry}
-              updateHealthEntry={updateHealthEntry}
-              deleteHealthEntry={deleteHealthEntry}
-              getHealthDataByDateRange={getHealthDataByDateRange || (() => {})}
-              getLatestEntry={getLatestEntry || (() => {})}
-              calculateWeeklyAverage={calculateWeeklyAverage || (() => {})}
-              calculateTrend={calculateTrend || (() => {})}
-            />
-          </div>
-        ) : currentTab === 4 ? (
-          // Transcription tab for mobile
-          <div style={{ marginTop: 24 }}>
-            <TranscriptionTab user={user} onTasksExtracted={handleTasksExtracted} />
-          </div>
-        ) : currentTab === 5 ? (
-          // Success tracker for mobile
-          <div style={{ marginTop: 24 }}>
-            <SuccessTracker userId={user?.uid} />
-          </div>
-        ) : currentTab === 6 ? (
-          // Settings for mobile
-          <div style={{ marginTop: 24 }}>
-            <Settings user={user} />
-          </div>
-        ) : (
-          <>
-            {/* Task list based on current tab */}
-            {currentTab === 0 ? (
-              <div style={{ marginTop: 24 }}>
-                <TaskList
-                  tasks={tasks[currentTaskList]}
-                  currentList={currentTaskList}
-                  lists={tasks}
-                  moveTask={moveTask}
-                  setCurrentList={setCurrentTaskList}
-                  addList={addTaskList}
-                  deleteList={deleteTaskList}
-                  updateList={(updatedData) => {
-                    if (updatedData.id && updatedData.list) {
-                      updateTaskList(updatedData);
-                    } else {
-                      updateTaskList(currentTaskList, updatedData);
-                    }
-                  }}
-                  signOut={signOut}
-                />
-              </div>
-            ) : null}
-          </>
-        )}
-        {/* Chat button for all mobile views */}
+  // Fallback - show board
+  return (
+    <ErrorBoundary>
+      <main className={`responsive-container ${!isDesktop ? 'mobile-full-width' : ''}`} style={{
+        ...mainStyle,
+        overflowY: 'hidden'
+      }}>
+        <PlannerBoard
+          tasks={tasks}
+          updateTaskList={updateTaskList}
+          addTaskList={addTaskList}
+          moveTask={moveTask}
+          user={user}
+        />
+
         <div className="chat-button-container">
           {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
         </div>
-        {/* Chat interface moved to App.jsx (single global modal) */}
       </main>
-    );
-  }
+    </ErrorBoundary>
+  );
 }
 
 export default ResponsiveMainContent;

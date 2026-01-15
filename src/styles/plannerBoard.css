@@ -11,78 +11,125 @@
 .pb-container {
   display: flex;
   flex-direction: column;
-  gap: 12px;
   height: 100%;
+  padding: 20px 24px;
+  box-sizing: border-box;
 }
 
+/* Improved toolbar - more spacious and balanced */
 .pb-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  padding: 16px 20px;
+  background: var(--pb-surface);
+  border: 1px solid var(--pb-border);
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: var(--pb-shadow);
 }
 
 .pb-toolbar-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
 .pb-title {
-  font-weight: 600;
+  font-size: 1.25rem;
+  font-weight: 700;
   color: var(--pb-text);
+  letter-spacing: -0.02em;
 }
 
 .pb-hint {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--pb-muted);
+  padding-left: 16px;
+  border-left: 1px solid var(--pb-border);
 }
 
 .pb-toolbar-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .pb-counter {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--pb-muted);
+  background: #f3f4f6;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 500;
 }
 
+.pb-create-list-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 2px dashed var(--pb-border);
+  background: transparent;
+  color: var(--pb-muted);
+  font-size: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.pb-create-list-btn:hover {
+  border-color: var(--pb-accent);
+  color: var(--pb-accent);
+  background: rgba(33, 150, 243, 0.05);
+}
+
+/* Board - left aligned for natural reading */
 .pb-board {
   display: flex;
-  gap: 16px;
+  gap: 20px;
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 8px 8px 12px;
-  justify-content: center;
+  padding: 4px 4px 16px;
+  flex: 1;
+  align-items: flex-start;
+  justify-content: flex-start;
 }
 
+/* Column cards */
 .pb-column {
   background: var(--pb-surface);
   border: 1px solid var(--pb-border);
-  border-radius: 8px;
+  border-radius: 12px;
   min-width: 320px;
   width: 320px;
   display: flex;
   flex-direction: column;
   box-shadow: var(--pb-shadow);
-  overflow: hidden; /* prevent inner content from bleeding under borders */
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.pb-column:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 .pb-column-header {
   position: sticky;
   top: 0;
   z-index: 1;
-  background: var(--pb-surface);
+  background: linear-gradient(to bottom, var(--pb-surface) 0%, var(--pb-surface) 100%);
   border-bottom: 1px solid var(--pb-border);
-  padding: 10px 12px;
+  padding: 14px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
 .pb-column-title {
+  font-size: 15px;
   font-weight: 600;
   color: var(--pb-text);
   overflow: hidden;
@@ -91,41 +138,55 @@
 }
 
 .pb-tasks {
-  padding: 8px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  max-height: calc(100vh - 240px);
+  gap: 10px;
+  max-height: calc(100vh - 300px);
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-gutter: stable both-edges; /* reserve gutter to avoid width jumping */
+  scrollbar-gutter: stable both-edges;
   align-items: stretch;
   box-sizing: border-box;
 }
 
+/* Task cards */
 .pb-task {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
+  gap: 12px;
+  padding: 12px 14px;
   border: 1px solid var(--pb-border);
-  border-radius: 6px;
+  border-radius: 8px;
   background: #fff;
   cursor: pointer;
   box-shadow: 0 1px 2px rgba(0,0,0,0.03);
   box-sizing: border-box;
   width: 100%;
+  transition: all 0.15s ease;
+  position: relative;
 }
 
-.pb-task:hover { background: #fafafa; }
+.pb-task:hover {
+  background: #f8fafc;
+  border-color: #d1d5db;
+}
 
 .pb-task.is-completed {
-  opacity: 0.65;
+  opacity: 0.55;
+}
+
+.pb-task.is-completed .pb-task-title {
   text-decoration: line-through;
+  color: var(--pb-muted);
 }
 
 .pb-task-checkbox {
   margin: 0;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--pb-accent);
 }
 
 .pb-task-title {
@@ -135,6 +196,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.4;
 }
 
 /* Add task inline form */
@@ -142,33 +204,52 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px;
+  padding: 12px;
   border-bottom: 1px solid var(--pb-border);
+  background: #fafbfc;
 }
 
 .pb-add-input {
   flex: 1;
   min-width: 0;
-  height: 32px;
-  padding: 6px 8px;
+  height: 36px;
+  padding: 8px 12px;
   border: 1px solid var(--pb-border);
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 14px;
   background: #fff;
+  transition: all 0.15s ease;
+}
+
+.pb-add-input:focus {
+  outline: none;
+  border-color: var(--pb-accent);
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+}
+
+.pb-add-input::placeholder {
+  color: #9ca3af;
 }
 
 .pb-add-btn {
-  height: 32px;
-  min-width: 32px;
-  padding: 0 10px;
-  border: 1px solid var(--pb-border);
-  background: #f5f7fa;
-  color: var(--pb-accent);
-  border-radius: 6px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0 12px;
+  border: none;
+  background: var(--pb-accent);
+  color: white;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pb-add-btn:hover {
+  background: #1976d2;
 }
 
 /* Tooltip on task hover */
-.pb-task { position: relative; }
 .pb-task-tooltip {
   position: absolute;
   left: 12px;
@@ -178,9 +259,9 @@
   color: var(--pb-text);
   border: 1px solid var(--pb-border);
   border-radius: 6px;
-  padding: 6px 8px;
+  padding: 6px 10px;
   font-size: 12px;
-  box-shadow: var(--pb-shadow);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   white-space: nowrap;
   max-width: 480px;
   overflow: hidden;
@@ -188,33 +269,79 @@
   pointer-events: none;
   opacity: 0;
   transition: opacity .12s ease;
+  z-index: 10;
 }
-.pb-task:hover .pb-task-tooltip { opacity: 1; }
+
+.pb-task:hover .pb-task-tooltip {
+  opacity: 1;
+}
 
 .pb-task.is-dragging {
-  z-index: 900; /* keep below chat modal overlay */
-  box-shadow: 0 8px 16px rgba(0,0,0,0.18);
+  z-index: 900;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+  transform: rotate(2deg);
 }
 
 .pb-task-delete {
   border: none;
   background: transparent;
-  color: var(--pb-muted);
-  font-size: 16px;
+  color: #d1d5db;
+  font-size: 18px;
   line-height: 1;
-  height: 24px;
-  width: 24px;
-  border-radius: 4px;
+  height: 28px;
+  width: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
 }
 
 .pb-task-delete:hover {
-  background: #f3f4f6;
+  background: #fee2e2;
+  color: #ef4444;
 }
 
+/* Empty state */
+.pb-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 40px;
+  text-align: center;
+  color: var(--pb-muted);
+  flex: 1;
+}
+
+/* Hide hint on mobile */
 @media (max-width: 768px) {
-  .pb-column { min-width: 300px; width: 300px; }
+  .pb-container {
+    padding: 12px 16px;
+  }
+
+  .pb-toolbar {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .pb-hint {
+    display: none;
+  }
+
+  .pb-column {
+    min-width: 300px;
+    width: 300px;
+  }
+
+  .hide-on-mobile {
+    display: none;
+  }
 }
 
+/* Dark mode */
 @media (prefers-color-scheme: dark) {
   :root {
     --pb-bg: #0f1115;
@@ -224,6 +351,35 @@
     --pb-muted: #9ca3af;
     --pb-shadow: 0 2px 8px rgba(0,0,0,0.25);
   }
-  .pb-task { background: #171a22; }
-  .pb-task:hover { background: #1a1e27; }
+
+  .pb-task {
+    background: #171a22;
+  }
+
+  .pb-task:hover {
+    background: #1e222d;
+  }
+
+  .pb-add {
+    background: #161921;
+  }
+
+  .pb-counter {
+    background: #2a2f3a;
+  }
+
+  .pb-task-delete:hover {
+    background: rgba(239, 68, 68, 0.2);
+  }
+
+  .pb-create-list-btn {
+    border-color: var(--pb-border);
+    color: var(--pb-muted);
+  }
+
+  .pb-create-list-btn:hover {
+    border-color: var(--pb-accent);
+    color: var(--pb-accent);
+    background: rgba(33, 150, 243, 0.1);
+  }
 }

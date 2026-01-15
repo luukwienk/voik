@@ -75,9 +75,9 @@ function TranscriptionList({ user, onTasksExtracted }) {
   };
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('nl-NL', {
+    return new Date(date).toLocaleDateString('en-US', {
       day: 'numeric',
-      month: 'long',
+      month: 'short',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -85,7 +85,7 @@ function TranscriptionList({ user, onTasksExtracted }) {
   };
 
   const formatDuration = (seconds) => {
-    if (!seconds) return 'Onbekend';
+    if (!seconds) return 'Unknown';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -94,7 +94,7 @@ function TranscriptionList({ user, onTasksExtracted }) {
   if (isLoading) {
     return (
       <div className="transcription-list loading">
-        <div className="loading-spinner">Transcripties laden...</div>
+        <div className="loading-spinner">Loading transcriptions...</div>
       </div>
     );
   }
@@ -112,16 +112,15 @@ function TranscriptionList({ user, onTasksExtracted }) {
   return (
     <div className="transcription-list">
       <div className="list-header">
-        <h2>Mijn Transcripties</h2>
+        <h2>My Transcriptions</h2>
         <div className="search-box">
           <input
             type="text"
-            placeholder=""
+            placeholder="Search..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ paddingLeft: '32px' }}
           />
-          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#bbb', pointerEvents: 'none' }}>
+          <span className="search-icon">
             <FontAwesomeIcon icon={faSearch} />
           </span>
         </div>
@@ -131,9 +130,12 @@ function TranscriptionList({ user, onTasksExtracted }) {
         {filteredTranscriptions.length === 0 ? (
           <div className="empty-state">
             {searchTerm ? (
-              <p>Geen transcripties gevonden voor "{searchTerm}"</p>
+              <p>No transcriptions found for "{searchTerm}"</p>
             ) : (
-              <p>Je hebt nog geen transcripties. Maak je eerste opname!</p>
+              <>
+                <p>No transcriptions yet</p>
+                <p className="empty-hint">Tap the microphone button to start recording</p>
+              </>
             )}
           </div>
         ) : (
@@ -165,10 +167,10 @@ function TranscriptionList({ user, onTasksExtracted }) {
                 )}
                 <div className="card-actions">
                   {transcription.processingStatus && transcription.processingStatus !== 'completed' && (
-                    <span className={`status-chip ${transcription.processingStatus}`} title="Achtergrondverwerking">
-                      {transcription.processingStatus === 'queued' && 'Wachtend'}
-                      {transcription.processingStatus === 'processing' && 'Bezig'}
-                      {transcription.processingStatus === 'error' && 'Fout'}
+                    <span className={`status-chip ${transcription.processingStatus}`} title="Processing status">
+                      {transcription.processingStatus === 'queued' && 'Queued'}
+                      {transcription.processingStatus === 'processing' && 'Processing'}
+                      {transcription.processingStatus === 'error' && 'Error'}
                     </span>
                   )}
                   <button
@@ -177,7 +179,7 @@ function TranscriptionList({ user, onTasksExtracted }) {
                       e.stopPropagation();
                       handleEdit(transcription);
                     }}
-                    title="Bewerk titel"
+                    title="Edit title"
                   >
                     <FontAwesomeIcon icon={faPen} />
                   </button>
@@ -187,7 +189,7 @@ function TranscriptionList({ user, onTasksExtracted }) {
                       e.stopPropagation();
                       exportTranscription(transcription, 'txt');
                     }}
-                    title="Download als tekst"
+                    title="Download as text"
                   >
                     <FontAwesomeIcon icon={faDownload} />
                   </button>
@@ -197,7 +199,7 @@ function TranscriptionList({ user, onTasksExtracted }) {
                       e.stopPropagation();
                       setShowDeleteConfirm(transcription.id);
                     }}
-                    title="Verwijder"
+                    title="Delete"
                   >
                     <FontAwesomeIcon icon={faTrash} />
                   </button>
@@ -221,28 +223,28 @@ function TranscriptionList({ user, onTasksExtracted }) {
               </div>
 
               <div className="card-preview">
-                {transcription.text 
+                {transcription.text
                   ? `${transcription.text.substring(0, 150)}...`
-                  : (transcription.processingStatus === 'error' 
-                      ? 'Verwerking mislukt. Probeer opnieuw of neem contact op.' 
-                      : 'Transcriptie wordt verwerkt...')}
+                  : (transcription.processingStatus === 'error'
+                      ? 'Processing failed. Please try again or contact support.'
+                      : 'Transcription is being processed...')}
               </div>
 
               {showDeleteConfirm === transcription.id && (
                 <div className="delete-confirm" onClick={(e) => e.stopPropagation()}>
-                  <p>Weet je zeker dat je deze transcriptie wilt verwijderen?</p>
+                  <p>Are you sure you want to delete this transcription?</p>
                   <div className="confirm-actions">
                     <button
                       className="btn danger"
                       onClick={() => handleDelete(transcription.id)}
                     >
-                      <FontAwesomeIcon icon={faTrash} /> Verwijder
+                      <FontAwesomeIcon icon={faTrash} /> Delete
                     </button>
                     <button
                       className="btn secondary"
                       onClick={() => setShowDeleteConfirm(null)}
                     >
-                      <FontAwesomeIcon icon={faTimes} /> Annuleer
+                      <FontAwesomeIcon icon={faTimes} /> Cancel
                     </button>
                   </div>
                 </div>

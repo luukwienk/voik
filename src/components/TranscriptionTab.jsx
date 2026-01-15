@@ -1,19 +1,13 @@
 // components/TranscriptionTab.jsx
 import React, { useState } from 'react';
-import TranscriptionRecorder from './TranscriptionRecorder';
 import TranscriptionList from './TranscriptionList';
+import QuickRecordButton from './QuickRecordButton';
+import MiniRecorder from './MiniRecorder';
 import '../styles/TranscriptionTab.css';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMicrophone, faClipboardList } from '@fortawesome/free-solid-svg-icons';
 
 function TranscriptionTab({ user, onTasksExtracted }) {
-  const [activeView, setActiveView] = useState('recorder');
-  const [refreshList, setRefreshList] = useState(0);
-
-  const handleTranscriptionSaved = () => {
-    setRefreshList(prev => prev + 1);
-    setActiveView('list');
-  };
+  const [showMiniRecorder, setShowMiniRecorder] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleTasksExtracted = (tasks) => {
     if (onTasksExtracted) {
@@ -21,39 +15,33 @@ function TranscriptionTab({ user, onTasksExtracted }) {
     }
   };
 
+  const handleUploadComplete = () => {
+    // Refresh the list when a new recording is uploaded
+    setRefreshKey(prev => prev + 1);
+  };
+
   return (
     <div className="transcription-tab">
-      <div className="transcription-nav">
-        <button
-          className={`nav-btn ${activeView === 'recorder' ? 'active' : ''}`}
-          onClick={() => setActiveView('recorder')}
-        >
-          <span className="nav-icon"><FontAwesomeIcon icon={faMicrophone} /></span>
-          <span className="nav-text">Nieuwe Opname</span>
-        </button>
-        <button
-          className={`nav-btn ${activeView === 'list' ? 'active' : ''}`}
-          onClick={() => setActiveView('list')}
-        >
-          <span className="nav-icon"><FontAwesomeIcon icon={faClipboardList} /></span>
-          <span className="nav-text">Mijn Transcripties</span>
-        </button>
-      </div>
+      <TranscriptionList
+        user={user}
+        key={refreshKey}
+        onTasksExtracted={handleTasksExtracted}
+      />
 
-      <div className="transcription-content">
-        {activeView === 'recorder' ? (
-          <TranscriptionRecorder 
-            user={user} 
-            onSaved={handleTranscriptionSaved}
-          />
-        ) : (
-          <TranscriptionList 
-            user={user} 
-            key={refreshList}
-            onTasksExtracted={handleTasksExtracted}
-          />
-        )}
-      </div>
+      {/* Quick Record Button */}
+      <QuickRecordButton
+        onClick={() => setShowMiniRecorder(true)}
+        isActive={showMiniRecorder}
+      />
+
+      {/* Mini Recorder Overlay */}
+      {showMiniRecorder && (
+        <MiniRecorder
+          user={user}
+          onClose={() => setShowMiniRecorder(false)}
+          onUploadComplete={handleUploadComplete}
+        />
+      )}
     </div>
   );
 }

@@ -3,6 +3,9 @@ import { createPortal } from 'react-dom';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import MultiSelectDropdown from './MultiSelectDropdown';
 import TaskEditorModal from './TaskEditorModal';
+import QuickRecordButton from './QuickRecordButton';
+import MiniRecorder from './MiniRecorder';
+import CreateListModal from './CreateListModal';
 import '../styles/plannerBoard.css';
 
 // Local storage key for selected columns (list names)
@@ -25,8 +28,19 @@ const StrictModeDroppable = ({ children, ...props }) => {
   return <Droppable {...props}>{children}</Droppable>;
 };
 
-const PlannerBoard = ({ tasks, updateTaskList, moveTask }) => {
+const PlannerBoard = ({ tasks, updateTaskList, addTaskList, moveTask, user }) => {
   const allListNames = useMemo(() => Object.keys(tasks || {}), [tasks]);
+  const [showMiniRecorder, setShowMiniRecorder] = useState(false);
+  const [showCreateListModal, setShowCreateListModal] = useState(false);
+
+  // Create new list handler
+  const handleCreateList = (name) => {
+    addTaskList(name);
+    // Auto-add to columns if not at max
+    if (columns.length < MAX_COLUMNS) {
+      setColumns(prev => [...prev, name]);
+    }
+  };
 
   // Initialize columns: from LS (filter unknown), else default ['Today']
   const [columns, setColumns] = useState(() => {
@@ -90,7 +104,7 @@ const PlannerBoard = ({ tasks, updateTaskList, moveTask }) => {
 
     // Limit to MAX_COLUMNS
     if (newSelection.length > MAX_COLUMNS) {
-      alert(`Maximaal ${MAX_COLUMNS} kolommen toegestaan`);
+      alert(`Maximum ${MAX_COLUMNS} columns allowed`);
       return; // ignore this change
     }
 
@@ -217,7 +231,7 @@ const PlannerBoard = ({ tasks, updateTaskList, moveTask }) => {
               />
               <div className="pb-task-title" title={fullTitle}>{title}</div>
               <div className="pb-task-tooltip">{fullTitle}</div>
-              <button className="pb-task-delete" onClick={deleteTask} title="Verwijderen" aria-label="Verwijderen">×</button>
+              <button className="pb-task-delete" onClick={deleteTask} title="Delete" aria-label="Delete">×</button>
             </div>
           );
           return snapshot.isDragging ? createPortal(content, document.body) : content;
@@ -233,21 +247,28 @@ const PlannerBoard = ({ tasks, updateTaskList, moveTask }) => {
       <div className="pb-toolbar">
         <div className="pb-toolbar-left">
           <div className="pb-title">Board</div>
-          <div className="pb-hint hide-on-mobile">Sleep kolommen om te herordenen</div>
+          <div className="pb-hint hide-on-mobile">Drag columns to reorder</div>
         </div>
         <div className="pb-toolbar-right">
           <MultiSelectDropdown
             options={availableToAdd}
             selectedOptions={selectedOptions}
             onChange={handleSelectColumns}
-            placeholder="Kolommen kiezen"
+            placeholder="Select columns"
           />
+          <button
+            className="pb-create-list-btn"
+            onClick={() => setShowCreateListModal(true)}
+            title="Create new list"
+          >
+            +
+          </button>
           <div className="pb-counter">{columns.length}/{MAX_COLUMNS}</div>
         </div>
       </div>
 
       {columns.length === 0 ? (
-        <div style={{ padding: 16 }}>Geen kolommen geselecteerd.</div>
+        <div style={{ padding: 16 }}>No columns selected.</div>
       ) : (
       <DragDropContext onDragEnd={onDragEnd}>
         {/* Columns reorder */}
@@ -317,6 +338,31 @@ const PlannerBoard = ({ tasks, updateTaskList, moveTask }) => {
             const items = (tasks[list]?.items || []).map((t) => (t.id === updatedTask.id ? { ...t, ...updatedTask } : t));
             updateTaskList(list, { items });
             setSelectedTask(null);
+          }}
+        />
+      )}
+
+      {/* Create List Modal */}
+      <CreateListModal
+        isOpen={showCreateListModal}
+        onClose={() => setShowCreateListModal(false)}
+        onCreate={handleCreateList}
+        existingLists={allListNames}
+      />
+
+      {/* Quick Record Button */}
+      <QuickRecordButton
+        onClick={() => setShowMiniRecorder(true)}
+        isActive={showMiniRecorder}
+      />
+
+      {/* Mini Recorder Overlay */}
+      {showMiniRecorder && (
+        <MiniRecorder
+          user={user}
+          onClose={() => setShowMiniRecorder(false)}
+          onUploadComplete={() => {
+            // Recording uploaded successfully
           }}
         />
       )}

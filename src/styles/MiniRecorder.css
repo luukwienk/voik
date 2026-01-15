@@ -1,0 +1,302 @@
+/* MiniRecorder.css - Compact recorder overlay & quick record button */
+
+/* Floating Action Buttons Container */
+.fab-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 1001;
+}
+
+/* Quick Record Floating Button - softer purple/indigo color */
+.quick-record-button {
+  position: fixed;
+  bottom: 92px;
+  right: 24px;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  transition: all 0.2s ease;
+  z-index: 1001;
+}
+
+.quick-record-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.45);
+}
+
+.quick-record-button.is-active {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  animation: record-glow 2s ease-in-out infinite;
+}
+
+@keyframes record-glow {
+  0%, 100% {
+    box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35);
+  }
+  50% {
+    box-shadow: 0 4px 24px rgba(139, 92, 246, 0.6);
+  }
+}
+
+/* Mini Recorder Overlay */
+.mini-recorder-overlay {
+  position: fixed;
+  bottom: 160px;
+  right: 24px;
+  z-index: 1050;
+}
+
+.mini-recorder {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0,0,0,0.05);
+  padding: 24px;
+  width: 320px;
+  max-width: calc(100vw - 48px);
+}
+
+.mini-recorder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.mini-recorder-title {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mini-recorder-title .recording-dot {
+  width: 10px;
+  height: 10px;
+  background: #8b5cf6;
+  border-radius: 50%;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.mini-recorder-close {
+  background: #f3f4f6;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 8px 10px;
+  border-radius: 8px;
+  transition: all 0.15s;
+}
+
+.mini-recorder-close:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.mini-recorder-duration {
+  text-align: center;
+  font-size: 3rem;
+  font-weight: 700;
+  color: #8b5cf6;
+  font-variant-numeric: tabular-nums;
+  margin: 20px 0;
+  letter-spacing: -0.02em;
+}
+
+.mini-recorder-audio {
+  margin-bottom: 20px;
+}
+
+.mini-recorder-audio audio {
+  width: 100%;
+  height: 40px;
+  border-radius: 8px;
+}
+
+.mini-recorder-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mini-recorder-save {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mini-btn-row {
+  display: flex;
+  gap: 10px;
+}
+
+.mini-btn-row .flex-1 {
+  flex: 1;
+}
+
+.mini-btn {
+  padding: 12px 18px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.mini-btn.large {
+  padding: 16px 24px;
+  font-size: 1rem;
+}
+
+.mini-btn.primary {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+}
+
+.mini-btn.primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+.mini-btn.secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.mini-btn.secondary:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+
+.mini-btn.danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+.mini-btn.danger:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.mini-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.mini-title-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  transition: all 0.15s;
+  box-sizing: border-box;
+}
+
+.mini-title-input:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.mini-error {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: #fef2f2;
+  color: #dc2626;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 767px) {
+  .quick-record-button {
+    bottom: 150px;
+    right: 16px;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+  }
+
+  .mini-recorder-overlay {
+    bottom: 210px;
+    right: 16px;
+    left: 16px;
+  }
+
+  .mini-recorder {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .mini-recorder {
+    background: #1e1e1e;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  }
+
+  .mini-recorder-title {
+    color: #e5e7eb;
+  }
+
+  .mini-recorder-close {
+    background: #2a2f3a;
+    color: #9ca3af;
+  }
+
+  .mini-recorder-close:hover {
+    background: #3a3f4a;
+    color: #d1d5db;
+  }
+
+  .mini-title-input {
+    background: #2a2f3a;
+    border-color: #3a3f4a;
+    color: #e5e7eb;
+  }
+
+  .mini-title-input:focus {
+    border-color: #8b5cf6;
+  }
+
+  .mini-btn.secondary {
+    background: #2a2f3a;
+    color: #d1d5db;
+  }
+
+  .mini-btn.secondary:hover:not(:disabled) {
+    background: #3a3f4a;
+  }
+
+  .mini-error {
+    background: #451a1a;
+  }
+}
