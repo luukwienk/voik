@@ -1,4 +1,4 @@
-// recorder.js - Audio opname in een apart tabblad
+// recorder.js - Audio recording in a separate tab
 
 let audioContext = null;
 let mediaRecorder = null;
@@ -29,23 +29,24 @@ const postRecording = document.getElementById('post-recording');
 const playback = document.getElementById('playback');
 const sizeInfo = document.getElementById('size-info');
 const infoEl = document.getElementById('info');
+const languageSelect = document.getElementById('language-select');
 
-// Initialiseer
+// Initialize
 async function init() {
   if (!tabStreamId && captureTab) {
-    showError('Geen stream ID ontvangen. Sluit dit tabblad en probeer opnieuw via de extension.');
+    showError('No stream ID received. Close this tab and try again via the extension.');
     return;
   }
 
   // Update info text
   let sources = [];
   if (captureTab) sources.push('Meet tab audio');
-  if (captureMic) sources.push('microfoon');
+  if (captureMic) sources.push('microphone');
   if (sources.length > 0) {
-    infoEl.textContent = `De opname bevat: ${sources.join(' + ')}`;
+    infoEl.textContent = `Recording includes: ${sources.join(' + ')}`;
   }
 
-  setStatus('ready', 'Klaar om op te nemen');
+  setStatus('ready', 'Ready to record');
 }
 
 function setStatus(state, text) {
@@ -56,7 +57,7 @@ function setStatus(state, text) {
 function showError(msg) {
   errorEl.textContent = msg;
   errorEl.style.display = 'block';
-  setStatus('', 'Fout');
+  setStatus('', 'Error');
 }
 
 function hideError() {
@@ -74,13 +75,13 @@ async function startRecording() {
       await audioContext.resume();
     }
 
-    // Stereo destination: Left = mic (ik), Right = tab (anderen)
-    // We maken een stereo stream met ChannelMergerNode
+    // Stereo destination: Left = mic (me), Right = tab (others)
+    // We create a stereo stream with ChannelMergerNode
     const channelMerger = audioContext.createChannelMerger(2);
     const destination = audioContext.createMediaStreamDestination();
     channelMerger.connect(destination);
 
-    // Tab audio capture -> RIGHT channel (anderen)
+    // Tab audio capture -> RIGHT channel (others)
     if (captureTab && tabStreamId) {
       try {
         tabStream = await navigator.mediaDevices.getUserMedia({
@@ -98,19 +99,19 @@ async function startRecording() {
         tabGain.gain.value = 1.0;
         tabSource.connect(tabGain);
 
-        // Tab naar RIGHT channel (index 1)
+        // Tab to RIGHT channel (index 1)
         tabGain.connect(channelMerger, 0, 1);
 
-        // Ook naar speakers zodat je anderen nog hoort
+        // Also to speakers so you can still hear others
         tabGain.connect(audioContext.destination);
       } catch (err) {
         console.error('[Recorder] Tab capture error:', err);
-        showError('Kon Meet audio niet capturen: ' + err.message);
+        showError('Could not capture Meet audio: ' + err.message);
         return;
       }
     }
 
-    // Microfoon capture -> LEFT channel (ik)
+    // Microphone capture -> LEFT channel (me)
     if (captureMic) {
       try {
         micStream = await navigator.mediaDevices.getUserMedia({
@@ -127,21 +128,21 @@ async function startRecording() {
         micGain.gain.value = 1.0;
         micSource.connect(micGain);
 
-        // Mic naar LEFT channel (index 0)
+        // Mic to LEFT channel (index 0)
         micGain.connect(channelMerger, 0, 0);
       } catch (err) {
         console.error('[Recorder] Mic capture error:', err);
         if (!tabStream) {
-          showError('Kon microfoon niet openen: ' + err.message);
+          showError('Could not access microphone: ' + err.message);
           return;
         }
-        // Continue zonder microfoon als we tab audio hebben
+        // Continue without microphone if we have tab audio
       }
     }
 
-    // Check of we iets hebben
+    // Check if we have any audio sources
     if (!tabStream && !micStream) {
-      showError('Geen audiobronnen beschikbaar');
+      showError('No audio sources available');
       return;
     }
 
@@ -164,12 +165,12 @@ async function startRecording() {
     mediaRecorder.onstop = () => {
       audioBlob = new Blob(recordedChunks, { type: mimeType });
       playback.src = URL.createObjectURL(audioBlob);
-      sizeInfo.textContent = `Duur: ${formatTime(duration)} | Grootte: ${formatSize(audioBlob.size)}`;
+      sizeInfo.textContent = `Duration: ${formatTime(duration)} | Size: ${formatSize(audioBlob.size)}`;
 
       // Show post-recording UI
       controlsRecording.classList.add('hidden');
       postRecording.classList.add('show');
-      setStatus('ready', 'Opname voltooid');
+      setStatus('ready', 'Recording complete');
     };
 
     // Start!
@@ -180,14 +181,15 @@ async function startRecording() {
     // UI
     controlsStart.classList.add('hidden');
     controlsRecording.classList.remove('hidden');
-    setStatus('recording', 'Opname bezig...');
+    languageSelect.disabled = true;
+    setStatus('recording', 'Recording...');
 
     // Timer
     timerInterval = setInterval(updateTimer, 100);
 
   } catch (err) {
     console.error('[Recorder] Start error:', err);
-    showError('Kon opname niet starten: ' + err.message);
+    showError('Could not start recording: ' + err.message);
     cleanup();
   }
 }
@@ -250,13 +252,14 @@ async function uploadToVoik() {
     const config = result.firebaseConfig;
 
     if (!config || !config.authToken) {
-      // Fallback: open Voik met audio in storage
+      // Fallback: open Voik with audio in storage
       const base64 = await blobToBase64(audioBlob);
       await chrome.storage.local.set({
         pendingAudio: {
           data: base64,
           duration,
           meetingTitle,
+          language: languageSelect.value,
           timestamp: Date.now(),
           mimeType: 'audio/webm;codecs=opus',
           size: audioBlob.size
@@ -267,7 +270,7 @@ async function uploadToVoik() {
     }
 
     // Direct upload
-    setStatus('', 'Uploaden...');
+    setStatus('', 'Uploading...');
     document.querySelectorAll('button').forEach(b => b.disabled = true);
 
     const docId = crypto.randomUUID();
@@ -275,7 +278,7 @@ async function uploadToVoik() {
 
     // Create Firestore doc
     await createFirestoreDoc(config, docId, {
-      title: meetingTitle || `Meet opname ${new Date().toLocaleDateString('nl-NL')}`,
+      title: meetingTitle || `Meet recording ${new Date().toLocaleDateString('en-US')}`,
       duration,
       size: audioBlob.size
     });
@@ -286,14 +289,14 @@ async function uploadToVoik() {
     // Update doc
     await updateFirestoreDoc(config, docId, path);
 
-    setStatus('ready', 'Upload voltooid!');
+    setStatus('ready', 'Upload complete!');
     setTimeout(() => {
       window.open('https://voik.netlify.app', '_blank');
     }, 1000);
 
   } catch (err) {
     console.error('[Recorder] Upload error:', err);
-    showError('Upload mislukt: ' + err.message);
+    showError('Upload failed: ' + err.message);
     document.querySelectorAll('button').forEach(b => b.disabled = false);
   }
 }
@@ -301,22 +304,23 @@ async function uploadToVoik() {
 async function createFirestoreDoc(config, docId, meta) {
   const url = `https://firestore.googleapis.com/v1/projects/${config.projectId}/databases/(default)/documents/users/${config.userId}/transcriptions/${docId}`;
 
+  const selectedLanguage = languageSelect.value;
   const now = new Date().toISOString();
   const doc = {
     fields: {
       title: { stringValue: meta.title },
       tags: { arrayValue: { values: [{ stringValue: 'google-meet' }] } },
-      language: { stringValue: 'nl' },
+      language: { stringValue: selectedLanguage },
       duration: { integerValue: String(meta.duration) },
       processingStatus: { stringValue: 'queued' },
       storagePath: { stringValue: '' },
       audioSize: { integerValue: String(meta.size) },
       userId: { stringValue: config.userId },
       source: { stringValue: 'meet-extension' },
-      // Stereo channel info voor speaker diarization
+      // Stereo channel info for speaker diarization
       stereoChannels: { mapValue: { fields: {
-        left: { stringValue: 'Ik' },
-        right: { stringValue: 'Anderen' }
+        left: { stringValue: 'Me' },
+        right: { stringValue: 'Others' }
       }}},
       createdAt: { timestampValue: now },
       updatedAt: { timestampValue: now }
@@ -385,10 +389,11 @@ function downloadRecording() {
 function newRecording() {
   postRecording.classList.remove('show');
   controlsStart.classList.remove('hidden');
+  languageSelect.disabled = false;
   timerEl.textContent = '00:00';
   audioBlob = null;
   duration = 0;
-  setStatus('ready', 'Klaar om op te nemen');
+  setStatus('ready', 'Ready to record');
 }
 
 function blobToBase64(blob) {
@@ -400,7 +405,7 @@ function blobToBase64(blob) {
   });
 }
 
-// Event listeners (nodig voor Chrome Extension CSP)
+// Event listeners (required for Chrome Extension CSP)
 document.getElementById('btn-start').addEventListener('click', startRecording);
 document.getElementById('btn-stop').addEventListener('click', stopRecording);
 document.getElementById('btn-upload').addEventListener('click', uploadToVoik);

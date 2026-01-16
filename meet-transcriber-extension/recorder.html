@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Voik Meet Recorder</title>
@@ -143,12 +143,38 @@
       margin-bottom: 16px;
     }
     .hidden { display: none !important; }
+    .language-selector {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      padding: 12px 16px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+    .language-selector label {
+      font-weight: 500;
+      color: #333;
+    }
+    .language-selector select {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      background: white;
+      cursor: pointer;
+    }
+    .language-selector select:disabled {
+      background: #f1f3f4;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Voik Meet Recorder</h1>
-    <p class="subtitle">Houd dit tabblad open tijdens de meeting</p>
+    <p class="subtitle">Keep this tab open during the meeting</p>
 
     <div class="error" id="error"></div>
 
@@ -159,15 +185,28 @@
 
     <div class="timer" id="timer">00:00</div>
 
+    <div class="language-selector" id="language-selector">
+      <label for="language-select">Language:</label>
+      <select id="language-select">
+        <option value="auto">🔄 Auto detect</option>
+        <option value="nl">🇳🇱 Dutch</option>
+        <option value="en">🇬🇧 English</option>
+        <option value="cs">🇨🇿 Czech</option>
+        <option value="de">🇩🇪 German</option>
+        <option value="fr">🇫🇷 French</option>
+        <option value="es">🇪🇸 Spanish</option>
+      </select>
+    </div>
+
     <div class="controls" id="controls-start">
       <button class="btn-primary" id="btn-start">
-        Start Opname
+        Start Recording
       </button>
     </div>
 
     <div class="controls hidden" id="controls-recording">
       <button class="btn-danger" id="btn-stop">
-        Stop Opname
+        Stop Recording
       </button>
     </div>
 
@@ -176,7 +215,7 @@
       <audio id="playback" controls></audio>
       <div class="controls">
         <button class="btn-primary" id="btn-upload">
-          Upload naar Voik
+          Upload to Voik
         </button>
       </div>
       <div class="controls">
@@ -184,13 +223,13 @@
           Download
         </button>
         <button class="btn-secondary" id="btn-new">
-          Nieuwe Opname
+          New Recording
         </button>
       </div>
     </div>
 
     <div class="info" id="info">
-      De opname bevat audio van de Meet tab + je microfoon
+      Recording includes Meet tab audio + your microphone
     </div>
   </div>
 

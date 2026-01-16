@@ -1,5 +1,5 @@
 // popup.js - Voik Meet Transcriber Popup
-// Start opname door recorder tab te openen
+// Start recording by opening recorder tab
 
 // DOM elementen
 const elements = {
@@ -21,9 +21,9 @@ let state = {
   isOnMeetTab: false
 };
 
-// Initialiseer popup
+// Initialize popup
 async function init() {
-  // Check of we op een Meet tab zijn
+  // Check if we're on a Meet tab
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   state.isOnMeetTab = tab?.url?.includes('meet.google.com');
 
@@ -32,7 +32,7 @@ async function init() {
     return;
   }
 
-  // Haal meeting info op via content script
+  // Get meeting info via content script
   try {
     const meetingInfo = await chrome.tabs.sendMessage(tab.id, { type: 'GET_MEETING_INFO' });
     if (meetingInfo?.title) {
@@ -41,10 +41,10 @@ async function init() {
       elements.meetingInfo.classList.remove('hidden');
     }
   } catch (err) {
-    console.log('[Voik] Kon meeting info niet ophalen:', err);
+    console.log('[Voik] Could not get meeting info:', err);
   }
 
-  // Laad opgeslagen voorkeuren
+  // Load saved preferences
   loadPreferences();
 
   // Setup event listeners
@@ -52,7 +52,7 @@ async function init() {
 
   // Update UI
   elements.statusIndicator.classList.add('idle');
-  elements.statusText.textContent = 'Klaar om op te nemen';
+  elements.statusText.textContent = 'Ready to record';
 }
 
 function loadPreferences() {
@@ -84,7 +84,7 @@ async function startRecording() {
   const captureMic = elements.captureMic.checked;
 
   if (!captureTab && !captureMic) {
-    showError('Selecteer minimaal een audiobron');
+    showError('Select at least one audio source');
     return;
   }
 
@@ -93,7 +93,7 @@ async function startRecording() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-    // Haal tab capture stream ID op
+    // Get tab capture stream ID
     let tabStreamId = null;
     if (captureTab) {
       tabStreamId = await new Promise((resolve, reject) => {
@@ -107,7 +107,7 @@ async function startRecording() {
       });
     }
 
-    // Open recorder tab met parameters
+    // Open recorder tab with parameters
     const recorderUrl = new URL(chrome.runtime.getURL('recorder.html'));
     recorderUrl.searchParams.set('streamId', tabStreamId || '');
     recorderUrl.searchParams.set('captureTab', captureTab);
@@ -116,12 +116,12 @@ async function startRecording() {
 
     chrome.tabs.create({ url: recorderUrl.toString() });
 
-    // Sluit popup
+    // Close popup
     window.close();
 
   } catch (err) {
     console.error('[Voik] Start recording error:', err);
-    showError('Kon opname niet starten: ' + err.message);
+    showError('Could not start recording: ' + err.message);
   }
 }
 
@@ -141,5 +141,5 @@ function showMeetWarning() {
   elements.captureMic.disabled = true;
 }
 
-// Initialiseer bij laden
+// Initialize on load
 document.addEventListener('DOMContentLoaded', init);

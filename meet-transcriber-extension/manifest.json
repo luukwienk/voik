@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Voik Meet Transcriber",
   "version": "1.0.0",
-  "description": "Capture Google Meet audio en transcribeer via Voik",
+  "description": "Capture Google Meet audio and transcribe via Voik",
   "author": "Voik",
 
   "permissions": [

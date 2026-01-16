@@ -1,37 +1,37 @@
-// content.js - Google Meet detectie en communicatie
-// Dit script draait op meet.google.com pagina's
+// content.js - Google Meet detection and communication
+// This script runs on meet.google.com pages
 
-console.log('[Voik Content] Content script geladen op:', window.location.href);
+console.log('[Voik Content] Content script loaded on:', window.location.href);
 
-// Huidige meeting state
+// Current meeting state
 let meetingState = {
   isInMeeting: false,
   meetingCode: null,
   title: null
 };
 
-// Detecteer of we in een actieve meeting zitten
+// Detect if we're in an active meeting
 function detectMeetingStatus() {
-  // Check URL voor meeting code
+  // Check URL for meeting code
   const urlMatch = window.location.pathname.match(/\/([a-z]{3}-[a-z]{4}-[a-z]{3})$/i);
   const meetingCode = urlMatch ? urlMatch[1] : null;
 
-  // Check voor meeting UI elementen
-  // De data-meeting-code attribuut is aanwezig wanneer in meeting
+  // Check for meeting UI elements
+  // The data-meeting-code attribute is present when in a meeting
   const meetingElement = document.querySelector('[data-meeting-code]');
   const isInMeeting = !!meetingElement || !!meetingCode;
 
-  // Haal meeting title op (indien beschikbaar)
+  // Get meeting title (if available)
   let title = null;
 
-  // Probeer titel uit verschillende plaatsen te halen
-  // Meeting titel in de top bar
+  // Try to get title from various places
+  // Meeting title in the top bar
   const titleElement = document.querySelector('[data-meeting-title]');
   if (titleElement) {
     title = titleElement.textContent;
   }
 
-  // Of uit de document titel
+  // Or from the document title
   if (!title && document.title) {
     // Google Meet - meeting code format
     const titleMatch = document.title.match(/^(.+?)\s*[-|]\s*Google Meet/);
@@ -48,7 +48,7 @@ function detectMeetingStatus() {
     title: title || meetingCode || 'Google Meet'
   };
 
-  // Notify als status veranderd is
+  // Notify if status changed
   if (wasInMeeting !== isInMeeting) {
     notifyMeetingStatusChange();
   }
@@ -56,7 +56,7 @@ function detectMeetingStatus() {
   return meetingState;
 }
 
-// Stuur meeting status naar background script
+// Send meeting status to background script
 function notifyMeetingStatusChange() {
   try {
     chrome.runtime.sendMessage({
@@ -66,13 +66,13 @@ function notifyMeetingStatusChange() {
     });
   } catch (err) {
     // Extension context might be invalidated
-    console.log('[Voik Content] Kon status niet versturen:', err);
+    console.log('[Voik Content] Could not send status:', err);
   }
 }
 
-// Luister naar berichten van popup
+// Listen for messages from popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('[Voik Content] Bericht ontvangen:', message.type);
+  console.log('[Voik Content] Message received:', message.type);
 
   switch (message.type) {
     case 'GET_MEETING_INFO':
@@ -94,7 +94,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-// Optionele discrete opname indicator
+// Optional discrete recording indicator
 let recordingIndicator = null;
 
 function showRecordingIndicator() {
@@ -138,7 +138,7 @@ function showRecordingIndicator() {
       }
     </style>
     <span class="dot"></span>
-    <span>Voik opname</span>
+    <span>Voik recording</span>
   `;
 
   document.body.appendChild(recordingIndicator);
@@ -151,16 +151,16 @@ function hideRecordingIndicator() {
   }
 }
 
-// Observeer DOM veranderingen voor meeting status updates
+// Observe DOM changes for meeting status updates
 const observer = new MutationObserver(() => {
   detectMeetingStatus();
 });
 
-// Start observer wanneer DOM klaar is
+// Start observer when DOM is ready
 function init() {
   detectMeetingStatus();
 
-  // Observer voor meeting UI changes
+  // Observer for meeting UI changes
   observer.observe(document.body, {
     childList: true,
     subtree: true,
@@ -168,20 +168,20 @@ function init() {
     attributeFilter: ['data-meeting-code', 'data-meeting-title']
   });
 
-  // Periodieke check (backup voor als observer mist)
+  // Periodic check (backup in case observer misses)
   setInterval(detectMeetingStatus, 5000);
 
-  console.log('[Voik Content] Geïnitialiseerd, meeting status:', meetingState);
+  console.log('[Voik Content] Initialized, meeting status:', meetingState);
 }
 
-// Wacht tot DOM geladen is
+// Wait until DOM is loaded
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
 } else {
   init();
 }
 
-// Cleanup bij navigatie
+// Cleanup on navigation
 window.addEventListener('beforeunload', () => {
   observer.disconnect();
   hideRecordingIndicator();

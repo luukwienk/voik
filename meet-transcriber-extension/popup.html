@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,47 +13,47 @@
       <span class="version">v1.0</span>
     </header>
 
-    <!-- Status sectie -->
+    <!-- Status section -->
     <div id="status-section" class="status-section">
       <div id="status-indicator" class="status-indicator">
         <span class="status-dot"></span>
-        <span id="status-text">Initialiseren...</span>
+        <span id="status-text">Initializing...</span>
       </div>
       <div id="meeting-info" class="meeting-info hidden">
         <span id="meeting-title">Meeting</span>
       </div>
     </div>
 
-    <!-- Audio bronnen -->
+    <!-- Audio sources -->
     <div class="audio-sources">
       <label class="checkbox-label">
         <input type="checkbox" id="capture-tab" checked>
-        <span>Tab audio (andere deelnemers)</span>
+        <span>Tab audio (other participants)</span>
       </label>
       <label class="checkbox-label">
         <input type="checkbox" id="capture-mic" checked>
-        <span>Microfoon (mijn stem)</span>
+        <span>Microphone (my voice)</span>
       </label>
     </div>
 
-    <!-- Start knop -->
+    <!-- Start button -->
     <div class="controls">
       <button id="btn-start" class="btn btn-primary">
         <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
           <circle cx="12" cy="12" r="6"/>
         </svg>
-        Start Opname
+        Start Recording
       </button>
     </div>
 
-    <!-- Error berichten -->
+    <!-- Error messages -->
     <div id="error-section" class="error-section hidden">
       <span id="error-message"></span>
     </div>
 
-    <!-- Meet detectie waarschuwing -->
+    <!-- Meet detection warning -->
     <div id="meet-warning" class="warning-section hidden">
-      <span>Open deze extensie op een Google Meet tab</span>
+      <span>Open this extension on a Google Meet tab</span>
     </div>
 
     <footer class="popup-footer">
