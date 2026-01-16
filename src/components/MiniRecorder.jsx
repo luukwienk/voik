@@ -35,6 +35,17 @@ function MiniRecorder({ user, onClose, onUploadComplete }) {
 
   const { uploading, progress, error: uploadError, uploadAndQueueTranscription } = useTranscriptionUpload(user);
   const [title, setTitle] = useState('');
+  const [language, setLanguage] = useState('auto');
+
+  const languageOptions = [
+    { code: 'auto', label: 'Auto', flag: '🔄' },
+    { code: 'nl', label: 'NL', flag: '🇳🇱' },
+    { code: 'en', label: 'EN', flag: '🇬🇧' },
+    { code: 'cs', label: 'CS', flag: '🇨🇿' },
+    { code: 'de', label: 'DE', flag: '🇩🇪' },
+    { code: 'fr', label: 'FR', flag: '🇫🇷' },
+    { code: 'es', label: 'ES', flag: '🇪🇸' },
+  ];
 
   const handleUpload = useCallback(async () => {
     if (!audioBlob) return;
@@ -43,7 +54,7 @@ function MiniRecorder({ user, onClose, onUploadComplete }) {
         audioBlob,
         title: title.trim() || `Quick Recording ${new Date().toLocaleDateString('nl-NL')}`,
         tags: ['quick-record'],
-        language: 'nl',
+        language: language,
         durationSec: duration,
         formattedDuration,
         mimeType: audioBlob.type || 'audio/webm'
@@ -81,6 +92,20 @@ function MiniRecorder({ user, onClose, onUploadComplete }) {
         </div>
 
         <div className="mini-recorder-duration">{formattedDuration}</div>
+
+        <div className="mini-recorder-language">
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            disabled={isRecording}
+          >
+            {languageOptions.map((opt) => (
+              <option key={opt.code} value={opt.code}>
+                {opt.flag} {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {audioUrl && !isRecording && (
           <div className="mini-recorder-audio">

@@ -14,10 +14,10 @@
 /* Quick Record Floating Button - softer purple/indigo color */
 .quick-record-button {
   position: fixed;
-  bottom: 92px;
-  right: 24px;
-  width: 52px;
-  height: 52px;
+  bottom: 100px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
   border-radius: 14px;
   background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   color: white;
@@ -29,7 +29,7 @@
   justify-content: center;
   font-size: 1.1rem;
   transition: all 0.2s ease;
-  z-index: 1001;
+  z-index: 99;
 }
 
 .quick-record-button:hover {
@@ -120,6 +120,43 @@
   font-variant-numeric: tabular-nums;
   margin: 20px 0;
   letter-spacing: -0.02em;
+}
+
+.mini-recorder-language {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.mini-recorder-language select {
+  padding: 8px 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 16px; /* Prevents iOS zoom */
+  background-color: white;
+  color: #333;
+  cursor: pointer;
+  min-width: 120px;
+  transition: all 0.15s;
+  -webkit-appearance: menulist;
+  appearance: menulist;
+}
+
+.mini-recorder-language select option {
+  color: #333;
+  background-color: white;
+}
+
+.mini-recorder-language select:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.mini-recorder-language select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f5f5f5;
 }
 
 .mini-recorder-audio {
@@ -237,22 +274,64 @@
 /* Mobile adjustments */
 @media (max-width: 767px) {
   .quick-record-button {
-    bottom: 150px;
+    bottom: 144px;
     right: 16px;
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    z-index: 999;
   }
 
   .mini-recorder-overlay {
-    bottom: 210px;
-    right: 16px;
-    left: 16px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 16px;
+    z-index: 1050;
   }
 
   .mini-recorder {
     width: 100%;
-    max-width: none;
+    max-width: 340px;
+    padding: 20px;
+    border-radius: 16px;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+  }
+
+  .mini-recorder-duration {
+    font-size: 2.5rem;
+    margin: 16px 0;
+  }
+
+  .mini-recorder-language {
+    margin-bottom: 12px;
+  }
+
+  .mini-recorder-language select {
+    width: 100%;
+  }
+
+  .mini-recorder-audio {
+    margin-bottom: 16px;
+  }
+
+  .mini-btn {
+    padding: 14px 16px;
+  }
+
+  .mini-btn.large {
+    padding: 16px 20px;
+  }
+
+  .mini-title-input {
+    font-size: 16px;
   }
 }
 
@@ -298,5 +377,15 @@
 
   .mini-error {
     background: #451a1a;
+  }
+
+  .mini-recorder-language select {
+    background: #2a2f3a;
+    border-color: #3a3f4a;
+    color: #e5e7eb;
+  }
+
+  .mini-recorder-language select:focus {
+    border-color: #8b5cf6;
   }
 }

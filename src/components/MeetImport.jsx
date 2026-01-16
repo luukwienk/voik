@@ -19,10 +19,21 @@ function MeetImport({ user, onClose, onSuccess }) {
   const [audioUrl, setAudioUrl] = useState(null);
   const [title, setTitle] = useState('');
   const [tags, setTags] = useState('');
+  const [language, setLanguage] = useState('auto');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const audioRef = useRef(null);
+
+  const languageOptions = [
+    { code: 'auto', label: 'Automatisch detecteren', flag: '🔄' },
+    { code: 'nl', label: 'Nederlands', flag: '🇳🇱' },
+    { code: 'en', label: 'English', flag: '🇬🇧' },
+    { code: 'cs', label: 'Čeština', flag: '🇨🇿' },
+    { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
+    { code: 'fr', label: 'Français', flag: '🇫🇷' },
+    { code: 'es', label: 'Español', flag: '🇪🇸' },
+  ];
 
   const { uploading, progress, error: uploadError, uploadAndQueueTranscription } = useTranscriptionUpload(user);
 
@@ -123,7 +134,7 @@ function MeetImport({ user, onClose, onSuccess }) {
         audioBlob,
         title: title.trim() || `Meet opname ${new Date().toLocaleDateString('nl-NL')}`,
         tags: tags.split(',').map(t => t.trim()).filter(Boolean),
-        language: 'nl',
+        language: language,
         durationSec: pendingAudio?.duration || 0,
         formattedDuration: formatDuration(pendingAudio?.duration || 0),
         mimeType: pendingAudio?.mimeType || 'audio/webm;codecs=opus'
@@ -258,6 +269,21 @@ function MeetImport({ user, onClose, onSuccess }) {
               onChange={(e) => setTags(e.target.value)}
               placeholder="meeting, google-meet, notities"
             />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="import-language">Taal</label>
+            <select
+              id="import-language"
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+            >
+              {languageOptions.map((opt) => (
+                <option key={opt.code} value={opt.code}>
+                  {opt.flag} {opt.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -418,6 +444,30 @@ function MeetImport({ user, onClose, onSuccess }) {
         }
 
         .meet-import-form input:focus {
+          outline: none;
+          border-color: #1a73e8;
+          box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+        }
+
+        .meet-import-form select {
+          width: 100%;
+          padding: 10px 12px;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          font-size: 16px;
+          background-color: white;
+          color: #333;
+          cursor: pointer;
+          -webkit-appearance: menulist;
+          appearance: menulist;
+        }
+
+        .meet-import-form select option {
+          color: #333;
+          background-color: white;
+        }
+
+        .meet-import-form select:focus {
           outline: none;
           border-color: #1a73e8;
           box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);

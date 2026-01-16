@@ -45,8 +45,19 @@ function TranscriptionRecorder({ user, onSaved }) {
   const [transcriptionError, setTranscriptionError] = useState(null);
   const [title, setTitle] = useState('');
   const [tags, setTags] = useState('');
+  const [language, setLanguage] = useState('auto');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showLongRecordingWarning, setShowLongRecordingWarning] = useState(false);
+
+  const languageOptions = [
+    { code: 'auto', label: 'Automatisch detecteren', flag: '🔄' },
+    { code: 'nl', label: 'Nederlands', flag: '🇳🇱' },
+    { code: 'en', label: 'English', flag: '🇬🇧' },
+    { code: 'cs', label: 'Čeština', flag: '🇨🇿' },
+    { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
+    { code: 'fr', label: 'Français', flag: '🇫🇷' },
+    { code: 'es', label: 'Español', flag: '🇪🇸' },
+  ];
   
   const audioRef = useRef(null);
   const transcriptionService = useRef(
@@ -61,8 +72,8 @@ function TranscriptionRecorder({ user, onSaved }) {
 
     try {
       const result = await transcriptionService.current.transcribeAudio(audioBlob, {
-        language: 'nl',
-        prompt: 'Dit is een Nederlandse transcriptie.'
+        language: language === 'auto' ? undefined : language,
+        prompt: language === 'nl' ? 'Dit is een Nederlandse transcriptie.' : undefined
       });
 
       setTranscriptionResult(result);
@@ -147,7 +158,7 @@ function TranscriptionRecorder({ user, onSaved }) {
         audioBlob,
         title,
         tags: tags.split(',').map(t => t.trim()).filter(Boolean),
-        language: 'nl',
+        language: language,
         durationSec: duration,
         formattedDuration,
         mimeType: audioBlob.type || 'audio/webm'
@@ -176,6 +187,22 @@ function TranscriptionRecorder({ user, onSaved }) {
               Opname actief
             </div>
           )}
+        </div>
+
+        <div className="language-selector">
+          <label htmlFor="language-select">Taal:</label>
+          <select
+            id="language-select"
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            disabled={isRecording}
+          >
+            {languageOptions.map((opt) => (
+              <option key={opt.code} value={opt.code}>
+                {opt.flag} {opt.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="recorder-controls">

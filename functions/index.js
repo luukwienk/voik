@@ -109,13 +109,17 @@ function createChunk(srcPath, startSec, durationSec, destPath) {
   });
 }
 
-async function transcribeChunk(filePath, apiKey, { language = 'nl' } = {}) {
+async function transcribeChunk(filePath, apiKey, { language } = {}) {
   const form = new FormData();
   const fileBuffer = await fs.promises.readFile(filePath);
   const blob = new Blob([fileBuffer], { type: 'audio/wav' });
   form.append('file', blob, path.basename(filePath));
   form.append('model', MODEL);
-  form.append('language', language);
+  // Only set language if explicitly specified (not 'auto')
+  // This allows Whisper to auto-detect the language
+  if (language && language !== 'auto') {
+    form.append('language', language);
+  }
   form.append('response_format', 'verbose_json');
 
   const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
@@ -218,7 +222,7 @@ export const onAudioUploaded = functions
 
         const parts = [];
         for (const chunk of chunks) {
-          const result = await transcribeChunk(chunk.path, apiKey, { language: metadata?.language || 'nl' });
+          const result = await transcribeChunk(chunk.path, apiKey, { language: metadata?.language });
           // Get segments with timestamps from verbose_json response
           const segments = result.segments || [];
           parts.push({
@@ -313,7 +317,7 @@ export const onAudioUploaded = functions
 
       const parts = [];
       for (const chunk of chunks) {
-        const result = await transcribeChunk(chunk.path, apiKey, { language: metadata?.language || 'nl' });
+        const result = await transcribeChunk(chunk.path, apiKey, { language: metadata?.language });
         parts.push({ startSec: chunk.startSec, result });
       }
 
@@ -326,7 +330,7 @@ export const onAudioUploaded = functions
 
     await docRef.set({
       text,
-      language: metadata?.language || 'nl',
+      language: metadata?.language || 'auto',
       duration: durationSec,
       chunkCount,
       model: MODEL,

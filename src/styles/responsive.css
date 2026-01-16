@@ -138,14 +138,6 @@ html, body, #root, .App {
       padding: 12px 8px;
     }
     
-    /* Adjust the ChatButton on mobile */
-    .chat-button {
-      width: 56px;
-      height: 56px;
-      bottom: 16px;
-      right: 16px;
-    }
-    
     .responsive-container {
       min-height: 100vh !important;
       height: 100vh !important;
@@ -243,11 +235,6 @@ html, body, #root, .App {
   
   /* Safe areas for notched devices */
   @supports (padding: max(0px)) {
-    .chat-button {
-      bottom: max(20px, env(safe-area-inset-bottom));
-      right: max(20px, env(safe-area-inset-right));
-    }
-    
     .chat-modal-overlay {
       padding-bottom: env(safe-area-inset-bottom);
     }
