@@ -1,6 +1,6 @@
 // components/MiniRecorder.jsx
-// Compact recording overlay for embedding in PlannerBoard
-import { useState, useCallback } from 'react';
+// Compact recording overlay with auto-upload on stop
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAudioRecording } from '../hooks/useAudioRecording';
 import { useTranscriptionUpload } from '../hooks/useTranscriptionUpload';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -9,9 +9,9 @@ import {
   faPause,
   faPlay,
   faStop,
-  faUpload,
   faTimes,
-  faRedo,
+  faSpinner,
+  faCheck,
   faExclamationTriangle
 } from '@fortawesome/free-solid-svg-icons';
 import '../styles/MiniRecorder.css';
@@ -22,20 +22,21 @@ function MiniRecorder({ user, onClose, onUploadComplete }) {
     isPaused,
     formattedDuration,
     audioBlob,
-    audioUrl,
     error: recordingError,
     startRecording,
     pauseRecording,
     resumeRecording,
     stopRecording,
     resetRecording,
-    hasRecording,
     duration
   } = useAudioRecording();
 
   const { uploading, progress, error: uploadError, uploadAndQueueTranscription } = useTranscriptionUpload(user);
-  const [title, setTitle] = useState('');
   const [language, setLanguage] = useState('auto');
+  const [uploadComplete, setUploadComplete] = useState(false);
+  const hasTriggeredUpload = useRef(false);
+  const savedDuration = useRef(null);
+  const savedFormattedDuration = useRef(null);
 
   const languageOptions = [
     { code: 'auto', label: 'Auto', flag: '🔄' },
@@ -47,36 +48,65 @@ function MiniRecorder({ user, onClose, onUploadComplete }) {
     { code: 'es', label: 'ES', flag: '🇪🇸' },
   ];
 
-  const handleUpload = useCallback(async () => {
-    if (!audioBlob) return;
-    try {
-      await uploadAndQueueTranscription({
-        audioBlob,
-        title: title.trim() || `Quick Recording ${new Date().toLocaleDateString('nl-NL')}`,
-        tags: ['quick-record'],
-        language: language,
-        durationSec: duration,
-        formattedDuration,
-        mimeType: audioBlob.type || 'audio/webm'
-      });
-      resetRecording();
-      setTitle('');
-      if (onUploadComplete) onUploadComplete();
-      if (onClose) onClose();
-    } catch (e) {
-      // Error is surfaced via uploadError state
+  // Generate auto title like "Recording Jan 15, 14:30"
+  const generateTitle = () => {
+    const now = new Date();
+    return `Recording ${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
+  };
+
+  // Save duration when recording to use after stop
+  useEffect(() => {
+    if (isRecording) {
+      savedDuration.current = duration;
+      savedFormattedDuration.current = formattedDuration;
     }
-  }, [audioBlob, title, duration, formattedDuration, uploadAndQueueTranscription, resetRecording, onUploadComplete, onClose]);
+  }, [isRecording, duration, formattedDuration]);
+
+  // Auto-upload when audioBlob becomes available (after stop)
+  useEffect(() => {
+    if (audioBlob && !hasTriggeredUpload.current && !uploading) {
+      hasTriggeredUpload.current = true;
+
+      const doUpload = async () => {
+        try {
+          await uploadAndQueueTranscription({
+            audioBlob,
+            title: generateTitle(),
+            tags: ['quick-record'],
+            language: language,
+            durationSec: savedDuration.current || duration,
+            formattedDuration: savedFormattedDuration.current || formattedDuration,
+            mimeType: audioBlob.type || 'audio/webm'
+          });
+          setUploadComplete(true);
+          if (onUploadComplete) onUploadComplete();
+          // Auto-close after brief success indication
+          setTimeout(() => {
+            if (onClose) onClose();
+          }, 1000);
+        } catch (e) {
+          // Error is surfaced via uploadError state
+          hasTriggeredUpload.current = false; // Allow retry
+        }
+      };
+
+      doUpload();
+    }
+  }, [audioBlob, uploading, language, duration, formattedDuration, uploadAndQueueTranscription, onUploadComplete, onClose]);
 
   const handleClose = useCallback(() => {
     if (isRecording) {
-      stopRecording();
+      // Just close without saving if still recording
+      resetRecording();
     }
-    resetRecording();
     if (onClose) onClose();
-  }, [isRecording, stopRecording, resetRecording, onClose]);
+  }, [isRecording, resetRecording, onClose]);
 
   const error = recordingError || uploadError;
+
+  // Determine current state for UI
+  const isUploading = uploading || (audioBlob && !uploadComplete && !error);
+  const showSuccess = uploadComplete && !error;
 
   return (
     <div className="mini-recorder-overlay">
@@ -84,37 +114,35 @@ function MiniRecorder({ user, onClose, onUploadComplete }) {
         <div className="mini-recorder-header">
           <span className="mini-recorder-title">
             {isRecording && <span className="recording-dot" />}
-            {isRecording ? 'Recording...' : hasRecording ? 'Review' : 'Quick Record'}
+            {isRecording ? 'Recording...' : isUploading ? 'Uploading...' : showSuccess ? 'Done!' : 'Quick Record'}
           </span>
           <button className="mini-recorder-close" onClick={handleClose} title="Close">
             <FontAwesomeIcon icon={faTimes} />
           </button>
         </div>
 
-        <div className="mini-recorder-duration">{formattedDuration}</div>
-
-        <div className="mini-recorder-language">
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            disabled={isRecording}
-          >
-            {languageOptions.map((opt) => (
-              <option key={opt.code} value={opt.code}>
-                {opt.flag} {opt.label}
-              </option>
-            ))}
-          </select>
+        <div className="mini-recorder-duration">
+          {isUploading || showSuccess ? (savedFormattedDuration.current || formattedDuration) : formattedDuration}
         </div>
 
-        {audioUrl && !isRecording && (
-          <div className="mini-recorder-audio">
-            <audio src={audioUrl} controls />
+        {!isUploading && !showSuccess && (
+          <div className="mini-recorder-language">
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              disabled={isRecording}
+            >
+              {languageOptions.map((opt) => (
+                <option key={opt.code} value={opt.code}>
+                  {opt.flag} {opt.label}
+                </option>
+              ))}
+            </select>
           </div>
         )}
 
         <div className="mini-recorder-controls">
-          {!isRecording && !hasRecording && (
+          {!isRecording && !audioBlob && !isUploading && !showSuccess && (
             <button className="mini-btn primary large" onClick={startRecording}>
               <FontAwesomeIcon icon={faMicrophone} /> Start
             </button>
@@ -132,28 +160,17 @@ function MiniRecorder({ user, onClose, onUploadComplete }) {
             </>
           )}
 
-          {hasRecording && !isRecording && (
-            <div className="mini-recorder-save">
-              <input
-                type="text"
-                className="mini-title-input"
-                placeholder="Title (optional)"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-              <div className="mini-btn-row">
-                <button className="mini-btn secondary" onClick={resetRecording} title="New recording">
-                  <FontAwesomeIcon icon={faRedo} />
-                </button>
-                <button
-                  className="mini-btn primary flex-1"
-                  onClick={handleUpload}
-                  disabled={uploading}
-                >
-                  <FontAwesomeIcon icon={faUpload} />
-                  {uploading ? `${progress}%` : 'Upload'}
-                </button>
-              </div>
+          {isUploading && (
+            <div className="mini-upload-status">
+              <FontAwesomeIcon icon={faSpinner} spin />
+              <span>Uploading... {progress > 0 ? `${progress}%` : ''}</span>
+            </div>
+          )}
+
+          {showSuccess && (
+            <div className="mini-upload-status success">
+              <FontAwesomeIcon icon={faCheck} />
+              <span>Uploaded successfully</span>
             </div>
           )}
         </div>
@@ -161,6 +178,9 @@ function MiniRecorder({ user, onClose, onUploadComplete }) {
         {error && (
           <div className="mini-error">
             <FontAwesomeIcon icon={faExclamationTriangle} /> {error}
+            <button className="mini-btn secondary small" onClick={() => { hasTriggeredUpload.current = false; }}>
+              Retry
+            </button>
           </div>
         )}
       </div>

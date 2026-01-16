@@ -259,6 +259,25 @@
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
+.mini-upload-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  color: #6b7280;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.mini-upload-status.success {
+  color: #10b981;
+}
+
+.mini-upload-status svg {
+  font-size: 1.25rem;
+}
+
 .mini-error {
   margin-top: 16px;
   padding: 12px 14px;
@@ -269,6 +288,16 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mini-error .mini-btn {
+  margin-left: auto;
+}
+
+.mini-btn.small {
+  padding: 6px 12px;
+  font-size: 0.8rem;
 }
 
 /* Mobile adjustments */
