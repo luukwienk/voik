@@ -46,7 +46,11 @@ function ResponsiveMainContent({
   // Chat props
   chatProps,
   isChatModalOpen,
-  setIsChatModalOpen
+  setIsChatModalOpen,
+  // Transcription navigation
+  pendingTranscriptionId,
+  onNavigateToTranscription,
+  onClearPendingTranscription
 }) {
   // Detect if device is an iPad
   const isIPad = /iPad/.test(navigator.userAgent) ||
@@ -92,6 +96,7 @@ function ResponsiveMainContent({
             addTaskList={addTaskList}
             moveTask={moveTask}
             user={user}
+            onNavigateToTranscription={onNavigateToTranscription}
           />
 
           {/* Chat button */}
@@ -108,7 +113,13 @@ function ResponsiveMainContent({
     return (
       <ErrorBoundary>
         <main className={`responsive-container ${!isDesktop ? 'mobile-full-width' : ''}`} style={mainStyle}>
-          <TranscriptionTab user={user} onTasksExtracted={handleTasksExtracted} />
+          <TranscriptionTab
+            user={user}
+            onTasksExtracted={handleTasksExtracted}
+            pendingTranscriptionId={pendingTranscriptionId}
+            onNavigateToTranscription={onNavigateToTranscription}
+            onClearPendingTranscription={onClearPendingTranscription}
+          />
 
           <div className="chat-button-container">
             {!isChatModalOpen && <ChatButton onClick={() => setIsChatModalOpen(true)} />}
@@ -245,6 +256,7 @@ function ResponsiveMainContent({
           addTaskList={addTaskList}
           moveTask={moveTask}
           user={user}
+          onNavigateToTranscription={onNavigateToTranscription}
         />
 
         <div className="chat-button-container">

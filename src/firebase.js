@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc, onSnapshot } from 'firebase/firestore';
 import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { debugLog } from './utils/debug';
 
@@ -37,22 +37,23 @@ const signOutUser = () => {
   return signOut(auth);
 };
 
-export { 
-  auth, 
-  db, 
+export {
+  auth,
+  db,
   storage,
-  signInWithGoogle, 
-  signOutUser, 
-  onAuthStateChanged, 
-  collection, 
-  getDocs, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
+  signInWithGoogle,
+  signOutUser,
+  onAuthStateChanged,
+  collection,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
   setDoc,
+  onSnapshot,
   // storage helpers
-  storageRef, 
-  uploadBytesResumable, 
+  storageRef,
+  uploadBytesResumable,
   getDownloadURL
 };

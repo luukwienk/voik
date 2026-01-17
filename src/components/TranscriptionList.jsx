@@ -1,6 +1,7 @@
 // components/TranscriptionList.jsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTranscriptions } from '../hooks/useTranscriptions';
+import { useTranscriptionRealtime } from '../hooks/useTranscriptionRealtime';
 import TranscriptionAIActions from './TranscriptionAIActions';
 import '../styles/TranscriptionList.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -17,10 +18,11 @@ import {
   faMoneyBill,
   faPlus,
   faExclamationTriangle,
-  faSearch
+  faSearch,
+  faCopy
 } from '@fortawesome/free-solid-svg-icons';
 
-function TranscriptionList({ user, onTasksExtracted }) {
+function TranscriptionList({ user, onTasksExtracted, pendingTranscriptionId, onClearPendingTranscription }) {
   const {
     transcriptions,
     isLoading,
@@ -36,17 +38,40 @@ function TranscriptionList({ user, onTasksExtracted }) {
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [editingDetailTitle, setEditingDetailTitle] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Realtime listener for pending transcription
+  const {
+    transcription: pendingTranscription,
+    isProcessing: isPendingProcessing,
+    isCompleted: isPendingCompleted
+  } = useTranscriptionRealtime(user, pendingTranscriptionId);
+
+  // Auto-select transcription when processing completes
+  useEffect(() => {
+    if (isPendingCompleted && pendingTranscription) {
+      setSelectedTranscription(pendingTranscription);
+    }
+  }, [isPendingCompleted, pendingTranscription]);
 
   const filteredTranscriptions = useMemo(() => {
-    if (!searchTerm) return transcriptions;
-    
+    let result = transcriptions;
+
+    // Exclude pending transcription from list (it's shown separately)
+    if (pendingTranscriptionId) {
+      result = result.filter(t => t.id !== pendingTranscriptionId);
+    }
+
+    if (!searchTerm) return result;
+
     const lowercaseSearch = searchTerm.toLowerCase();
-    return transcriptions.filter(t => 
+    return result.filter(t =>
       t.text?.toLowerCase().includes(lowercaseSearch) ||
       t.title?.toLowerCase().includes(lowercaseSearch) ||
       t.tags?.some(tag => tag.toLowerCase().includes(lowercaseSearch))
     );
-  }, [transcriptions, searchTerm]);
+  }, [transcriptions, searchTerm, pendingTranscriptionId]);
 
   const handleEdit = (transcription) => {
     setEditingId(transcription.id);
@@ -64,6 +89,33 @@ function TranscriptionList({ user, onTasksExtracted }) {
   const handleCancelEdit = () => {
     setEditingId(null);
     setEditTitle('');
+  };
+
+  const handleDetailTitleEdit = () => {
+    setEditTitle(selectedTranscription?.title || '');
+    setEditingDetailTitle(true);
+  };
+
+  const handleDetailTitleSave = async () => {
+    if (selectedTranscription && editTitle.trim()) {
+      await updateTranscription(selectedTranscription.id, { title: editTitle.trim() });
+      setSelectedTranscription({ ...selectedTranscription, title: editTitle.trim() });
+      setEditingDetailTitle(false);
+      setEditTitle('');
+    }
+  };
+
+  const handleDetailTitleCancel = () => {
+    setEditingDetailTitle(false);
+    setEditTitle('');
+  };
+
+  const handleCopyText = async () => {
+    if (selectedTranscription?.text) {
+      await navigator.clipboard.writeText(selectedTranscription.text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -127,7 +179,37 @@ function TranscriptionList({ user, onTasksExtracted }) {
       </div>
 
       <div className="transcription-grid">
-        {filteredTranscriptions.length === 0 ? (
+        {/* Processing transcription card */}
+        {pendingTranscriptionId && pendingTranscription && isPendingProcessing && (
+          <div className="transcription-card processing-card">
+            <div className="card-header">
+              <h3>{pendingTranscription.title}</h3>
+              <div className="card-actions">
+                <span className="status-chip processing">Processing</span>
+              </div>
+            </div>
+            <div className="card-meta">
+              <span className="meta-item">
+                <FontAwesomeIcon icon={faCalendar} /> {formatDate(pendingTranscription.createdAt)}
+              </span>
+              <span className="meta-item">
+                <FontAwesomeIcon icon={faClock} /> {formatDuration(pendingTranscription.duration)}
+              </span>
+            </div>
+            <div className="card-preview processing-preview">
+              <div className="transcribing-status">
+                <div className="transcribing-dots">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+                <p>Transcribing...</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {filteredTranscriptions.length === 0 && !pendingTranscriptionId ? (
           <div className="empty-state">
             {searchTerm ? (
               <p>No transcriptions found for "{searchTerm}"</p>
@@ -255,16 +337,57 @@ function TranscriptionList({ user, onTasksExtracted }) {
       </div>
 
       {selectedTranscription && (
-        <div className="transcription-detail-modal" onClick={() => setSelectedTranscription(null)}>
+        <div className="transcription-detail-modal" onClick={() => {
+          setSelectedTranscription(null);
+          if (onClearPendingTranscription) onClearPendingTranscription();
+        }}>
           <div className="detail-content" onClick={(e) => e.stopPropagation()}>
             <div className="detail-header">
-              <h2>{selectedTranscription.title}</h2>
-              <button
-                className="close-btn"
-                onClick={() => setSelectedTranscription(null)}
-              >
-                <FontAwesomeIcon icon={faTimes} />
-              </button>
+              {editingDetailTitle ? (
+                <div className="detail-title-edit">
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleDetailTitleSave();
+                      if (e.key === 'Escape') handleDetailTitleCancel();
+                    }}
+                    autoFocus
+                  />
+                  <button className="save-btn" onClick={handleDetailTitleSave}>
+                    <FontAwesomeIcon icon={faCheck} />
+                  </button>
+                  <button className="cancel-btn" onClick={handleDetailTitleCancel}>
+                    <FontAwesomeIcon icon={faTimes} />
+                  </button>
+                </div>
+              ) : (
+                <h2 className="editable-title" onClick={handleDetailTitleEdit}>
+                  {selectedTranscription.title}
+                  <FontAwesomeIcon icon={faPen} className="edit-icon" />
+                </h2>
+              )}
+              <div className="header-actions">
+                <button
+                  className={`copy-btn ${copied ? 'copied' : ''}`}
+                  onClick={handleCopyText}
+                  title="Copy transcription"
+                >
+                  <FontAwesomeIcon icon={faCopy} />
+                  {copied && <span className="copied-label">Copied</span>}
+                </button>
+                <button
+                  className="close-btn"
+                  onClick={() => {
+                    setSelectedTranscription(null);
+                    setEditingDetailTitle(false);
+                    if (onClearPendingTranscription) onClearPendingTranscription();
+                  }}
+                >
+                  <FontAwesomeIcon icon={faTimes} />
+                </button>
+              </div>
             </div>
 
             <div className="detail-meta">

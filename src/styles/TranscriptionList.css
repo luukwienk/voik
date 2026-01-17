@@ -138,8 +138,69 @@
   margin-right: 8px;
 }
 .status-chip.queued { background: #fff7e6; color: #b26a00; }
-.status-chip.processing { background: #e8f4fd; color: #1b6fa8; }
+.status-chip.processing { background: #f3e8ff; color: #7c3aed; }
 .status-chip.error { background: #fee; color: #e74c3c; }
+
+/* Processing card - shown for pending transcription */
+.transcription-card.processing-card {
+  border: 2px solid #8b5cf6;
+  background: white;
+}
+
+.transcription-card.processing-card .card-actions {
+  opacity: 1;
+}
+
+.processing-preview {
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.transcribing-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #6b7280;
+}
+
+.transcribing-status p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.transcribing-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.transcribing-dots span {
+  width: 8px;
+  height: 8px;
+  background: #8b5cf6;
+  border-radius: 50%;
+  animation: transcribing-pulse 1.4s ease-in-out infinite;
+}
+
+.transcribing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.transcribing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes transcribing-pulse {
+  0%, 80%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
 
 .edit-title {
   display: flex;
@@ -304,6 +365,122 @@
   margin: 0;
   font-size: 1.5rem;
   color: #1a1a1a;
+}
+
+.detail-header h2.editable-title {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px;
+  margin: -4px -8px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.detail-header h2.editable-title:hover {
+  background: #f3f4f6;
+}
+
+.detail-header h2.editable-title .edit-icon {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.detail-header h2.editable-title:hover .edit-icon {
+  opacity: 1;
+}
+
+.detail-title-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.detail-title-edit input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 2px solid #8b5cf6;
+  border-radius: 8px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.detail-title-edit input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.detail-title-edit .save-btn,
+.detail-title-edit .cancel-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.detail-title-edit .save-btn {
+  background: #8b5cf6;
+  color: white;
+}
+
+.detail-title-edit .save-btn:hover {
+  background: #7c3aed;
+}
+
+.detail-title-edit .cancel-btn {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.detail-title-edit .cancel-btn:hover {
+  background: #e5e7eb;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.copy-btn {
+  height: 36px;
+  padding: 0 12px;
+  border: none;
+  background: #f0f0f0;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #6b7280;
+  transition: all 0.15s;
+}
+
+.copy-btn:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.copy-btn.copied {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.copied-label {
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .close-btn {
@@ -543,6 +720,40 @@
     color: #e5e7eb;
   }
 
+  .detail-header h2.editable-title:hover {
+    background: #2a2f3a;
+  }
+
+  .detail-title-edit input {
+    background: #2a2f3a;
+    border-color: #8b5cf6;
+    color: #e5e7eb;
+  }
+
+  .detail-title-edit .cancel-btn {
+    background: #2a2f3a;
+    color: #9ca3af;
+  }
+
+  .detail-title-edit .cancel-btn:hover {
+    background: #3a3f4a;
+  }
+
+  .copy-btn {
+    background: #2a2f3a;
+    color: #9ca3af;
+  }
+
+  .copy-btn:hover {
+    background: #3a3f4a;
+    color: #d1d5db;
+  }
+
+  .copy-btn.copied {
+    background: #064e3b;
+    color: #34d399;
+  }
+
   .close-btn {
     background: #2a2f3a;
     color: #9ca3af;
@@ -582,5 +793,15 @@
 
   .error-message {
     background: #451a1a;
+  }
+
+  /* Processing card dark mode */
+  .transcription-card.processing-card {
+    background: #1b1f2a;
+    border-color: #8b5cf6;
+  }
+
+  .transcribing-status {
+    color: #9ca3af;
   }
 }

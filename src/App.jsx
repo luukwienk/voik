@@ -25,6 +25,7 @@ function App() {
   const [currentTab, setCurrentTab] = useState(0);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
   const [showMeetImport, setShowMeetImport] = useState(false);
+  const [pendingTranscriptionId, setPendingTranscriptionId] = useState(null);
   
   // Initialize health tracking
   const { 
@@ -232,9 +233,18 @@ function App() {
         setInitialTabsVisited(prev => ({ ...prev, 2: true }));
       }
 
-      // We behouden de geselecteerde lijsten bij tabwisseling
+      // Clear pending transcription when leaving transcription tab
+      if (tab !== 1 && pendingTranscriptionId) {
+        setPendingTranscriptionId(null);
+      }
     }
   };
+
+  // Navigate to transcription tab and show processing transcription
+  const handleNavigateToTranscription = useCallback((transcriptionId) => {
+    setPendingTranscriptionId(transcriptionId);
+    setCurrentTab(1); // Transcriptions tab
+  }, []);
 
   const moveTask = async (task, sourceList, destinationList) => {
     debugLog('Moving task:', { task, sourceList, destinationList });
@@ -298,10 +308,14 @@ function App() {
   getLatestEntry={getLatestEntry}
   calculateWeeklyAverage={calculateWeeklyAverage}
   calculateTrend={calculateTrend}
-  // Chat props - NEW!
+  // Chat props
   chatProps={chatProps}
   isChatModalOpen={isChatModalOpen}
   setIsChatModalOpen={setIsChatModalOpen}
+  // Transcription navigation
+  pendingTranscriptionId={pendingTranscriptionId}
+  onNavigateToTranscription={handleNavigateToTranscription}
+  onClearPendingTranscription={() => setPendingTranscriptionId(null)}
 />
       
       {/* PWA Install Prompt */}

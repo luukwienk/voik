@@ -28,7 +28,7 @@ const StrictModeDroppable = ({ children, ...props }) => {
   return <Droppable {...props}>{children}</Droppable>;
 };
 
-const PlannerBoard = ({ tasks, updateTaskList, addTaskList, moveTask, user }) => {
+const PlannerBoard = ({ tasks, updateTaskList, addTaskList, moveTask, user, onNavigateToTranscription }) => {
   const allListNames = useMemo(() => Object.keys(tasks || {}), [tasks]);
   const [showMiniRecorder, setShowMiniRecorder] = useState(false);
   const [showCreateListModal, setShowCreateListModal] = useState(false);
@@ -363,6 +363,10 @@ const PlannerBoard = ({ tasks, updateTaskList, addTaskList, moveTask, user }) =>
           onClose={() => setShowMiniRecorder(false)}
           onUploadComplete={() => {
             // Recording uploaded successfully
+          }}
+          onNavigateToTranscription={(id) => {
+            setShowMiniRecorder(false);
+            if (onNavigateToTranscription) onNavigateToTranscription(id);
           }}
         />
       )}

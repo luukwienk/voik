@@ -5,7 +5,7 @@ import QuickRecordButton from './QuickRecordButton';
 import MiniRecorder from './MiniRecorder';
 import '../styles/TranscriptionTab.css';
 
-function TranscriptionTab({ user, onTasksExtracted }) {
+function TranscriptionTab({ user, onTasksExtracted, pendingTranscriptionId, onNavigateToTranscription, onClearPendingTranscription }) {
   const [showMiniRecorder, setShowMiniRecorder] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -26,6 +26,8 @@ function TranscriptionTab({ user, onTasksExtracted }) {
         user={user}
         key={refreshKey}
         onTasksExtracted={handleTasksExtracted}
+        pendingTranscriptionId={pendingTranscriptionId}
+        onClearPendingTranscription={onClearPendingTranscription}
       />
 
       {/* Quick Record Button */}
@@ -40,6 +42,7 @@ function TranscriptionTab({ user, onTasksExtracted }) {
           user={user}
           onClose={() => setShowMiniRecorder(false)}
           onUploadComplete={handleUploadComplete}
+          onNavigateToTranscription={onNavigateToTranscription}
         />
       )}
     </div>

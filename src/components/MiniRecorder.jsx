@@ -16,7 +16,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import '../styles/MiniRecorder.css';
 
-function MiniRecorder({ user, onClose, onUploadComplete }) {
+function MiniRecorder({ user, onClose, onUploadComplete, onNavigateToTranscription }) {
   const {
     isRecording,
     isPaused,
@@ -69,7 +69,7 @@ function MiniRecorder({ user, onClose, onUploadComplete }) {
 
       const doUpload = async () => {
         try {
-          await uploadAndQueueTranscription({
+          const result = await uploadAndQueueTranscription({
             audioBlob,
             title: generateTitle(),
             tags: ['quick-record'],
@@ -80,10 +80,19 @@ function MiniRecorder({ user, onClose, onUploadComplete }) {
           });
           setUploadComplete(true);
           if (onUploadComplete) onUploadComplete();
-          // Auto-close after brief success indication
-          setTimeout(() => {
-            if (onClose) onClose();
-          }, 1000);
+
+          // Navigate to transcription view if callback provided
+          if (onNavigateToTranscription && result?.id) {
+            setTimeout(() => {
+              onNavigateToTranscription(result.id);
+              if (onClose) onClose();
+            }, 500);
+          } else {
+            // Fallback: auto-close after brief success indication
+            setTimeout(() => {
+              if (onClose) onClose();
+            }, 1000);
+          }
         } catch (e) {
           // Error is surfaced via uploadError state
           hasTriggeredUpload.current = false; // Allow retry
@@ -92,7 +101,7 @@ function MiniRecorder({ user, onClose, onUploadComplete }) {
 
       doUpload();
     }
-  }, [audioBlob, uploading, language, duration, formattedDuration, uploadAndQueueTranscription, onUploadComplete, onClose]);
+  }, [audioBlob, uploading, language, duration, formattedDuration, uploadAndQueueTranscription, onUploadComplete, onClose, onNavigateToTranscription]);
 
   const handleClose = useCallback(() => {
     if (isRecording) {
