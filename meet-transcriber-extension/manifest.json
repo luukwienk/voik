@@ -8,6 +8,7 @@
   "permissions": [
     "tabCapture",
     "activeTab",
+    "tabs",
     "scripting",
     "storage",
     "unlimitedStorage"

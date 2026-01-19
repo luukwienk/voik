@@ -145,9 +145,11 @@ function App() {
     initClient().catch(error => debugError("Failed to initialize Google API client:", error));
   }, []);
 
-  // Detecteer Meet import URL parameter
+  // Detecteer URL parameters voor Meet import en directe transcriptie navigatie
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+
+    // Handle Meet import
     if (params.get('import') === 'meet' && user) {
       setShowMeetImport(true);
       // Verwijder parameter uit URL zonder pagina reload
@@ -156,6 +158,18 @@ function App() {
       window.history.replaceState({}, '', url.pathname);
       // Ga naar transcriptie tab (now index 1)
       setCurrentTab(1);
+    }
+
+    // Handle direct transcription navigation (from extension)
+    const transcriptionId = params.get('transcription');
+    if (transcriptionId && user) {
+      // Navigate to transcription tab and show the specific transcription
+      setPendingTranscriptionId(transcriptionId);
+      setCurrentTab(1);
+      // Clean up URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('transcription');
+      window.history.replaceState({}, '', url.pathname);
     }
   }, [user]);
 

@@ -25,9 +25,8 @@ const timerEl = document.getElementById('timer');
 const errorEl = document.getElementById('error');
 const controlsStart = document.getElementById('controls-start');
 const controlsRecording = document.getElementById('controls-recording');
-const postRecording = document.getElementById('post-recording');
-const playback = document.getElementById('playback');
-const sizeInfo = document.getElementById('size-info');
+const uploadStatusEl = document.getElementById('upload-status');
+const uploadMessageEl = document.getElementById('upload-message');
 const infoEl = document.getElementById('info');
 const languageSelect = document.getElementById('language-select');
 
@@ -164,13 +163,12 @@ async function startRecording() {
 
     mediaRecorder.onstop = () => {
       audioBlob = new Blob(recordedChunks, { type: mimeType });
-      playback.src = URL.createObjectURL(audioBlob);
-      sizeInfo.textContent = `Duration: ${formatTime(duration)} | Size: ${formatSize(audioBlob.size)}`;
 
-      // Show post-recording UI
+      // Auto-upload immediately
       controlsRecording.classList.add('hidden');
-      postRecording.classList.add('show');
-      setStatus('ready', 'Recording complete');
+      uploadStatusEl.classList.add('show');
+      setStatus('ready', 'Uploading...');
+      uploadToVoik();
     };
 
     // Start!
@@ -246,6 +244,8 @@ function formatSize(bytes) {
 async function uploadToVoik() {
   if (!audioBlob) return;
 
+  const VOIK_URL = 'https://voik.netlify.app';
+
   try {
     // Get Firebase config from storage
     const result = await chrome.storage.local.get(['firebaseConfig']);
@@ -265,13 +265,12 @@ async function uploadToVoik() {
           size: audioBlob.size
         }
       });
-      window.open('https://voik.netlify.app?import=meet', '_blank');
+      await navigateToVoik(`${VOIK_URL}?import=meet`);
       return;
     }
 
     // Direct upload
-    setStatus('', 'Uploading...');
-    document.querySelectorAll('button').forEach(b => b.disabled = true);
+    uploadMessageEl.textContent = 'Uploading...';
 
     const docId = crypto.randomUUID();
     const path = `transcriptions/${config.userId}/${docId}.webm`;
@@ -289,15 +288,44 @@ async function uploadToVoik() {
     // Update doc
     await updateFirestoreDoc(config, docId, path);
 
+    // Show success state
+    uploadStatusEl.classList.add('success');
+    uploadMessageEl.textContent = 'Uploaded!';
     setStatus('ready', 'Upload complete!');
-    setTimeout(() => {
-      window.open('https://voik.netlify.app', '_blank');
+
+    // Navigate to specific transcription and close this tab
+    setTimeout(async () => {
+      await navigateToVoik(`${VOIK_URL}?transcription=${docId}`);
+      window.close();
     }, 1000);
 
   } catch (err) {
     console.error('[Recorder] Upload error:', err);
     showError('Upload failed: ' + err.message);
-    document.querySelectorAll('button').forEach(b => b.disabled = false);
+    uploadStatusEl.classList.remove('show');
+    controlsStart.classList.remove('hidden');
+  }
+}
+
+// Navigate to Voik - reuse existing tab if found, otherwise open new
+async function navigateToVoik(url) {
+  try {
+    // Find existing Voik tab
+    const tabs = await chrome.tabs.query({ url: 'https://voik.netlify.app/*' });
+
+    if (tabs.length > 0) {
+      // Reuse existing tab - update URL and focus it
+      const existingTab = tabs[0];
+      await chrome.tabs.update(existingTab.id, { url, active: true });
+      await chrome.windows.update(existingTab.windowId, { focused: true });
+    } else {
+      // No existing tab, open new one
+      await chrome.tabs.create({ url });
+    }
+  } catch (err) {
+    console.error('[Recorder] Navigation error:', err);
+    // Fallback to simple window.open
+    window.open(url, '_blank');
   }
 }
 
@@ -377,25 +405,6 @@ async function updateFirestoreDoc(config, docId, path) {
   if (!resp.ok) throw new Error('Firestore update error: ' + resp.status);
 }
 
-function downloadRecording() {
-  if (!audioBlob) return;
-
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(audioBlob);
-  a.download = `meet-recording-${new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-')}.webm`;
-  a.click();
-}
-
-function newRecording() {
-  postRecording.classList.remove('show');
-  controlsStart.classList.remove('hidden');
-  languageSelect.disabled = false;
-  timerEl.textContent = '00:00';
-  audioBlob = null;
-  duration = 0;
-  setStatus('ready', 'Ready to record');
-}
-
 function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -408,9 +417,6 @@ function blobToBase64(blob) {
 // Event listeners (required for Chrome Extension CSP)
 document.getElementById('btn-start').addEventListener('click', startRecording);
 document.getElementById('btn-stop').addEventListener('click', stopRecording);
-document.getElementById('btn-upload').addEventListener('click', uploadToVoik);
-document.getElementById('btn-download').addEventListener('click', downloadRecording);
-document.getElementById('btn-new').addEventListener('click', newRecording);
 
 // Start
 init();
