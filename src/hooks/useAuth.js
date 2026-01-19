@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { auth, onAuthStateChanged, signOutUser } from '../firebase';
+import { debugLog, debugError } from '../utils/debug';
 
 export function useAuth() {
   const [user, setUser] = useState(null);
@@ -7,10 +8,10 @@ export function useAuth() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        console.log('User signed in:', user);
+        debugLog('User signed in:', user);
         setUser(user);
       } else {
-        console.log('User signed out');
+        debugLog('User signed out');
         setUser(null);
       }
     });
@@ -19,8 +20,8 @@ export function useAuth() {
 
   const signOut = () => {
     signOutUser()
-      .then(() => console.log('User signed out successfully'))
-      .catch((error) => console.error('Error signing out:', error));
+      .then(() => debugLog('User signed out successfully'))
+      .catch((error) => debugError('Error signing out:', error));
   };
 
   return { user, signOut };

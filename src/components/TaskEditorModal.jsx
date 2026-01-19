@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { debugLog } from '../utils/debug';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -38,8 +39,8 @@ const TaskEditorModal = ({ task, onClose, updateTaskList }) => {
       text: html,
       list: task.list
     };
-    console.log('Task in handleSave:', task);
-    console.log('UpdatedTask in handleSave:', updatedTask);
+    debugLog('Task in handleSave:', task);
+    debugLog('UpdatedTask in handleSave:', updatedTask);
     updateTaskList(updatedTask);
     onClose();
   };

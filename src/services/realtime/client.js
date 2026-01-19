@@ -1,6 +1,7 @@
 // src/services/realtime/client.js
 import { AudioProcessor } from './audio';
 import { realtimeFunctions } from './functions';
+import { debugLog, debugError, debugWarn } from '../../utils/debug';
 
 export class RealtimeClient {
   constructor(apiKey) {
@@ -48,7 +49,7 @@ export class RealtimeClient {
 
   async connect() {
     if (this.isConnecting || (this.ws && this.ws.readyState === WebSocket.OPEN)) {
-      console.log('Already connected or connecting');
+      debugLog('Already connected or connecting');
       return;
     }
 
@@ -56,11 +57,11 @@ export class RealtimeClient {
     this.isDisconnecting = false;
 
     try {
-      console.log('Connecting to OpenAI Realtime API...');
+      debugLog('Connecting to OpenAI Realtime API...');
       
       const wsUrl = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17`;
       
-      console.log('Connecting to WebSocket:', wsUrl);
+      debugLog('Connecting to WebSocket:', wsUrl);
       this.ws = new WebSocket(wsUrl, [
         'realtime',
         `openai-insecure-api-key.${this.apiKey}`,
@@ -84,13 +85,13 @@ export class RealtimeClient {
         
         const handleOpen = () => {
           clearTimeout(timeout);
-          console.log('WebSocket connected successfully');
+          debugLog('WebSocket connected successfully');
           resolve();
         };
         
         const handleError = (error) => {
           clearTimeout(timeout);
-          console.error('WebSocket error during connection:', error);
+          debugError('WebSocket error during connection:', error);
           reject(new Error('WebSocket connection failed'));
         };
         
@@ -104,7 +105,7 @@ export class RealtimeClient {
       
     } catch (error) {
       this.isConnecting = false;
-      console.error('Connection error:', error);
+      debugError('Connection error:', error);
       this.emit('error', error);
       
       // Attempt reconnection
@@ -118,7 +119,7 @@ export class RealtimeClient {
 
   setupEventHandlers() {
     this.ws.onopen = () => {
-      console.log('WebSocket opened, sending session.update with configuration...');
+      debugLog('WebSocket opened, sending session.update with configuration...');
       
       // Send session configuration after connection
       this.send({
@@ -144,17 +145,17 @@ export class RealtimeClient {
         const data = JSON.parse(event.data);
         this.handleServerEvent(data);
       } catch (error) {
-        console.error('Error parsing message:', error);
+        debugError('Error parsing message:', error);
       }
     };
 
     this.ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      debugError('WebSocket error:', error);
       this.emit('error', error);
     };
 
     this.ws.onclose = (event) => {
-      console.log('Disconnected from Realtime API', event.code, event.reason);
+      debugLog('Disconnected from Realtime API', event.code, event.reason);
       this.stopPingInterval();
       
       // Clear session URL
@@ -174,31 +175,31 @@ export class RealtimeClient {
   }
 
   handleServerEvent(event) {
-    console.log('Server event:', event.type, event); // Log het hele event object
+    debugLog('Server event:', event.type, event); // Log het hele event object
     
     // Log ALLE events die "transcript" bevatten
     if (JSON.stringify(event).includes('transcript') && !event.type.includes('response')) {
-      console.log('POSSIBLE USER TRANSCRIPT EVENT:', event);
+      debugLog('POSSIBLE USER TRANSCRIPT EVENT:', event);
     }
     
     // Voeg deze case toe voor andere mogelijke transcriptie events:
     if (event.type.includes('transcription') || event.type.includes('audio')) {
-      console.log('Audio/Transcription related event:', event);
+      debugLog('Audio/Transcription related event:', event);
     }
     
     switch (event.type) {
       case 'error':
-        console.error('Server error:', event.error);
+        debugError('Server error:', event.error);
         this.emit('server.error', event.error);
         break;
         
       case 'session.created':
-        console.log('Session created:', event.session);
+        debugLog('Session created:', event.session);
         this.emit('session.created', event.session);
         break;
         
       case 'session.updated':
-        console.log('Session updated:', event.session);
+        debugLog('Session updated:', event.session);
         this.emit('session.updated', event.session);
         break;
         
@@ -225,7 +226,7 @@ export class RealtimeClient {
       case 'response.audio_transcript.done':
         // Dit is het transcriptie event voor de ASSISTANT (niet de user)
         if (event.transcript) {
-          console.log('Assistant audio transcript:', event.transcript);
+          debugLog('Assistant audio transcript:', event.transcript);
           // VOEG DIT TOE - emit als assistant message
           this.emit('assistant.message', {
             id: event.item_id || `assistant-transcript-${Date.now()}`,
@@ -235,7 +236,7 @@ export class RealtimeClient {
         break;
         
       case 'conversation.item.created':
-        console.log('FULL conversation item:', event.item);
+        debugLog('FULL conversation item:', event.item);
         
         // Check voor user audio transcripties in conversation items
         if (event.item?.role === 'user' && event.item?.content) {
@@ -302,11 +303,11 @@ export class RealtimeClient {
         break;
         
       case 'rate_limits.updated':
-        console.log('Rate limits:', event.rate_limits);
+        debugLog('Rate limits:', event.rate_limits);
         break;
         
       default:
-        console.warn(`Unknown server event: ${event.type}`);
+        debugWarn(`Unknown server event: ${event.type}`);
     }
   }
 
@@ -318,7 +319,7 @@ export class RealtimeClient {
       }));
       this.audioDataSent = true;
     } else {
-      console.warn('WebSocket not ready for sending:', { type: 'input_audio_buffer.append', audio: base64Audio });
+      debugWarn('WebSocket not ready for sending:', { type: 'input_audio_buffer.append', audio: base64Audio });
     }
   }
 
@@ -326,7 +327,7 @@ export class RealtimeClient {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(data));
     } else {
-      console.warn('WebSocket not ready for sending:', data.type);
+      debugWarn('WebSocket not ready for sending:', data.type);
     }
   }
 
@@ -337,7 +338,7 @@ export class RealtimeClient {
       this.recordingStartTime = Date.now();
       this.emit('recording.started');
     } catch (error) {
-      console.error('Failed to start recording:', error);
+      debugError('Failed to start recording:', error);
       this.emit('recording.error', error);
       throw error;
     }
@@ -349,16 +350,16 @@ export class RealtimeClient {
     // Check of we überhaupt audio data hebben verzonden
     if (this.recordingStartTime && this.audioDataSent) {
       const recordingDuration = Date.now() - this.recordingStartTime;
-      // console.log(`Recording duration: ${recordingDuration}ms`); // Debug log verwijderd
+      // debugLog(`Recording duration: ${recordingDuration}ms`); // Debug log verwijderd
       
       if (recordingDuration > 500) {
         this.send({ type: 'input_audio_buffer.commit' });
       } else {
-        console.log('Skipping commit - recording too short');
+        debugLog('Skipping commit - recording too short');
         this.send({ type: 'input_audio_buffer.clear' });
       }
     } else {
-      console.log('No audio data sent - clearing buffer');
+      debugLog('No audio data sent - clearing buffer');
       this.send({ type: 'input_audio_buffer.clear' });
     }
     
@@ -436,11 +437,11 @@ export class RealtimeClient {
     this.reconnectAttempts++;
     const delay = Math.min(this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1), 30000);
     
-    console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+    debugLog(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
     
     setTimeout(() => {
       if (!this.isDisconnecting) {
-        this.connect().catch(console.error);
+        this.connect().catch(debugError);
       }
     }, delay);
   }
@@ -455,9 +456,9 @@ export class RealtimeClient {
     this.pingInterval = setInterval(() => {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
         // Connection is still open, do nothing
-        // console.log('WebSocket connection is alive'); // Debug log verwijderd
+        // debugLog('WebSocket connection is alive'); // Debug log verwijderd
       } else if (this.ws) {
-        console.log('WebSocket connection lost');
+        debugLog('WebSocket connection lost');
         this.stopPingInterval();
       }
     }, 30000);
@@ -501,7 +502,7 @@ export class RealtimeClient {
         try {
           handler(data);
         } catch (error) {
-          console.error(`Error in event handler for ${event}:`, error);
+          debugError(`Error in event handler for ${event}:`, error);
         }
       });
     }

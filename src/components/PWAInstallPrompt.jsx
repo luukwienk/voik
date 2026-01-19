@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { debugLog } from '../utils/debug';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDownload, faTimes } from '@fortawesome/free-solid-svg-icons';
 
@@ -60,9 +61,9 @@ const PWAInstallPrompt = () => {
     
     // Track the outcome
     if (choiceResult.outcome === 'accepted') {
-      console.log('User accepted the install prompt');
+      debugLog('User accepted the install prompt');
     } else {
-      console.log('User dismissed the install prompt');
+      debugLog('User dismissed the install prompt');
       localStorage.setItem('pwaInstallPromptDismissed', Date.now().toString());
     }
   };

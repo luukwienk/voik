@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { debugError } from '../utils/debug';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
 import moment from 'moment';
@@ -225,7 +226,7 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
           setShowSuccessNotification(true);
         })
         .catch((error) => {
-          console.error('Could not add event to Google Calendar:', error);
+          debugError('Could not add event to Google Calendar:', error);
           alert('Could not add event to calendar. Please try again.');
         })
         .finally(() => {
@@ -233,7 +234,7 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
           try { delete window.__voikDragTask; } catch {}
         });
     } catch (err) {
-      console.error('Error in handleDropFromOutside:', err);
+      debugError('Error in handleDropFromOutside:', err);
     }
   }, [addEvent, selectedCalendars]);
   
@@ -243,7 +244,7 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
       if (e && e.preventDefault) e.preventDefault();
       setIsDragOver(true);
     } catch (err) {
-      console.error('Error in RBC drag over handler:', err);
+      debugError('Error in RBC drag over handler:', err);
     }
   }, []);
   
@@ -274,7 +275,7 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
         return;
       }
     } catch (err) {
-      console.error('Error opening Google Calendar link:', err);
+      debugError('Error opening Google Calendar link:', err);
     }
     // Fallback: use internal modal
     setSelectedEvent(event);
@@ -297,12 +298,12 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
   
       // Update the event
       updateEvent(updatedEvent).catch(error => {
-        console.error("Could not update event:", error);
+        debugError("Could not update event:", error);
         // Revert the change in UI if update fails
         alert("Failed to update event. Please try again.");
       });
     } catch (error) {
-      console.error("Error in handleEventResize:", error);
+      debugError("Error in handleEventResize:", error);
     }
   };
   
@@ -322,12 +323,12 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
   
       // Update the event
       updateEvent(updatedEvent).catch(error => {
-        console.error("Could not update event:", error);
+        debugError("Could not update event:", error);
         // Revert the change in UI if update fails
         alert("Failed to update event. Please try again.");
       });
     } catch (error) {
-      console.error("Error in handleEventDrop:", error);
+      debugError("Error in handleEventDrop:", error);
     }
   };
   
@@ -354,7 +355,7 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
           // Event will be added to the view via the useEffect hook that listens to googleEvents
         })
         .catch(error => {
-          console.error("Could not add event:", error);
+          debugError("Could not add event:", error);
           alert("Could not add event. Please try again.");
         });
     }
@@ -369,7 +370,7 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
     // Check if we have an ID to delete
     const eventId = selectedEvent.id;
     if (!eventId) {
-      console.error('Cannot delete event without ID');
+      debugError('Cannot delete event without ID');
       setSelectedEvent(null);
       return;
     }
@@ -388,7 +389,7 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
         setSelectedEvent(null);
       })
       .catch(error => {
-        console.error("Could not delete event:", error);
+        debugError("Could not delete event:", error);
         alert("Could not delete event. Please try again.");
       });
   };
@@ -401,7 +402,7 @@ const BigCalendarView = ({ tasks, currentTaskList, moveTask }) => {
           setSelectedEvent(null);
         })
         .catch(error => {
-          console.error("Could not update event:", error);
+          debugError("Could not update event:", error);
           alert("Failed to update event. Please try again.");
         });
     }

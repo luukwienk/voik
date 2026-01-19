@@ -2,6 +2,7 @@
 // Handelt audio import van de Chrome Extension af
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { debugLog, debugError } from '../utils/debug';
 import { useTranscriptionUpload } from '../hooks/useTranscriptionUpload';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -47,7 +48,7 @@ function MeetImport({ user, onClose, onSuccess }) {
 
       // Bridge is klaar
       if (event.data?.type === 'VOIK_BRIDGE_READY') {
-        console.log('[MeetImport] Bridge ready, requesting audio...');
+        debugLog('[MeetImport] Bridge ready, requesting audio...');
         bridgeReady = true;
         window.postMessage({ type: 'VOIK_GET_PENDING_AUDIO' }, '*');
       }
@@ -89,7 +90,7 @@ function MeetImport({ user, onClose, onSuccess }) {
             setAudioUrl(URL.createObjectURL(blob));
             setTitle(meetingTitle || `Meet opname ${new Date().toLocaleDateString('nl-NL')}`);
           } catch (err) {
-            console.error('[MeetImport] Base64 decode error:', err);
+            debugError('[MeetImport] Base64 decode error:', err);
             setError('Kon audio niet decoderen');
           }
         } else {
@@ -147,7 +148,7 @@ function MeetImport({ user, onClose, onSuccess }) {
         onSuccess();
       }
     } catch (err) {
-      console.error('Upload error:', err);
+      debugError('Upload error:', err);
       // Error wordt getoond via uploadError state
     }
   }, [audioBlob, title, tags, pendingAudio, uploadAndQueueTranscription, onSuccess]);

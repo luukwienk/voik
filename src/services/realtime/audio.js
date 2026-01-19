@@ -1,4 +1,6 @@
 // src/services/realtime/audio.js
+import { debugError, debugWarn } from '../../utils/debug';
+
 export class AudioProcessor {
   static workletRegistered = false; // Track of worklet al geregistreerd is
   
@@ -121,7 +123,7 @@ export class AudioProcessor {
           source.connect(this.audioWorkletNode);
           this.audioWorkletNode.connect(this.audioContext.destination);
         } catch (error) {
-          console.warn('AudioWorklet failed, falling back to ScriptProcessor:', error);
+          debugWarn('AudioWorklet failed, falling back to ScriptProcessor:', error);
           this.setupScriptProcessor(source);
         }
       } else {
@@ -130,7 +132,7 @@ export class AudioProcessor {
       }
       
     } catch (error) {
-      console.error('Error starting recording:', error);
+      debugError('Error starting recording:', error);
       throw error;
     }
   }
@@ -233,7 +235,7 @@ export class AudioProcessor {
         this.playQueue();
       }
     } catch (error) {
-      console.error('Error playing audio:', error);
+      debugError('Error playing audio:', error);
     }
   }
 
@@ -258,7 +260,7 @@ export class AudioProcessor {
           this.currentSource.start(0);
         });
       } catch (error) {
-        console.error('Error playing audio buffer:', error);
+        debugError('Error playing audio buffer:', error);
         this.currentSource = null;
       }
     }
@@ -303,7 +305,7 @@ export class AudioProcessor {
     this.stopRecording();
     
     if (this.audioContext && this.audioContext.state !== 'closed') {
-      this.audioContext.close().catch(console.error);
+      this.audioContext.close().catch(debugError);
       this.audioContext = null;
     }
   }

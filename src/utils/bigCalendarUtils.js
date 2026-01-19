@@ -1,4 +1,5 @@
 // bigCalendarUtils.js - Utilities for converting between tasks and events for React Big Calendar
+import { debugLog, debugError } from './debug';
 
 /**
  * Converts a task to a calendar event format compatible with React Big Calendar
@@ -68,12 +69,12 @@ export const taskToEvent = (task, startTime = null, durationHours = 1) => {
         googleEvent.summary.includes('{"key"')
       )
     ) {
-      console.log('Skipping event with invalid summary:', googleEvent.summary);
+      debugLog('Skipping event with invalid summary:', googleEvent.summary);
       return null;
     }
     
     // Debug the Google event structure
-    console.log('Processing Google event:', googleEvent);
+    debugLog('Processing Google event:', googleEvent);
     
     // Handle all-day events (date only) and regular events (with time)
     const startDateTime = googleEvent.start?.dateTime || googleEvent.start?.date;
@@ -81,7 +82,7 @@ export const taskToEvent = (task, startTime = null, durationHours = 1) => {
     
     // Check for valid dates
     if (!startDateTime || !endDateTime) {
-      console.log('Missing start or end time in event:', googleEvent);
+      debugLog('Missing start or end time in event:', googleEvent);
       return null;
     }
     
@@ -106,7 +107,7 @@ export const taskToEvent = (task, startTime = null, durationHours = 1) => {
       }
     };
     
-    console.log('Converted to React Big Calendar event:', rbcEvent);
+    debugLog('Converted to React Big Calendar event:', rbcEvent);
     return rbcEvent;
   };
   
@@ -118,17 +119,17 @@ export const taskToEvent = (task, startTime = null, durationHours = 1) => {
    */
   export const googleEventsToRbcEvents = (googleEvents) => {
     if (!googleEvents || !Array.isArray(googleEvents)) {
-      console.log('No Google events to convert');
+      debugLog('No Google events to convert');
       return [];
     }
     
-    console.log(`Converting ${googleEvents.length} Google events to RBC format`);
+    debugLog(`Converting ${googleEvents.length} Google events to RBC format`);
     
     const rbcEvents = googleEvents
       .map(googleEventToRbcEvent)
       .filter(event => event !== null);
       
-    console.log(`Successfully converted ${rbcEvents.length} events`);
+    debugLog(`Successfully converted ${rbcEvents.length} events`);
     return rbcEvents;
   };
   
@@ -141,15 +142,15 @@ export const taskToEvent = (task, startTime = null, durationHours = 1) => {
    */
   export const rbcEventToGoogleEvent = (rbcEvent, timeZone = 'Europe/Amsterdam') => {
     // Debug the React Big Calendar event structure
-    console.log('Converting RBC event to Google format:', rbcEvent);
+    debugLog('Converting RBC event to Google format:', rbcEvent);
     
     if (!rbcEvent) {
-      console.error('Invalid event passed to rbcEventToGoogleEvent');
+      debugError('Invalid event passed to rbcEventToGoogleEvent');
       return null;
     }
     
     if (!rbcEvent.start || !rbcEvent.end) {
-      console.error('Event missing start or end time:', rbcEvent);
+      debugError('Event missing start or end time:', rbcEvent);
       return null;
     }
     
@@ -205,7 +206,7 @@ export const taskToEvent = (task, startTime = null, durationHours = 1) => {
       };
     }
     
-    console.log('Converted to Google Calendar event:', eventResource);
+    debugLog('Converted to Google Calendar event:', eventResource);
     return eventResource;
   };
   

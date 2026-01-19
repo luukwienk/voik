@@ -1,5 +1,6 @@
 // googleCalendar.js - Met verbeterde OAuth scopes
 import { gapi } from 'gapi-script';
+import { debugLog, debugError, debugWarn } from '../utils/debug';
 
 const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -24,7 +25,7 @@ export const isGoogleClientReady = () => {
 export const initClient = () => {
   return new Promise((resolve, reject) => {
     gapi.load('client:auth2', () => {
-      console.log("Initializing Google API client with scopes:", SCOPES);
+      debugLog("Initializing Google API client with scopes:", SCOPES);
       gapi.client.init({
         apiKey: API_KEY,
         clientId: CLIENT_ID,
@@ -32,10 +33,10 @@ export const initClient = () => {
         scope: SCOPES
       }).then(() => {
         isInitialized = true;
-        console.log("Google API client initialized successfully");
+        debugLog("Google API client initialized successfully");
         resolve();
       }).catch(error => {
-        console.error("Error initializing GAPI client:", error);
+        debugError("Error initializing GAPI client:", error);
         reject(error);
       });
     });
@@ -44,12 +45,12 @@ export const initClient = () => {
 
 export const handleGoogleCalendarAuth = async () => {
   if (!isInitialized) {
-    console.log("Initializing GAPI client before authentication");
+    debugLog("Initializing GAPI client before authentication");
     await initClient();
   }
   
   try {
-    console.log("Requesting authentication with scopes:", SCOPES);
+    debugLog("Requesting authentication with scopes:", SCOPES);
     // Force consent to ensure we get the right permissions
     const authOptions = { 
       prompt: 'consent', 
@@ -60,41 +61,41 @@ export const handleGoogleCalendarAuth = async () => {
     
     // Log de verkregen scope om te debuggen
     const grantedScopes = authResult.getGrantedScopes();
-    console.log("Authentication successful. Granted scopes:", grantedScopes);
+    debugLog("Authentication successful. Granted scopes:", grantedScopes);
     
     // Debug check: controleer of we de juiste scopes hebben gekregen
     if (!grantedScopes.includes("https://www.googleapis.com/auth/calendar")) {
-      console.warn("Warning: Full calendar access not granted in scopes");
+      debugWarn("Warning: Full calendar access not granted in scopes");
     }
     
     return authResult;
   } catch (error) {
-    console.error("Error signing in to Google:", error);
+    debugError("Error signing in to Google:", error);
     throw error;
   }
 };
 
 // Verbeterde functie voor het ophalen van beschikbare agenda's
 export const listAvailableCalendars = async () => {
-  console.log("Attempting to list available calendars");
+  debugLog("Attempting to list available calendars");
   
   if (!isGoogleClientReady()) {
-    console.log("Google client not ready, initiating authentication...");
+    debugLog("Google client not ready, initiating authentication...");
     await handleGoogleCalendarAuth();
   }
 
   try {
-    console.log("Calling calendarList.list API");
+    debugLog("Calling calendarList.list API");
     const response = await gapi.client.calendar.calendarList.list({
       showHidden: false, // Alleen zichtbare agenda's ophalen
       minAccessRole: 'reader' // Minimaal leestoegang nodig
     });
     
-    console.log('Available calendars from Google:', response.result.items);
+    debugLog('Available calendars from Google:', response.result.items);
     
     // Controleer op nextPageToken voor paginering (voor gebruikers met veel agenda's)
     if (response.result.nextPageToken) {
-      console.log('More calendars available, consider implementing pagination');
+      debugLog('More calendars available, consider implementing pagination');
     }
     
     return response.result.items.map(calendar => ({
@@ -108,26 +109,26 @@ export const listAvailableCalendars = async () => {
       accessRole: calendar.accessRole
     }));
   } catch (error) {
-    console.error("Error fetching available calendars:", error);
+    debugError("Error fetching available calendars:", error);
     if (error.result && error.result.error) {
-      console.error("API Error details:", error.result.error);
+      debugError("API Error details:", error.result.error);
       
       // Specifieke foutafhandeling voor authenticatieproblemen
       if (error.result.error.code === 403 && 
           error.result.error.status === "PERMISSION_DENIED") {
-        console.error("Permission denied! This might be a scope issue. Re-authenticating...");
+        debugError("Permission denied! This might be a scope issue. Re-authenticating...");
         
         // Probeer opnieuw te authenticeren met de juiste scopes
         await handleGoogleCalendarAuth();
         
         // Probeer de aanroep nog een keer
-        console.log("Retrying calendarList.list after re-authentication");
+        debugLog("Retrying calendarList.list after re-authentication");
         const retryResponse = await gapi.client.calendar.calendarList.list({
           showHidden: false,
           minAccessRole: 'reader'
         });
         
-        console.log('Retry successful! Available calendars:', retryResponse.result.items);
+        debugLog('Retry successful! Available calendars:', retryResponse.result.items);
         
         return retryResponse.result.items.map(calendar => ({
           id: calendar.id,
@@ -162,7 +163,7 @@ export const addEventToCalendar = async (event, calendarId = 'primary') => {
   try {
     // Basic validation of the event object
     if (!event.summary) {
-      console.warn("Event missing summary, setting default", event);
+      debugWarn("Event missing summary, setting default", event);
       event.summary = "Untitled Event";
     }
     
@@ -174,10 +175,10 @@ export const addEventToCalendar = async (event, calendarId = 'primary') => {
       'calendarId': calendarId,
       'resource': event
     });
-    console.log('Event added successfully to calendar', calendarId, ':', response);
+    debugLog('Event added successfully to calendar', calendarId, ':', response);
     return response;
   } catch (error) {
-    console.error(`Error adding event to calendar ${calendarId}:`, error);
+    debugError(`Error adding event to calendar ${calendarId}:`, error);
     throw error;
   }
 };
@@ -199,7 +200,7 @@ export const fetchGoogleCalendarEvents = async (timeMin, timeMax, calendarId = '
     });
     return response.result.items;
   } catch (error) {
-    console.error(`Error fetching events from calendar ${calendarId}:`, error);
+    debugError(`Error fetching events from calendar ${calendarId}:`, error);
     throw error;
   }
 };
@@ -219,7 +220,7 @@ export const updateEventInCalendar = async (eventId, updatedEvent, calendarId = 
   }
 
   try {
-    console.log(`Updating event ${eventId} in calendar ${calendarId} with data:`, updatedEvent);
+    debugLog(`Updating event ${eventId} in calendar ${calendarId} with data:`, updatedEvent);
     
     // Ensure the event has required fields
     if (!updatedEvent.start || !updatedEvent.end) {
@@ -236,7 +237,7 @@ export const updateEventInCalendar = async (eventId, updatedEvent, calendarId = 
       'resource': updatedEvent
     });
     
-    console.log(`Event ${eventId} updated successfully in calendar ${calendarId}`, response);
+    debugLog(`Event ${eventId} updated successfully in calendar ${calendarId}`, response);
     return response;
   } catch (error) {
     // Try to provide more specific error details
@@ -256,7 +257,7 @@ export const updateEventInCalendar = async (eventId, updatedEvent, calendarId = 
       }
     }
     
-    console.error(errorMessage, error);
+    debugError(errorMessage, error);
     throw error;
   }
 };
@@ -272,14 +273,14 @@ export const deleteEventFromCalendar = async (eventId, calendarId = 'primary') =
   }
 
   try {
-    console.log(`Sending delete request for event ${eventId} from calendar ${calendarId}`);
+    debugLog(`Sending delete request for event ${eventId} from calendar ${calendarId}`);
     
     const response = await gapi.client.calendar.events.delete({
       'calendarId': calendarId,
       'eventId': eventId
     });
     
-    console.log(`Event ${eventId} deleted successfully from calendar ${calendarId}`, response);
+    debugLog(`Event ${eventId} deleted successfully from calendar ${calendarId}`, response);
     return response;
   } catch (error) {
     // Try to provide more specific error details
@@ -299,7 +300,7 @@ export const deleteEventFromCalendar = async (eventId, calendarId = 'primary') =
       }
     }
     
-    console.error(errorMessage, error);
+    debugError(errorMessage, error);
     throw error;
   }
 };
@@ -316,7 +317,7 @@ export const getCalendarDetails = async (calendarId) => {
     });
     return response.result;
   } catch (error) {
-    console.error(`Error getting details for calendar ${calendarId}:`, error);
+    debugError(`Error getting details for calendar ${calendarId}:`, error);
     throw error;
   }
 };
@@ -336,10 +337,10 @@ export const createCalendar = async (summary, description = '', location = '', t
         'timeZone': timeZone
       }
     });
-    console.log('Calendar created successfully:', response.result);
+    debugLog('Calendar created successfully:', response.result);
     return response.result;
   } catch (error) {
-    console.error('Error creating calendar:', error);
+    debugError('Error creating calendar:', error);
     throw error;
   }
 };
@@ -362,10 +363,10 @@ export const shareCalendarWithUser = async (calendarId, userEmail, role = 'reade
         'role': role
       }
     });
-    console.log(`Calendar ${calendarId} shared with ${userEmail} as ${role}`);
+    debugLog(`Calendar ${calendarId} shared with ${userEmail} as ${role}`);
     return response.result;
   } catch (error) {
-    console.error(`Error sharing calendar ${calendarId} with ${userEmail}:`, error);
+    debugError(`Error sharing calendar ${calendarId} with ${userEmail}:`, error);
     throw error;
   }
 };
@@ -382,7 +383,7 @@ export const getCalendarPermissions = async (calendarId) => {
     });
     return response.result.items;
   } catch (error) {
-    console.error(`Error getting permissions for calendar ${calendarId}:`, error);
+    debugError(`Error getting permissions for calendar ${calendarId}:`, error);
     throw error;
   }
 };

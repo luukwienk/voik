@@ -206,10 +206,10 @@ function App() {
   }, [user]);
 
   useEffect(() => {
-    console.log('Tasks:', tasks);
-    console.log('Current Task List:', currentTaskList);
+    debugLog('Tasks:', tasks);
+    debugLog('Current Task List:', currentTaskList);
     if (healthData) {
-      console.log('Health Data:', healthData);
+      debugLog('Health Data:', healthData);
     }
   }, [tasks, currentTaskList, healthData]);
 

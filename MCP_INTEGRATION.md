@@ -2,31 +2,31 @@
 
 ## Overview
 
-TaskBuddy (Voik) heeft een **MCP (Model Context Protocol) server** die Claude Desktop toegang geeft tot je taken.
+TaskBuddy (Voik) has an **MCP (Model Context Protocol) server** that gives Claude Desktop access to your tasks.
 
-## MCP Server Locatie
+## MCP Server Location
 
 **Repository:** `C:\Projects\taskbuddy-mcp\`
 
-## Wat kan de MCP server?
+## What Can the MCP Server Do?
 
-- ✅ Taken ophalen van alle lijsten
-- ✅ Taken toevoegen aan specifieke lijsten
-- ✅ Taken markeren als voltooid
-- ✅ Lijsten van takenlijsten ophalen
-- ✅ Taken zoeken en filteren
+- Retrieve tasks from all lists
+- Add tasks to specific lists
+- Mark tasks as completed
+- Get list of task lists
+- Search and filter tasks
 
 ## Related: RAG MCP Server
 
-Er is ook een **RAG MCP server** (`C:\Projects\rag-mcp\`) die semantic search biedt in de kennisbank (Pinecone):
-- Confluence documentatie
+There is also a **RAG MCP server** (`C:\Projects\rag-mcp\`) that provides semantic search in the knowledge base (Pinecone):
+- Confluence documentation
 - Jira tickets
 - Slack conversations
 - Email threads
 
 ## Claude Desktop Setup
 
-Beide servers kunnen **samen** gebruikt worden in Claude Desktop:
+Both servers can be used **together** in Claude Desktop:
 
 ```json
 {
@@ -47,20 +47,21 @@ Beide servers kunnen **samen** gebruikt worden in Claude Desktop:
 
 ```
 Claude Desktop
-     ↓
- ┌───┴────┐
- ↓        ↓
+     |
+ +---+----+
+ |        |
+ v        v
 TaskBuddy  RAG MCP
-  MCP        ↓
-  ↓       Pinecone + PostgreSQL
-Firebase    (kennisbank)
+  MCP        |
+  |       Pinecone + PostgreSQL
+Firebase    (knowledge base)
 ```
 
-**Voordelen:**
-- Voik blijft onafhankelijk (geen code changes)
-- RAG systeem blijft onafhankelijk
-- Claude Desktop orkestreert beide
-- Modulair en flexibel
+**Advantages:**
+- Voik remains independent (no code changes needed)
+- RAG system remains independent
+- Claude Desktop orchestrates both
+- Modular and flexible
 
 ## Example Workflows
 

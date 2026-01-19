@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+build/
+
+# Cache
+.cache/
+*.local
+
+# Logs
+*.log
+
+# IDE
+.idea/
+.vscode/
+
+# Firebase
+functions/node_modules/
+
+# Extension
+meet-transcriber-extension/
+
+# Package files
+package-lock.json
+
+# Generated files
+*.min.js
+*.min.css
