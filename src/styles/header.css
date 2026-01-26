@@ -131,22 +131,13 @@
   height: 48px;
 }
 
+/* navbar-wrapper positioning is handled by TabsNavigation inline styles */
 .navbar-wrapper {
   width: 100%;
 }
 
 @media (max-width: 767px) {
-  .navbar-wrapper {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 1000;
-    background: white;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
-    padding-bottom: env(safe-area-inset-bottom);
-    overflow: visible; /* Allow dropdown menu to escape */
-  }
+  /* Only keep app-header and App rules - navbar is handled by TabsNavigation.jsx */
   .app-header {
     position: fixed;
     top: 0;
@@ -165,13 +156,5 @@
   }
   .tasklist-container {
     margin-bottom: 8px;
-  }
-}
-
-@media (min-width: 768px) {
-  .navbar-wrapper {
-    position: static;
-    box-shadow: none;
-    padding-bottom: 0;
   }
 }

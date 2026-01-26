@@ -40,7 +40,6 @@
 @media (max-width: 767px) {
   .tabs-navigation {
     border-top: 1px solid #eee;
-    overflow: visible; /* Allow dropdown menu to escape */
   }
 
   .tab-item {
