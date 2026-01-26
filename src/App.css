@@ -6,6 +6,13 @@ body, html, #root, .App {
   font-family: Arial, sans-serif;
 }
 
+/* iOS PWA safe area - push content below notch/Dynamic Island */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .App {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
 #root {
   display: flex;
   flex-direction: column;

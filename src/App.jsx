@@ -1,7 +1,6 @@
 // Updated App.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
-import './styles/header.css';
 // import Header from './components/Header';
 import ResponsiveMainContent from './components/ResponsiveMainContent';
 import { useAuth } from './hooks/useAuth';
