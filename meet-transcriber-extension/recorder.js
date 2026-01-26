@@ -111,7 +111,9 @@ async function startRecording() {
     }
 
     // Microphone capture -> LEFT channel (me)
+    // Small delay to let Chrome's permission UI settle after tab capture
     if (captureMic) {
+      await new Promise(resolve => setTimeout(resolve, 300));
       try {
         micStream = await navigator.mediaDevices.getUserMedia({
           audio: {

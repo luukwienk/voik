@@ -27,6 +27,9 @@ dist-ssr
 .netlify
 .env
 
+# Claude Code local settings
+.claude/settings.local.json
+
 # Windows files
 nul
 Thumbs.db

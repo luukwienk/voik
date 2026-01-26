@@ -23,6 +23,11 @@ const MODEL = process.env.TRANSCRIBE_MODEL || 'whisper-1';
 const CHUNK_SECONDS = parseInt(process.env.CHUNK_SECONDS || '120', 10);
 const CHUNK_OVERLAP_SECONDS = parseInt(process.env.CHUNK_OVERLAP_SECONDS || '2', 10);
 
+// VAD settings - silence detection thresholds
+const SILENCE_THRESHOLD_DB = parseInt(process.env.SILENCE_THRESHOLD_DB || '-35', 10); // dB below which is silence
+const SILENCE_MIN_DURATION = parseFloat(process.env.SILENCE_MIN_DURATION || '1.0'); // min silence duration to detect
+const SPEECH_GAP_MERGE = parseFloat(process.env.SPEECH_GAP_MERGE || '3.0'); // merge speech segments closer than this
+
 async function downloadFile(bucketName, filePath, destPath) {
   const bucket = storage.bucket(bucketName);
   await bucket.file(filePath).download({ destination: destPath });
@@ -107,6 +112,155 @@ function createChunk(srcPath, startSec, durationSec, destPath) {
       .on('error', reject)
       .run();
   });
+}
+
+// Detect speech segments using ffmpeg silencedetect filter
+// Returns array of { start, end } objects for speech (non-silent) sections
+function detectSpeechSegments(filePath, totalDuration) {
+  return new Promise((resolve, reject) => {
+    const silentParts = [];
+    let currentSilenceStart = null;
+
+    ffmpeg(filePath)
+      .audioFilters(`silencedetect=noise=${SILENCE_THRESHOLD_DB}dB:d=${SILENCE_MIN_DURATION}`)
+      .outputOptions(['-f null'])
+      .output('-')
+      .on('stderr', (line) => {
+        // Parse silence_start and silence_end from ffmpeg stderr
+        const startMatch = line.match(/silence_start:\s*([\d.]+)/);
+        const endMatch = line.match(/silence_end:\s*([\d.]+)/);
+
+        if (startMatch) {
+          currentSilenceStart = parseFloat(startMatch[1]);
+        }
+        if (endMatch && currentSilenceStart !== null) {
+          silentParts.push({
+            start: currentSilenceStart,
+            end: parseFloat(endMatch[1])
+          });
+          currentSilenceStart = null;
+        }
+      })
+      .on('end', () => {
+        // Handle case where audio ends during silence
+        if (currentSilenceStart !== null) {
+          silentParts.push({ start: currentSilenceStart, end: totalDuration });
+        }
+
+        // Invert silent parts to get speech segments
+        const speechSegments = [];
+        let lastEnd = 0;
+
+        for (const silent of silentParts) {
+          if (silent.start > lastEnd) {
+            speechSegments.push({ start: lastEnd, end: silent.start });
+          }
+          lastEnd = silent.end;
+        }
+        // Add final segment if audio doesn't end in silence
+        if (lastEnd < totalDuration) {
+          speechSegments.push({ start: lastEnd, end: totalDuration });
+        }
+
+        // Merge nearby segments (within SPEECH_GAP_MERGE seconds)
+        const merged = [];
+        for (const seg of speechSegments) {
+          if (merged.length === 0) {
+            merged.push({ ...seg });
+          } else {
+            const last = merged[merged.length - 1];
+            if (seg.start - last.end <= SPEECH_GAP_MERGE) {
+              // Merge with previous segment
+              last.end = seg.end;
+            } else {
+              merged.push({ ...seg });
+            }
+          }
+        }
+
+        console.log(`[VAD] Found ${silentParts.length} silent sections, ${merged.length} speech segments`);
+        resolve(merged);
+      })
+      .on('error', (err) => {
+        // If silencedetect fails, return full audio as one segment
+        console.warn('[VAD] Silence detection failed, using full audio:', err.message);
+        resolve([{ start: 0, end: totalDuration }]);
+      })
+      .run();
+  });
+}
+
+// Create chunks only from speech segments, respecting max chunk size
+function createSpeechChunks(speechSegments, maxChunkSec, overlapSec) {
+  const chunks = [];
+
+  for (const seg of speechSegments) {
+    const segDuration = seg.end - seg.start;
+
+    if (segDuration <= maxChunkSec) {
+      // Segment fits in one chunk
+      chunks.push({ startSec: seg.start, durationSec: segDuration });
+    } else {
+      // Split segment into multiple chunks with overlap
+      let pos = seg.start;
+      while (pos < seg.end) {
+        const remaining = seg.end - pos;
+        const dur = Math.min(maxChunkSec, remaining);
+        chunks.push({ startSec: pos, durationSec: dur });
+        pos += maxChunkSec - overlapSec;
+      }
+    }
+  }
+
+  return chunks;
+}
+
+// Post-process transcription to remove common Whisper hallucinations
+function filterHallucinations(text) {
+  if (!text) return text;
+
+  let filtered = text;
+
+  // Common hallucination patterns
+  const hallucinationPatterns = [
+    // URLs and domains (Whisper often hallucinates these during silence)
+    /(?:https?:\/\/)?(?:www\.)?[a-z0-9-]+\.(com|org|net|io|co|info|biz|tv|me|us|uk|de|nl|be|fr|es|it|ru|cn|jp|in)[^\s]*/gi,
+    // Repeated phrases (3+ times in a row)
+    /(\b\w+(?:\s+\w+){0,3}\b)(?:\s*\1){2,}/gi,
+    // Common hallucinated phrases
+    /\b(?:thank you for watching|please subscribe|like and subscribe|see you next time|bye bye|goodbye)\b[.!]*/gi,
+    // Music/sound effect descriptions that shouldn't appear
+    /\[(?:music|applause|laughter|silence|background noise|inaudible)\]/gi,
+    // Foreign script that appears randomly (common Whisper hallucination)
+    /[\u0D80-\u0DFF]{5,}/g, // Sinhalese
+    /[\u0900-\u097F]{10,}/g, // Devanagari (when not expected)
+    /[\u4E00-\u9FFF]{10,}/g, // Chinese (when not expected)
+    /[\u0600-\u06FF]{10,}/g, // Arabic (when not expected)
+    /[\u3040-\u309F\u30A0-\u30FF]{10,}/g, // Japanese (when not expected)
+    // Repeated punctuation or symbols
+    /[.]{4,}/g,
+    /[-]{4,}/g,
+    // Empty speaker labels
+    /\[\w+\]:\s*$/gm,
+  ];
+
+  for (const pattern of hallucinationPatterns) {
+    filtered = filtered.replace(pattern, '');
+  }
+
+  // Clean up extra whitespace and newlines
+  filtered = filtered
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/^\s+|\s+$/gm, '')
+    .trim();
+
+  const removed = text.length - filtered.length;
+  if (removed > 50) {
+    console.log(`[Hallucination filter] Removed ${removed} characters of suspected hallucinations`);
+  }
+
+  return filtered;
 }
 
 async function transcribeChunk(filePath, apiKey, { language } = {}) {
@@ -205,19 +359,28 @@ export const onAudioUploaded = functions
 
       durationSec = Math.ceil(await probeDuration(localLeft));
 
-      // Transcribe both channels
+      // Transcribe both channels with VAD
       const transcribeChannel = async (wavPath, label) => {
+        // Detect speech segments using VAD
+        const speechSegments = await detectSpeechSegments(wavPath, durationSec);
+        console.log(`[Transcription] ${label} channel: ${speechSegments.length} speech segments detected`);
+
+        if (speechSegments.length === 0) {
+          console.log(`[Transcription] ${label} channel: no speech detected, skipping`);
+          return [];
+        }
+
+        // Create chunks only from speech segments
+        const chunkDefs = createSpeechChunks(speechSegments, CHUNK_SECONDS, CHUNK_OVERLAP_SECONDS);
+        console.log(`[Transcription] ${label} channel: ${chunkDefs.length} chunks to transcribe`);
+
         const chunks = [];
-        let start = 0;
-        while (start < durationSec) {
-          const effectiveStart = Math.max(0, start - (start > 0 ? CHUNK_OVERLAP_SECONDS : 0));
-          const remaining = durationSec - effectiveStart;
-          const dur = Math.min(CHUNK_SECONDS + (start > 0 ? CHUNK_OVERLAP_SECONDS : 0), remaining);
-          const chunkPath = path.join(tmpDir, `${docId}-${label}-${chunks.length}.wav`);
+        for (let i = 0; i < chunkDefs.length; i++) {
+          const { startSec, durationSec: dur } = chunkDefs[i];
+          const chunkPath = path.join(tmpDir, `${docId}-${label}-${i}.wav`);
           tempFiles.push(chunkPath);
-          await createChunk(wavPath, effectiveStart, dur, chunkPath);
-          chunks.push({ path: chunkPath, startSec: effectiveStart, durationSec: dur });
-          start += CHUNK_SECONDS;
+          await createChunk(wavPath, startSec, dur, chunkPath);
+          chunks.push({ path: chunkPath, startSec, durationSec: dur });
         }
 
         const parts = [];
@@ -294,42 +457,55 @@ export const onAudioUploaded = functions
       text = lines.join('\n\n');
 
     } else {
-      // Standard mono processing
-      console.log(`[Transcription] MONO MODE - standard processing`);
+      // Standard mono processing with VAD
+      console.log(`[Transcription] MONO MODE - standard processing with VAD`);
       const localWav = path.join(tmpDir, `${docId}.wav`);
       tempFiles.push(localWav);
 
       await transcodeToWavMono16k(localInput, localWav);
       durationSec = Math.ceil(await probeDuration(localWav));
 
-      const chunks = [];
-      let start = 0;
-      while (start < durationSec) {
-        const effectiveStart = Math.max(0, start - (start > 0 ? CHUNK_OVERLAP_SECONDS : 0));
-        const remaining = durationSec - effectiveStart;
-        const dur = Math.min(CHUNK_SECONDS + (start > 0 ? CHUNK_OVERLAP_SECONDS : 0), remaining);
-        const chunkPath = path.join(tmpDir, `${docId}-${chunks.length}.wav`);
-        tempFiles.push(chunkPath);
-        await createChunk(localWav, effectiveStart, dur, chunkPath);
-        chunks.push({ path: chunkPath, startSec: effectiveStart, durationSec: dur });
-        start += CHUNK_SECONDS;
-      }
+      // Detect speech segments using VAD
+      const speechSegments = await detectSpeechSegments(localWav, durationSec);
+      console.log(`[Transcription] MONO: ${speechSegments.length} speech segments detected`);
 
-      const parts = [];
-      for (const chunk of chunks) {
-        const result = await transcribeChunk(chunk.path, apiKey, { language: metadata?.language });
-        parts.push({ startSec: chunk.startSec, result });
-      }
+      if (speechSegments.length === 0) {
+        console.log(`[Transcription] No speech detected in audio`);
+        text = '';
+        chunkCount = 0;
+      } else {
+        // Create chunks only from speech segments
+        const chunkDefs = createSpeechChunks(speechSegments, CHUNK_SECONDS, CHUNK_OVERLAP_SECONDS);
+        console.log(`[Transcription] MONO: ${chunkDefs.length} chunks to transcribe`);
 
-      chunkCount = parts.length;
-      text = parts.map(p => (p.result?.text || '').trim()).join('\n');
+        const chunks = [];
+        for (let i = 0; i < chunkDefs.length; i++) {
+          const { startSec, durationSec: dur } = chunkDefs[i];
+          const chunkPath = path.join(tmpDir, `${docId}-${i}.wav`);
+          tempFiles.push(chunkPath);
+          await createChunk(localWav, startSec, dur, chunkPath);
+          chunks.push({ path: chunkPath, startSec, durationSec: dur });
+        }
+
+        const parts = [];
+        for (const chunk of chunks) {
+          const result = await transcribeChunk(chunk.path, apiKey, { language: metadata?.language });
+          parts.push({ startSec: chunk.startSec, result });
+        }
+
+        chunkCount = parts.length;
+        text = parts.map(p => (p.result?.text || '').trim()).join('\n');
+      }
     }
 
+    // Apply hallucination filter
+    const filteredText = filterHallucinations(text);
+
     console.log(`[Transcription] Completed - duration: ${durationSec}s, chunks: ${chunkCount}`);
-    console.log(`[Transcription] Result text (first 500 chars):`, text?.substring(0, 500));
+    console.log(`[Transcription] Result text (first 500 chars):`, filteredText?.substring(0, 500));
 
     await docRef.set({
-      text,
+      text: filteredText,
       language: metadata?.language || 'auto',
       duration: durationSec,
       chunkCount,
