@@ -154,9 +154,12 @@
     z-index: 1001;
     background: white;
     box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    /* iOS safe area - push content below notch/Dynamic Island */
+    padding-top: env(safe-area-inset-top);
   }
   .App {
-    padding-top: 56px;
+    /* Account for header height + safe area on iOS */
+    padding-top: calc(56px + env(safe-area-inset-top));
     padding-bottom: 0px;
   }
   .tasklist-container {
