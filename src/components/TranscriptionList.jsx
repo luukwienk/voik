@@ -19,7 +19,9 @@ import {
   faPlus,
   faExclamationTriangle,
   faSearch,
-  faCopy
+  faCopy,
+  faVolumeUp,
+  faRedo
 } from '@fortawesome/free-solid-svg-icons';
 
 function TranscriptionList({ user, onTasksExtracted, pendingTranscriptionId, onClearPendingTranscription }) {
@@ -30,6 +32,8 @@ function TranscriptionList({ user, onTasksExtracted, pendingTranscriptionId, onC
     updateTranscription,
     deleteTranscription,
     exportTranscription,
+    downloadAudio,
+    retryTranscription,
     searchTranscriptions
   } = useTranscriptions(user);
 
@@ -308,7 +312,22 @@ function TranscriptionList({ user, onTasksExtracted, pendingTranscriptionId, onC
                 {transcription.text
                   ? `${transcription.text.substring(0, 150)}...`
                   : (transcription.processingStatus === 'error'
-                      ? 'Processing failed. Please try again or contact support.'
+                      ? (
+                          <div className="error-preview">
+                            <span>Processing failed.</span>
+                            {transcription.storagePath && (
+                              <button
+                                className="retry-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  retryTranscription(transcription.id);
+                                }}
+                              >
+                                <FontAwesomeIcon icon={faRedo} /> Retry
+                              </button>
+                            )}
+                          </div>
+                        )
                       : 'Transcription is being processed...')}
               </div>
 
@@ -408,12 +427,44 @@ function TranscriptionList({ user, onTasksExtracted, pendingTranscriptionId, onC
             )}
 
             <div className="detail-text">
-              {selectedTranscription.text}
+              {selectedTranscription.text || (
+                selectedTranscription.processingStatus === 'error' ? (
+                  <div className="error-message-detail">
+                    <FontAwesomeIcon icon={faExclamationTriangle} />
+                    <span>Processing failed: {selectedTranscription.errorMessage || 'Unknown error'}</span>
+                  </div>
+                ) : selectedTranscription.processingStatus === 'processing' ? (
+                  <div className="processing-message">Processing...</div>
+                ) : null
+              )}
             </div>
 
             <div className="detail-actions">
+              {selectedTranscription.processingStatus === 'error' && selectedTranscription.storagePath && (
+                <button
+                  className="btn primary"
+                  onClick={() => {
+                    retryTranscription(selectedTranscription.id);
+                    setSelectedTranscription({
+                      ...selectedTranscription,
+                      processingStatus: 'processing',
+                      errorMessage: null
+                    });
+                  }}
+                >
+                  <FontAwesomeIcon icon={faRedo} /> Retry Transcription
+                </button>
+              )}
+              {selectedTranscription.storagePath && (
+                <button
+                  className="btn secondary"
+                  onClick={() => downloadAudio(selectedTranscription)}
+                >
+                  <FontAwesomeIcon icon={faVolumeUp} /> Download Audio
+                </button>
+              )}
               <button
-                className="btn primary"
+                className="btn secondary"
                 onClick={() => exportTranscription(selectedTranscription, 'txt')}
               >
                 <FontAwesomeIcon icon={faDownload} /> Download TXT
@@ -425,7 +476,7 @@ function TranscriptionList({ user, onTasksExtracted, pendingTranscriptionId, onC
                 <FontAwesomeIcon icon={faDownload} /> Download JSON
               </button>
               {/* AI Actions Component direct onder de downloadknoppen, binnen detail-actions */}
-              <TranscriptionAIActions 
+              <TranscriptionAIActions
                 transcription={selectedTranscription}
                 onTasksExtracted={onTasksExtracted}
               />

@@ -1,19 +1,22 @@
 // hooks/useTranscriptions.js
 import { useState, useEffect, useCallback } from 'react';
-import { 
-  collection, 
-  addDoc, 
+import {
+  collection,
+  addDoc,
   updateDoc,
   deleteDoc,
   doc,
-  getDocs, 
-  query, 
-  orderBy, 
+  getDocs,
+  query,
+  orderBy,
   limit,
-  serverTimestamp 
+  serverTimestamp
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { db, storage, storageRef, getDownloadURL } from '../firebase';
 import { debugLog, debugError } from '../utils/debug';
+
+const functions = getFunctions(undefined, 'us-central1');
 
 export function useTranscriptions(user) {
   const [transcriptions, setTranscriptions] = useState([]);
@@ -164,9 +167,9 @@ export function useTranscriptions(user) {
   const exportTranscription = useCallback((transcription, format = 'txt') => {
     const date = new Date(transcription.createdAt).toLocaleDateString('nl-NL');
     const time = new Date(transcription.createdAt).toLocaleTimeString('nl-NL');
-    
+
     let content = '';
-    
+
     if (format === 'txt') {
       content = `Transcriptie: ${transcription.title || 'Geen titel'}\n`;
       content += `Datum: ${date} ${time}\n`;
@@ -180,7 +183,7 @@ export function useTranscriptions(user) {
     } else if (format === 'json') {
       content = JSON.stringify(transcription, null, 2);
     }
-    
+
     const blob = new Blob([content], { type: `text/${format}` });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -192,6 +195,75 @@ export function useTranscriptions(user) {
     URL.revokeObjectURL(url);
   }, []);
 
+  const downloadAudio = useCallback(async (transcription) => {
+    if (!transcription.storagePath) {
+      throw new Error('Geen audio bestand beschikbaar');
+    }
+
+    try {
+      const audioRef = storageRef(storage, transcription.storagePath);
+      const downloadUrl = await getDownloadURL(audioRef);
+
+      // Determine file extension from storage path
+      const extension = transcription.storagePath.split('.').pop() || 'webm';
+
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `${transcription.title || 'recording'}-${transcription.id}.${extension}`;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      debugLog('Downloaded audio:', transcription.id);
+    } catch (err) {
+      debugError('Error downloading audio:', err);
+      throw new Error('Kon audio niet downloaden');
+    }
+  }, []);
+
+  const retryTranscription = useCallback(async (transcriptionId) => {
+    if (!user) {
+      throw new Error('Gebruiker niet ingelogd');
+    }
+
+    try {
+      debugLog('Retrying transcription:', transcriptionId);
+
+      // Update local state to show processing
+      setTranscriptions(prev =>
+        prev.map(t =>
+          t.id === transcriptionId
+            ? { ...t, processingStatus: 'processing', errorMessage: null }
+            : t
+        )
+      );
+
+      const retryFn = httpsCallable(functions, 'retryTranscription');
+      const result = await retryFn({ transcriptionId });
+
+      debugLog('Retry result:', result.data);
+
+      // Reload transcriptions to get updated data
+      await loadTranscriptions();
+
+      return result.data;
+    } catch (err) {
+      debugError('Error retrying transcription:', err);
+
+      // Update local state to show error
+      setTranscriptions(prev =>
+        prev.map(t =>
+          t.id === transcriptionId
+            ? { ...t, processingStatus: 'error', errorMessage: err.message }
+            : t
+        )
+      );
+
+      throw new Error(err.message || 'Kon transcriptie niet opnieuw verwerken');
+    }
+  }, [user, loadTranscriptions]);
+
   return {
     transcriptions,
     isLoading,
@@ -202,6 +274,8 @@ export function useTranscriptions(user) {
     searchTranscriptions,
     getTranscriptionsByDateRange,
     exportTranscription,
+    downloadAudio,
+    retryTranscription,
     reload: loadTranscriptions
   };
 }

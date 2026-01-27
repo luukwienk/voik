@@ -262,6 +262,47 @@
   font-size: 0.9rem;
 }
 
+.error-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #dc2626;
+}
+
+.error-preview .retry-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.2s;
+}
+
+.error-preview .retry-btn:hover {
+  background: #2563eb;
+}
+
+.error-message-detail {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #dc2626;
+  padding: 16px;
+  background: #fef2f2;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+}
+
+.processing-message {
+  color: #6b7280;
+  font-style: italic;
+}
+
 .empty-state {
   grid-column: 1 / -1;
   text-align: center;
