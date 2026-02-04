@@ -29,6 +29,9 @@ const uploadStatusEl = document.getElementById('upload-status');
 const uploadMessageEl = document.getElementById('upload-message');
 const postActionsEl = document.getElementById('post-actions');
 const downloadBtn = document.getElementById('btn-download');
+const loginNoticeEl = document.getElementById('login-notice');
+const btnOpenVoik = document.getElementById('btn-open-voik');
+const btnRetry = document.getElementById('btn-retry');
 const infoEl = document.getElementById('info');
 const languageSelect = document.getElementById('language-select');
 
@@ -260,21 +263,11 @@ async function uploadToVoik() {
     const config = result.firebaseConfig;
 
     if (!config || !config.authToken) {
-      // Fallback: open Voik with audio in storage
-      const base64 = await blobToBase64(audioBlob);
-      await chrome.storage.local.set({
-        pendingAudio: {
-          data: base64,
-          duration,
-          meetingTitle,
-          language: languageSelect.value,
-          timestamp: Date.now(),
-          mimeType: 'audio/webm;codecs=opus',
-          size: audioBlob.size
-        }
-      });
-      uploadMessageEl.textContent = 'Open Voik to import';
-      await navigateToVoik(`${VOIK_URL}?import=meet`);
+      // Show login notice instead of silently failing
+      uploadStatusEl.classList.remove('show');
+      loginNoticeEl.classList.add('show');
+      postActionsEl.classList.remove('hidden');
+      setStatus('ready', 'Login required');
       return;
     }
 
@@ -312,7 +305,7 @@ async function uploadToVoik() {
     console.error('[Recorder] Upload error:', err);
     showError('Upload failed: ' + err.message);
     uploadStatusEl.classList.remove('show');
-    controlsStart.classList.remove('hidden');
+    postActionsEl.classList.remove('hidden');
   }
 }
 
@@ -439,6 +432,35 @@ document.getElementById('btn-start').addEventListener('click', startRecording);
 document.getElementById('btn-stop').addEventListener('click', stopRecording);
 if (downloadBtn) {
   downloadBtn.addEventListener('click', downloadRecording);
+}
+const btnRetryGeneral = document.getElementById('btn-retry-general');
+if (btnRetryGeneral) {
+  btnRetryGeneral.addEventListener('click', () => {
+    hideError();
+    uploadStatusEl.classList.add('show');
+    uploadStatusEl.classList.remove('success');
+    uploadMessageEl.textContent = 'Uploading...';
+    postActionsEl.classList.add('hidden');
+    setStatus('ready', 'Uploading...');
+    uploadToVoik();
+  });
+}
+if (btnOpenVoik) {
+  btnOpenVoik.addEventListener('click', () => {
+    navigateToVoik('https://voik.netlify.app');
+  });
+}
+if (btnRetry) {
+  btnRetry.addEventListener('click', () => {
+    loginNoticeEl.classList.remove('show');
+    hideError();
+    uploadStatusEl.classList.add('show');
+    uploadStatusEl.classList.remove('success');
+    uploadMessageEl.textContent = 'Uploading...';
+    postActionsEl.classList.add('hidden');
+    setStatus('ready', 'Uploading...');
+    uploadToVoik();
+  });
 }
 
 // Start

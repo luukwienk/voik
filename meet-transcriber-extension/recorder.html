@@ -183,6 +183,34 @@
     .post-actions.hidden {
       display: none !important;
     }
+    .login-notice {
+      display: none;
+      background: #fff3e0;
+      border: 1px solid #ffb74d;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .login-notice.show {
+      display: block;
+    }
+    .login-notice .notice-title {
+      font-weight: 600;
+      color: #e65100;
+      margin-bottom: 8px;
+      font-size: 15px;
+    }
+    .login-notice .notice-text {
+      color: #666;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+    .login-notice .notice-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
@@ -260,7 +288,17 @@
       <div class="message" id="upload-message">Uploading...</div>
     </div>
 
+    <div class="login-notice" id="login-notice">
+      <div class="notice-title">Not logged in to Voik</div>
+      <div class="notice-text">Log in to Voik first, then click Retry to upload your recording.</div>
+      <div class="notice-actions">
+        <button class="btn-primary" id="btn-open-voik">Open Voik</button>
+        <button class="btn-secondary" id="btn-retry">Retry upload</button>
+      </div>
+    </div>
+
     <div class="post-actions hidden" id="post-actions">
+      <button class="btn-secondary" id="btn-retry-general">Retry upload</button>
       <button class="btn-secondary" id="btn-download">Download backup</button>
     </div>
 
