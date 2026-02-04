@@ -174,6 +174,15 @@
       color: #333;
       font-weight: 500;
     }
+    .post-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 12px;
+    }
+    .post-actions.hidden {
+      display: none !important;
+    }
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
@@ -249,6 +258,10 @@
       <div class="spinner"></div>
       <div class="check-icon"></div>
       <div class="message" id="upload-message">Uploading...</div>
+    </div>
+
+    <div class="post-actions hidden" id="post-actions">
+      <button class="btn-secondary" id="btn-download">Download backup</button>
     </div>
 
     <div class="info" id="info">

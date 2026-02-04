@@ -27,6 +27,8 @@ const controlsStart = document.getElementById('controls-start');
 const controlsRecording = document.getElementById('controls-recording');
 const uploadStatusEl = document.getElementById('upload-status');
 const uploadMessageEl = document.getElementById('upload-message');
+const postActionsEl = document.getElementById('post-actions');
+const downloadBtn = document.getElementById('btn-download');
 const infoEl = document.getElementById('info');
 const languageSelect = document.getElementById('language-select');
 
@@ -66,10 +68,14 @@ function hideError() {
 async function startRecording() {
   hideError();
   recordedChunks = [];
+  uploadStatusEl.classList.remove('show');
+  uploadStatusEl.classList.remove('success');
+  uploadMessageEl.textContent = 'Uploading...';
+  postActionsEl.classList.add('hidden');
 
   try {
     // Audio context
-    audioContext = new AudioContext({ sampleRate: 44100 });
+    audioContext = new AudioContext();
     if (audioContext.state === 'suspended') {
       await audioContext.resume();
     }
@@ -101,7 +107,7 @@ async function startRecording() {
         // Tab to RIGHT channel (index 1)
         tabGain.connect(channelMerger, 0, 1);
 
-        // Also to speakers so you can still hear others
+        // Route tab audio to speakers so user can still hear others
         tabGain.connect(audioContext.destination);
       } catch (err) {
         console.error('[Recorder] Tab capture error:', err);
@@ -118,8 +124,7 @@ async function startRecording() {
         micStream = await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: true,
-            noiseSuppression: true,
-            sampleRate: 44100
+            noiseSuppression: true
           },
           video: false
         });
@@ -169,6 +174,7 @@ async function startRecording() {
       // Auto-upload immediately
       controlsRecording.classList.add('hidden');
       uploadStatusEl.classList.add('show');
+      postActionsEl.classList.remove('hidden');
       setStatus('ready', 'Uploading...');
       uploadToVoik();
     };
@@ -267,6 +273,7 @@ async function uploadToVoik() {
           size: audioBlob.size
         }
       });
+      uploadMessageEl.textContent = 'Open Voik to import';
       await navigateToVoik(`${VOIK_URL}?import=meet`);
       return;
     }
@@ -407,6 +414,17 @@ async function updateFirestoreDoc(config, docId, path) {
   if (!resp.ok) throw new Error('Firestore update error: ' + resp.status);
 }
 
+function downloadRecording() {
+  if (!audioBlob) return;
+
+  const url = URL.createObjectURL(audioBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `meet-recording-${new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-')}.webm`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -419,6 +437,9 @@ function blobToBase64(blob) {
 // Event listeners (required for Chrome Extension CSP)
 document.getElementById('btn-start').addEventListener('click', startRecording);
 document.getElementById('btn-stop').addEventListener('click', stopRecording);
+if (downloadBtn) {
+  downloadBtn.addEventListener('click', downloadRecording);
+}
 
 // Start
 init();
