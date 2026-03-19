@@ -239,7 +239,7 @@ export function useTranscriptions(user) {
         )
       );
 
-      const retryFn = httpsCallable(functions, 'retryTranscription');
+      const retryFn = httpsCallable(functions, 'retryTranscription', { timeout: 540000 });
       const result = await retryFn({ transcriptionId });
 
       debugLog('Retry result:', result.data);
@@ -250,6 +250,19 @@ export function useTranscriptions(user) {
       return result.data;
     } catch (err) {
       debugError('Error retrying transcription:', err);
+
+      // If it's a timeout/network error, the function is likely still running server-side
+      const isTimeout = err.code === 'deadline-exceeded' ||
+        err.code === 'unavailable' ||
+        err.message?.includes('deadline') ||
+        err.message?.includes('timeout') ||
+        err.message?.includes('DEADLINE_EXCEEDED');
+
+      if (isTimeout) {
+        debugLog('Retry timed out client-side but function may still be running');
+        // Keep processing state — the function is still running server-side
+        return;
+      }
 
       // Update local state to show error
       setTranscriptions(prev =>

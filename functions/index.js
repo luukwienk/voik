@@ -264,8 +264,13 @@ async function transcribeChunk(filePath, apiKey, { language } = {}) {
   });
 
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`OpenAI transcription error: ${res.status} ${err}`);
+    const errBody = await res.text();
+    // If Whisper says audio is too short, skip this chunk instead of failing entirely
+    if (res.status === 400 && errBody.includes('audio_too_short')) {
+      console.log(`[Transcription] Whisper rejected chunk as too short, skipping: ${filePath}`);
+      return { text: '', segments: [] };
+    }
+    throw new Error(`OpenAI transcription error: ${res.status} ${errBody}`);
   }
   return res.json();
 }
