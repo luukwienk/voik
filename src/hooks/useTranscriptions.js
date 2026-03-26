@@ -16,7 +16,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db, storage, storageRef, getDownloadURL } from '../firebase';
 import { debugLog, debugError } from '../utils/debug';
 
-const functions = getFunctions(undefined, 'us-central1');
+const functions = getFunctions(undefined, 'europe-west4');
 
 export function useTranscriptions(user) {
   const [transcriptions, setTranscriptions] = useState([]);
@@ -239,7 +239,7 @@ export function useTranscriptions(user) {
         )
       );
 
-      const retryFn = httpsCallable(functions, 'retryTranscription', { timeout: 540000 });
+      const retryFn = httpsCallable(functions, 'retryTranscription', { timeout: 3600000 });
       const result = await retryFn({ transcriptionId });
 
       debugLog('Retry result:', result.data);

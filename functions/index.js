@@ -4,7 +4,8 @@ import path from 'node:path';
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
-import * as functions from 'firebase-functions';
+import { onObjectFinalized } from 'firebase-functions/v2/storage';
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegPath from 'ffmpeg-static';
@@ -19,7 +20,7 @@ const db = getFirestore();
 const storage = getStorage();
 
 const OPENAI_API_KEY = defineSecret('OPENAI_API_KEY');
-const FUNCTION_REGION = process.env.FUNCTION_REGION || 'us-central1';
+const FUNCTION_REGION = process.env.FUNCTION_REGION || 'europe-west4';
 const MODEL = process.env.TRANSCRIBE_MODEL || 'whisper-1';
 const CHUNK_SECONDS = parseInt(process.env.CHUNK_SECONDS || '120', 10);
 const CHUNK_OVERLAP_SECONDS = parseInt(process.env.CHUNK_OVERLAP_SECONDS || '2', 10);
@@ -31,6 +32,26 @@ const SPEECH_GAP_MERGE = parseFloat(process.env.SPEECH_GAP_MERGE || '3.0');
 
 // Minimum chunk duration for Whisper API (must be > 0.1s, use 0.5s for safety margin)
 const MIN_CHUNK_DURATION = 0.5;
+
+// Number of concurrent Whisper API calls
+const PARALLEL_TRANSCRIPTIONS = parseInt(process.env.PARALLEL_TRANSCRIPTIONS || '5', 10);
+
+/**
+ * Run an async function over an array with limited concurrency.
+ * Items are processed in order of availability, results preserve input order.
+ */
+async function parallelMap(items, fn, concurrency = PARALLEL_TRANSCRIPTIONS) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+  const worker = async () => {
+    while (nextIndex < items.length) {
+      const i = nextIndex++;
+      results[i] = await fn(items[i], i);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => worker()));
+  return results;
+}
 
 async function downloadFile(bucketName, filePath, destPath) {
   const bucket = storage.bucket(bucketName);
@@ -338,6 +359,7 @@ async function processTranscription(bucketName, storagePath, uid, docId, apiKey)
         return [];
       }
 
+      // Create all WAV chunks first (sequential - disk I/O)
       const chunks = [];
       for (let i = 0; i < chunkDefs.length; i++) {
         const { startSec, durationSec: dur } = chunkDefs[i];
@@ -347,11 +369,14 @@ async function processTranscription(bucketName, storagePath, uid, docId, apiKey)
         chunks.push({ path: chunkPath, startSec, durationSec: dur });
       }
 
-      const parts = [];
-      for (const chunk of chunks) {
+      // Transcribe in parallel
+      console.log(`[Transcription] ${label} channel: transcribing ${chunks.length} chunks (${PARALLEL_TRANSCRIPTIONS} parallel)...`);
+      const parts = await parallelMap(chunks, async (chunk, i) => {
+        console.log(`[Transcription] ${label} chunk ${i + 1}/${chunks.length} starting...`);
         const result = await transcribeChunk(chunk.path, apiKey, { language });
         const segments = result.segments || [];
-        parts.push({
+        console.log(`[Transcription] ${label} chunk ${i + 1}/${chunks.length} done`);
+        return {
           startSec: chunk.startSec,
           text: (result.text || '').trim(),
           segments: segments.map(s => ({
@@ -359,8 +384,8 @@ async function processTranscription(bucketName, storagePath, uid, docId, apiKey)
             end: chunk.startSec + s.end,
             text: s.text
           }))
-        });
-      }
+        };
+      });
       return parts;
     };
 
@@ -438,6 +463,7 @@ async function processTranscription(bucketName, storagePath, uid, docId, apiKey)
         text = '';
         chunkCount = 0;
       } else {
+        // Create all WAV chunks first (sequential - disk I/O)
         const chunks = [];
         for (let i = 0; i < chunkDefs.length; i++) {
           const { startSec, durationSec: dur } = chunkDefs[i];
@@ -447,11 +473,14 @@ async function processTranscription(bucketName, storagePath, uid, docId, apiKey)
           chunks.push({ path: chunkPath, startSec, durationSec: dur });
         }
 
-        const parts = [];
-        for (const chunk of chunks) {
+        // Transcribe in parallel
+        console.log(`[Transcription] Transcribing ${chunks.length} chunks (${PARALLEL_TRANSCRIPTIONS} parallel)...`);
+        const parts = await parallelMap(chunks, async (chunk, i) => {
+          console.log(`[Transcription] Chunk ${i + 1}/${chunks.length} starting...`);
           const result = await transcribeChunk(chunk.path, apiKey, { language });
-          parts.push({ startSec: chunk.startSec, result });
-        }
+          console.log(`[Transcription] Chunk ${i + 1}/${chunks.length} done`);
+          return { startSec: chunk.startSec, result };
+        });
 
         chunkCount = parts.length;
         text = parts.map(p => (p.result?.text || '').trim()).join('\n');
@@ -483,96 +512,104 @@ async function processTranscription(bucketName, storagePath, uid, docId, apiKey)
   return { success: true, duration: durationSec, chunkCount };
 }
 
-// Storage trigger - fires when audio file is uploaded
-export const onAudioUploaded = functions
-  .region(FUNCTION_REGION)
-  .runWith({ memory: '1GB', timeoutSeconds: 540, secrets: [OPENAI_API_KEY] })
-  .storage.object().onFinalize(async (object) => {
-    const { bucket, name, metadata = {} } = object;
-    if (!name) return;
+// Storage trigger (v2) - fires when audio file is uploaded
+// Timeout: 540s (max for event triggers); parallel Whisper keeps it well within limit
+// For very long recordings that still timeout, use retryTranscription (callable, 3600s)
+export const onAudioUploaded = onObjectFinalized({
+  region: FUNCTION_REGION,
+  memory: '1GiB',
+  timeoutSeconds: 540,
+  secrets: [OPENAI_API_KEY],
+}, async (event) => {
+  const { bucket, name } = event.data;
+  const metadata = event.data.metadata || {};
+  if (!name) return;
 
-    if (!name.startsWith('transcriptions/')) return;
+  if (!name.startsWith('transcriptions/')) return;
 
-    const uid = metadata.uid || name.split('/')[1];
-    const docId = metadata.transcriptionDocId || (name.split('/')[2]?.split('.')[0]);
-    if (!uid || !docId) return;
+  const uid = metadata.uid || name.split('/')[1];
+  const docId = metadata.transcriptionDocId || (name.split('/')[2]?.split('.')[0]);
+  if (!uid || !docId) return;
 
-    const docRef = db.doc(`users/${uid}/transcriptions/${docId}`);
+  const docRef = db.doc(`users/${uid}/transcriptions/${docId}`);
 
-    try {
-      const apiKey = OPENAI_API_KEY.value();
-      if (!apiKey) {
-        throw new Error('OPENAI_API_KEY not set. Configure functions secret.');
-      }
+  try {
+    const apiKey = OPENAI_API_KEY.value();
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY not set. Configure functions secret.');
+    }
 
-      // Set storagePath on initial upload
-      await docRef.set({ storagePath: name }, { merge: true });
+    // Set storagePath on initial upload
+    await docRef.set({ storagePath: name }, { merge: true });
 
-      await processTranscription(bucket, name, uid, docId, apiKey);
+    await processTranscription(bucket, name, uid, docId, apiKey);
 
-    } catch (err) {
-      console.error('Background transcription failed:', err);
-      await docRef.set({ processingStatus: 'error', errorMessage: String(err), updatedAt: new Date() }, { merge: true });
+  } catch (err) {
+    console.error('Background transcription failed:', err);
+    await docRef.set({ processingStatus: 'error', errorMessage: String(err), updatedAt: new Date() }, { merge: true });
+    throw err;
+  }
+});
+
+// Callable function (v2) for retrying failed transcriptions
+// Timeout: 3600s (60 min) to handle long recordings
+export const retryTranscription = onCall({
+  region: FUNCTION_REGION,
+  memory: '1GiB',
+  timeoutSeconds: 3600,
+  secrets: [OPENAI_API_KEY],
+}, async (request) => {
+  // Verify authentication
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'User must be authenticated');
+  }
+
+  const { transcriptionId } = request.data;
+  if (!transcriptionId) {
+    throw new HttpsError('invalid-argument', 'transcriptionId is required');
+  }
+
+  const uid = request.auth.uid;
+  const docRef = db.doc(`users/${uid}/transcriptions/${transcriptionId}`);
+
+  try {
+    // Get the transcription document
+    const docSnap = await docRef.get();
+    if (!docSnap.exists) {
+      throw new HttpsError('not-found', 'Transcription not found');
+    }
+
+    const docData = docSnap.data();
+    const storagePath = docData.storagePath;
+
+    if (!storagePath) {
+      throw new HttpsError('failed-precondition', 'No audio file available for this transcription');
+    }
+
+    const apiKey = OPENAI_API_KEY.value();
+    if (!apiKey) {
+      throw new HttpsError('internal', 'OPENAI_API_KEY not configured');
+    }
+
+    // Get bucket name from storage path or use default
+    const bucket = storage.bucket();
+    const bucketName = bucket.name;
+
+    console.log(`[Retry] Starting retry for transcription ${transcriptionId}, user ${uid}`);
+
+    const result = await processTranscription(bucketName, storagePath, uid, transcriptionId, apiKey);
+
+    return { success: true, ...result };
+
+  } catch (err) {
+    console.error('Retry transcription failed:', err);
+
+    // If it's already an HttpsError, rethrow it
+    if (err instanceof HttpsError) {
       throw err;
     }
-  });
 
-// Callable function for retrying failed transcriptions
-export const retryTranscription = functions
-  .region(FUNCTION_REGION)
-  .runWith({ memory: '1GB', timeoutSeconds: 540, secrets: [OPENAI_API_KEY] })
-  .https.onCall(async (data, context) => {
-    // Verify authentication
-    if (!context.auth) {
-      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
-    }
-
-    const { transcriptionId } = data;
-    if (!transcriptionId) {
-      throw new functions.https.HttpsError('invalid-argument', 'transcriptionId is required');
-    }
-
-    const uid = context.auth.uid;
-    const docRef = db.doc(`users/${uid}/transcriptions/${transcriptionId}`);
-
-    try {
-      // Get the transcription document
-      const docSnap = await docRef.get();
-      if (!docSnap.exists) {
-        throw new functions.https.HttpsError('not-found', 'Transcription not found');
-      }
-
-      const docData = docSnap.data();
-      const storagePath = docData.storagePath;
-
-      if (!storagePath) {
-        throw new functions.https.HttpsError('failed-precondition', 'No audio file available for this transcription');
-      }
-
-      const apiKey = OPENAI_API_KEY.value();
-      if (!apiKey) {
-        throw new functions.https.HttpsError('internal', 'OPENAI_API_KEY not configured');
-      }
-
-      // Get bucket name from storage path or use default
-      const bucket = storage.bucket();
-      const bucketName = bucket.name;
-
-      console.log(`[Retry] Starting retry for transcription ${transcriptionId}, user ${uid}`);
-
-      const result = await processTranscription(bucketName, storagePath, uid, transcriptionId, apiKey);
-
-      return { success: true, ...result };
-
-    } catch (err) {
-      console.error('Retry transcription failed:', err);
-
-      // If it's already an HttpsError, rethrow it
-      if (err instanceof functions.https.HttpsError) {
-        throw err;
-      }
-
-      await docRef.set({ processingStatus: 'error', errorMessage: String(err), updatedAt: new Date() }, { merge: true });
-      throw new functions.https.HttpsError('internal', `Transcription failed: ${err.message}`);
-    }
-  });
+    await docRef.set({ processingStatus: 'error', errorMessage: String(err), updatedAt: new Date() }, { merge: true });
+    throw new HttpsError('internal', `Transcription failed: ${err.message}`);
+  }
+});

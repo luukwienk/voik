@@ -328,7 +328,23 @@ function TranscriptionList({ user, onTasksExtracted, pendingTranscriptionId, onC
                             )}
                           </div>
                         )
-                      : 'Transcription is being processed...')}
+                      : (
+                          <div className="processing-preview">
+                            <span>Transcription is being processed...</span>
+                            {transcription.storagePath && transcription.updatedAt &&
+                              (Date.now() - (transcription.updatedAt?.toDate?.() || new Date(transcription.updatedAt)).getTime()) > 10 * 60 * 1000 && (
+                              <button
+                                className="retry-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  retryTranscription(transcription.id);
+                                }}
+                              >
+                                <FontAwesomeIcon icon={faRedo} /> Retry
+                              </button>
+                            )}
+                          </div>
+                        ))}
               </div>
 
               {showDeleteConfirm === transcription.id && (
@@ -440,7 +456,11 @@ function TranscriptionList({ user, onTasksExtracted, pendingTranscriptionId, onC
             </div>
 
             <div className="detail-actions">
-              {selectedTranscription.processingStatus === 'error' && selectedTranscription.storagePath && (
+              {(selectedTranscription.processingStatus === 'error' ||
+                (selectedTranscription.processingStatus === 'processing' &&
+                  selectedTranscription.updatedAt &&
+                  (Date.now() - (selectedTranscription.updatedAt?.toDate?.() || new Date(selectedTranscription.updatedAt)).getTime()) > 10 * 60 * 1000)
+              ) && selectedTranscription.storagePath && (
                 <button
                   className="btn primary"
                   onClick={() => {
