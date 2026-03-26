@@ -53,7 +53,7 @@ src/
 ├── firebase.js          # Firebase initialization
 └── App.jsx              # Main app component
 
-functions/               # Firebase Cloud Functions (transcription)
+functions/               # Firebase Cloud Functions v2 (transcription)
 meet-transcriber-extension/  # Chrome extension for Google Meet
 ```
 
@@ -83,6 +83,23 @@ debugError('Always logged');       // Errors always show
 - Event CRUD in `services/googleCalendar.js`
 - Smart deduplication by iCalUID for shared calendars
 
+## Cloud Functions
+
+Cloud Functions v2 run in **europe-west4** (same region as Storage bucket). Defined in `functions/index.js`.
+
+| Function | Trigger | Timeout | Purpose |
+|----------|---------|---------|---------|
+| `onAudioUploaded` | Storage (onObjectFinalized) | 540s | Auto-transcribe uploaded audio |
+| `retryTranscription` | Callable (onCall) | 3600s | Manual retry for failed/stuck transcriptions |
+
+Key features:
+- **Parallel Whisper calls**: 5 concurrent by default (`PARALLEL_TRANSCRIPTIONS` env var)
+- **VAD**: FFmpeg silence detection to skip silent segments
+- **Stereo support**: Separate channel transcription for Google Meet recordings
+- **Hallucination filter**: Removes common Whisper artifacts
+
+Deploy: `npx firebase deploy --only functions`
+
 ## Environment Variables
 
 All variables prefixed with `VITE_` are exposed to the client.
@@ -94,6 +111,16 @@ All variables prefixed with `VITE_` are exposed to the client.
 | `VITE_GOOGLE_CLIENT_ID` | Google OAuth client ID |
 | `VITE_GOOGLE_API_KEY` | Google Calendar API key |
 | `VITE_GOOGLE_CLIENT_SECRET` | Google OAuth secret |
+
+Cloud Functions env vars (set via Firebase CLI or GCP console):
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `OPENAI_API_KEY` | (secret) | Whisper API for transcription |
+| `FUNCTION_REGION` | `europe-west4` | Deploy region |
+| `PARALLEL_TRANSCRIPTIONS` | `5` | Concurrent Whisper API calls |
+| `CHUNK_SECONDS` | `120` | Max audio chunk length |
+| `SILENCE_THRESHOLD_DB` | `-35` | VAD silence threshold |
 
 See `.env.example` for the full list.
 
@@ -129,3 +156,10 @@ See `.env.example` for the full list.
 1. Calendar rendering: `BigCalendarView.jsx`
 2. Google API calls: `services/googleCalendar.js`
 3. State management: `hooks/useGoogleCalendar.js`
+
+### Modifying transcription processing
+1. Processing logic: `functions/index.js` → `processTranscription()`
+2. Client retry/upload: `hooks/useTranscriptions.js`, `hooks/useTranscriptionUpload.js`
+3. Real-time status: `hooks/useTranscriptionRealtime.js`
+4. UI (list, retry, detail): `components/TranscriptionList.jsx`
+5. Deploy changes: `npx firebase deploy --only functions`
