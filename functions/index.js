@@ -36,6 +36,10 @@ const MIN_CHUNK_DURATION = 0.5;
 // Number of concurrent Whisper API calls
 const PARALLEL_TRANSCRIPTIONS = parseInt(process.env.PARALLEL_TRANSCRIPTIONS || '5', 10);
 
+// Per-request timeout and attempts for a single Whisper call
+const CHUNK_TIMEOUT_MS = parseInt(process.env.CHUNK_TIMEOUT_MS || '90000', 10);
+const CHUNK_MAX_ATTEMPTS = parseInt(process.env.CHUNK_MAX_ATTEMPTS || '4', 10);
+
 /**
  * Run an async function over an array with limited concurrency.
  * Items are processed in order of availability, results preserve input order.
@@ -278,11 +282,29 @@ async function transcribeChunk(filePath, apiKey, { language } = {}) {
   }
   form.append('response_format', 'verbose_json');
 
-  const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}` },
-    body: form
-  });
+  // A single hung Whisper request used to fail the whole transcription (undici's
+  // 5-minute headers timeout). Time out each call and retry transient failures;
+  // if a chunk still fails, leave a gap marker instead of losing the rest.
+  let res;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}` },
+        body: form,
+        signal: AbortSignal.timeout(CHUNK_TIMEOUT_MS)
+      });
+      if (res.status >= 500 || res.status === 429) throw new Error(`HTTP ${res.status}`);
+      break;
+    } catch (err) {
+      if (attempt >= CHUNK_MAX_ATTEMPTS) {
+        console.error(`[Transcription] Chunk ${filePath} failed after ${attempt} attempts, leaving a gap: ${err.message}`);
+        return { text: '[…]', segments: [{ start: 0, end: actualDuration, text: '[…]' }] };
+      }
+      console.log(`[Transcription] Chunk ${filePath} attempt ${attempt} failed, retrying: ${err.message}`);
+      await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+    }
+  }
 
   if (!res.ok) {
     const errBody = await res.text();
