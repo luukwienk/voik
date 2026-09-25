@@ -539,7 +539,7 @@ async function processTranscription(bucketName, storagePath, uid, docId, apiKey)
 // For very long recordings that still timeout, use retryTranscription (callable, 3600s)
 export const onAudioUploaded = onObjectFinalized({
   region: FUNCTION_REGION,
-  memory: '1GiB',
+  memory: '2GiB',
   timeoutSeconds: 540,
   secrets: [OPENAI_API_KEY],
 }, async (event) => {
@@ -577,7 +577,7 @@ export const onAudioUploaded = onObjectFinalized({
 // Timeout: 3600s (60 min) to handle long recordings
 export const retryTranscription = onCall({
   region: FUNCTION_REGION,
-  memory: '1GiB',
+  memory: '2GiB',
   timeoutSeconds: 3600,
   secrets: [OPENAI_API_KEY],
 }, async (request) => {
