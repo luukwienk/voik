@@ -28,7 +28,7 @@ const SignIn = ({ user }) => {
       <div className="signin-content">
         <img src="/taskbuddy-logo.png" alt="TaskBuddy Logo" className="signin-logo" />
         <h1>TaskBuddy</h1>
-        <p>Beheer je taken en agenda op één plek</p>
+        <p>Gesprekken opnemen en transcriberen</p>
         {user ? (
           <div className="user-info">
             <span>{user.email}</span>

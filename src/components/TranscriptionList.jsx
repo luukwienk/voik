@@ -24,7 +24,7 @@ import {
   faRedo
 } from '@fortawesome/free-solid-svg-icons';
 
-function TranscriptionList({ user, onTasksExtracted, pendingTranscriptionId, onClearPendingTranscription }) {
+function TranscriptionList({ user, pendingTranscriptionId, onClearPendingTranscription }) {
   const {
     transcriptions,
     isLoading,
@@ -498,7 +498,6 @@ function TranscriptionList({ user, onTasksExtracted, pendingTranscriptionId, onC
               {/* AI Actions Component direct onder de downloadknoppen, binnen detail-actions */}
               <TranscriptionAIActions
                 transcription={selectedTranscription}
-                onTasksExtracted={onTasksExtracted}
               />
             </div>
           </div>

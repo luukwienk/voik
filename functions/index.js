@@ -4,6 +4,7 @@ import path from 'node:path';
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
+import { getAuth } from 'firebase-admin/auth';
 import { onObjectFinalized } from 'firebase-functions/v2/storage';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
@@ -20,6 +21,24 @@ const db = getFirestore();
 const storage = getStorage();
 
 const OPENAI_API_KEY = defineSecret('OPENAI_API_KEY');
+
+// Access is invite-only: config/access { emails: [...] } lists who may use Voik.
+// Kept in Firestore (not in this public repo) and also read by firestore.rules.
+async function isAllowedEmail(email) {
+  if (!email) return false;
+  const snap = await db.doc('config/access').get();
+  const emails = (snap.exists && snap.data().emails) || [];
+  return emails.map(e => e.toLowerCase()).includes(email.toLowerCase());
+}
+
+async function assertAllowed(request) {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'User must be authenticated');
+  }
+  if (!request.auth.token.email_verified || !(await isAllowedEmail(request.auth.token.email))) {
+    throw new HttpsError('permission-denied', 'This account has no access to Voik');
+  }
+}
 const FUNCTION_REGION = process.env.FUNCTION_REGION || 'europe-west4';
 const MODEL = process.env.TRANSCRIBE_MODEL || 'whisper-1';
 const CHUNK_SECONDS = parseInt(process.env.CHUNK_SECONDS || '120', 10);
@@ -570,6 +589,15 @@ export const onAudioUploaded = onObjectFinalized({
 
   const docRef = db.doc(`users/${uid}/transcriptions/${docId}`);
 
+  // Storage rules only check that users write to their own folder; spend
+  // OpenAI credits only on invited accounts
+  const uploader = await getAuth().getUser(uid).catch(() => null);
+  if (!uploader?.emailVerified || !(await isAllowedEmail(uploader.email))) {
+    console.warn(`[Transcription] Upload by non-allowed user ${uid}, deleting ${name}`);
+    await storage.bucket(bucket).file(name).delete().catch(() => {});
+    return;
+  }
+
   try {
     const apiKey = OPENAI_API_KEY.value();
     if (!apiKey) {
@@ -596,10 +624,7 @@ export const retryTranscription = onCall({
   timeoutSeconds: 3600,
   secrets: [OPENAI_API_KEY],
 }, async (request) => {
-  // Verify authentication
-  if (!request.auth) {
-    throw new HttpsError('unauthenticated', 'User must be authenticated');
-  }
+  await assertAllowed(request);
 
   const { transcriptionId } = request.data;
   if (!transcriptionId) {
@@ -654,47 +679,15 @@ export const retryTranscription = onCall({
 // The OpenAI key must never reach the browser (it was baked into the Vite bundle
 // and abused). Browser features call these functions instead.
 
-const REALTIME_MODEL = process.env.REALTIME_MODEL || 'gpt-realtime';
 const AI_ACTION_MODEL = process.env.AI_ACTION_MODEL || 'gpt-4.1-mini';
 const AI_ACTION_MAX_PROMPT_CHARS = 400000;
-
-// Mints a short-lived Realtime client secret so the browser can open the
-// Realtime WebSocket without ever seeing the API key.
-export const createRealtimeSession = onCall({
-  region: FUNCTION_REGION,
-  secrets: [OPENAI_API_KEY],
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError('unauthenticated', 'User must be authenticated');
-  }
-
-  const res = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${OPENAI_API_KEY.value()}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ session: { type: 'realtime', model: REALTIME_MODEL } })
-  });
-
-  if (!res.ok) {
-    const errBody = await res.text();
-    console.error(`[Realtime] client secret failed: ${res.status} ${errBody}`);
-    throw new HttpsError('internal', 'Could not start a Realtime session');
-  }
-
-  const data = await res.json();
-  return { clientSecret: data.value, expiresAt: data.expires_at, model: REALTIME_MODEL };
-});
 
 // Runs one AI action (summary, tasks, email, ...) on a transcription.
 export const runTranscriptionAIAction = onCall({
   region: FUNCTION_REGION,
   secrets: [OPENAI_API_KEY],
 }, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError('unauthenticated', 'User must be authenticated');
-  }
+  await assertAllowed(request);
 
   const { prompt } = request.data || {};
   if (typeof prompt !== 'string' || !prompt.trim()) {

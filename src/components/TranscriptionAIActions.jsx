@@ -54,7 +54,7 @@ const AI_ACTIONS = [
 
 const runAIAction = httpsCallable(getFunctions(undefined, 'europe-west4'), 'runTranscriptionAIAction');
 
-function TranscriptionAIActions({ transcription, onTasksExtracted }) {
+function TranscriptionAIActions({ transcription }) {
   const [showActions, setShowActions] = useState(false);
   const [selectedAction, setSelectedAction] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -110,18 +110,6 @@ function TranscriptionAIActions({ transcription, onTasksExtracted }) {
     // Visuele feedback zou hier kunnen
   };
 
-  const handleAddTasks = () => {
-    if (result?.action.id === 'tasks' && onTasksExtracted) {
-      // Parse taken uit het resultaat
-      const taskLines = result.content.split('\n').filter(line => line.match(/^\d+\./));
-      const tasks = taskLines.map(line => line.replace(/^\d+\.\s*/, '').trim());
-      onTasksExtracted(tasks);
-      
-      // Sluit het resultaat panel
-      setResult(null);
-      setShowActions(false);
-    }
-  };
 
   const handleCloseResult = () => {
     setResult(null);
@@ -244,15 +232,6 @@ function TranscriptionAIActions({ transcription, onTasksExtracted }) {
               📋 Kopiëren
             </button>
             
-            {result.action.id === 'tasks' && onTasksExtracted && (
-              <button
-                className="btn primary"
-                onClick={handleAddTasks}
-              >
-                ➕ Toevoegen aan Taken
-              </button>
-            )}
-
             {result.action.id === 'email' && (
               <button
                 className="btn primary"
