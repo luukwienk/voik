@@ -1,19 +1,20 @@
 // Voik: record and transcribe conversations (in-app, PWA on mobile, Meet extension)
 import { useState, useEffect, useCallback } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 import './App.css';
 import { useAuth } from './hooks/useAuth';
-import SignIn from './SignIn';
+import { useAccess } from './hooks/useAccess';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
-import ErrorBoundary from './components/ErrorBoundary';
-import TranscriptionTab from './components/TranscriptionTab';
 import MeetImport from './components/MeetImport';
+import Landing from './pages/Landing';
+import Home from './pages/Home';
+import NoAccess from './pages/NoAccess';
+import ExtensionInstall from './pages/ExtensionInstall';
 import { debugLog, debugError } from './utils/debug';
 
 function App() {
-  const { user, signOut } = useAuth();
+  const { user, authReady, signOut } = useAuth();
+  const access = useAccess(user);
   const [showMeetImport, setShowMeetImport] = useState(false);
   const [pendingTranscriptionId, setPendingTranscriptionId] = useState(null);
 
@@ -67,27 +68,24 @@ function App() {
     setPendingTranscriptionId(transcriptionId);
   }, []);
 
-  if (!user) return <SignIn user={user} />;
+  // One route besides the app itself; Netlify serves index.html for every path
+  if (window.location.pathname.replace(/\/$/, '') === '/extensie') {
+    return <ExtensionInstall user={user} />;
+  }
+
+  if (!authReady || (user && access === 'checking')) return <div className="app-splash" />;
+  if (!user) return <Landing />;
+  if (access === 'denied') return <NoAccess user={user} signOut={signOut} />;
 
   return (
     <div className="App">
-      <header className="app-header">
-        <span className="app-title">TaskBuddy</span>
-        <button className="app-signout" onClick={signOut} title="Uitloggen" aria-label="Uitloggen">
-          <FontAwesomeIcon icon={faSignOutAlt} />
-        </button>
-      </header>
-
-      <ErrorBoundary>
-        <main className="app-main">
-          <TranscriptionTab
-            user={user}
-            pendingTranscriptionId={pendingTranscriptionId}
-            onNavigateToTranscription={handleNavigateToTranscription}
-            onClearPendingTranscription={() => setPendingTranscriptionId(null)}
-          />
-        </main>
-      </ErrorBoundary>
+      <Home
+        user={user}
+        signOut={signOut}
+        pendingTranscriptionId={pendingTranscriptionId}
+        onNavigateToTranscription={handleNavigateToTranscription}
+        onClearPendingTranscription={() => setPendingTranscriptionId(null)}
+      />
 
       <PWAInstallPrompt />
 

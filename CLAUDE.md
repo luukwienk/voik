@@ -23,8 +23,9 @@ npm run lint
 
 ```
 src/
-├── App.jsx                     # Header + transcription view, extension bridge
-├── SignIn.jsx
+├── App.jsx                     # Routing (/, /extensie), auth + access gate, extension bridge
+├── pages/                      # Landing (signed out), Home (start screen + list),
+│                               # ExtensionInstall (/extensie), NoAccess
 ├── firebase.js
 ├── components/
 │   ├── TranscriptionTab.jsx    # List + record button
@@ -32,12 +33,12 @@ src/
 │   ├── TranscriptionAIActions.jsx  # Calls runTranscriptionAIAction
 │   ├── MiniRecorder.jsx / QuickRecordButton.jsx
 │   └── MeetImport.jsx          # Receives audio from the extension
-├── hooks/                      # useAuth, useAudioRecording, useTranscriptions,
-│                               # useTranscriptionUpload, useTranscriptionRealtime
+├── hooks/                      # useAuth, useAccess, useExtensionStatus, useAudioRecording,
+│                               # useTranscriptions, useTranscriptionUpload, useTranscriptionRealtime
 └── utils/debug.js              # Use debugLog, not console.log
 functions/index.js              # Cloud Functions
 firestore.rules, storage.rules  # Deployed with firebase deploy
-meet-transcriber-extension/     # Chrome extension
+meet-transcriber-extension/     # Chrome extension, zipped at build time by scripts/extension-zip.js
 ```
 
 ## Cloud Functions

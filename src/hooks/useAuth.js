@@ -4,6 +4,8 @@ import { debugLog, debugError } from '../utils/debug';
 
 export function useAuth() {
   const [user, setUser] = useState(null);
+  // False until Firebase has restored (or ruled out) a session, to avoid flashing the landing page
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -14,6 +16,7 @@ export function useAuth() {
         debugLog('User signed out');
         setUser(null);
       }
+      setAuthReady(true);
     });
     return () => unsubscribe();
   }, []);
@@ -24,5 +27,5 @@ export function useAuth() {
       .catch((error) => debugError('Error signing out:', error));
   };
 
-  return { user, signOut };
+  return { user, authReady, signOut };
 }
