@@ -26,9 +26,9 @@ const SignIn = ({ user }) => {
   return (
     <div className="signin-container">
       <div className="signin-content">
-        <img src="/taskbuddy-logo.png" alt="TaskBuddy Logo" className="signin-logo" />
-        <h1>TaskBuddy</h1>
-        <p>Beheer je taken en agenda op één plek</p>
+        <img src="/taskbuddy-logo.png" alt="Voik" className="signin-logo" />
+        <h1>Voik</h1>
+        <p>Gesprekken opnemen en transcriberen</p>
         {user ? (
           <div className="user-info">
             <span>{user.email}</span>

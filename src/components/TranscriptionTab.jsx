@@ -5,15 +5,9 @@ import QuickRecordButton from './QuickRecordButton';
 import MiniRecorder from './MiniRecorder';
 import '../styles/TranscriptionTab.css';
 
-function TranscriptionTab({ user, onTasksExtracted, pendingTranscriptionId, onNavigateToTranscription, onClearPendingTranscription }) {
+function TranscriptionTab({ user, pendingTranscriptionId, onNavigateToTranscription, onClearPendingTranscription }) {
   const [showMiniRecorder, setShowMiniRecorder] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-
-  const handleTasksExtracted = (tasks) => {
-    if (onTasksExtracted) {
-      onTasksExtracted(tasks);
-    }
-  };
 
   const handleUploadComplete = () => {
     // Refresh the list when a new recording is uploaded
@@ -25,7 +19,6 @@ function TranscriptionTab({ user, onTasksExtracted, pendingTranscriptionId, onNa
       <TranscriptionList
         user={user}
         key={refreshKey}
-        onTasksExtracted={handleTasksExtracted}
         pendingTranscriptionId={pendingTranscriptionId}
         onClearPendingTranscription={onClearPendingTranscription}
       />
