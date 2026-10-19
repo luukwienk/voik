@@ -264,6 +264,15 @@ function filterHallucinations(text) {
   return filtered;
 }
 
+// Out of OpenAI credits is not transient: fail the whole transcription loudly
+// instead of retrying and silently filling every chunk with a gap marker.
+class OpenAIQuotaError extends Error {
+  constructor() {
+    super('OpenAI credits exhausted: top up the OpenAI balance, then retry this transcription.');
+    this.name = 'OpenAIQuotaError';
+  }
+}
+
 async function transcribeChunk(filePath, apiKey, { language } = {}) {
   // Verify chunk duration before sending to API
   const actualDuration = await probeDuration(filePath);
@@ -294,9 +303,15 @@ async function transcribeChunk(filePath, apiKey, { language } = {}) {
         body: form,
         signal: AbortSignal.timeout(CHUNK_TIMEOUT_MS)
       });
-      if (res.status >= 500 || res.status === 429) throw new Error(`HTTP ${res.status}`);
+      if (res.status === 429) {
+        const errBody = await res.text();
+        if (errBody.includes('insufficient_quota')) throw new OpenAIQuotaError();
+        throw new Error(`HTTP 429`);
+      }
+      if (res.status >= 500) throw new Error(`HTTP ${res.status}`);
       break;
     } catch (err) {
+      if (err instanceof OpenAIQuotaError) throw err;
       if (attempt >= CHUNK_MAX_ATTEMPTS) {
         console.error(`[Transcription] Chunk ${filePath} failed after ${attempt} attempts, leaving a gap: ${err.message}`);
         return { text: '[…]', segments: [{ start: 0, end: actualDuration, text: '[…]' }] };
