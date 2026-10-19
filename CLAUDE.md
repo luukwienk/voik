@@ -1,164 +1,72 @@
 # CLAUDE.md - AI Context for Voik
 
-This file provides context for AI assistants working on the Voik codebase.
-
 ## Project Overview
 
-**Voik** is a voice-activated task management PWA built with React + Vite. It integrates with Firebase (auth, Firestore, Storage), Google Calendar, and OpenAI Realtime API for voice interactions.
+**Voik** records conversations and transcribes them, also in Dutch. React + Vite PWA on Firebase (Auth, Firestore, Storage, Cloud Functions v2) with OpenAI Whisper for transcription.
 
-### Core Features
-- **Planner Board**: Kanban-style columns with drag-and-drop (react-beautiful-dnd)
-- **Task Lists**: Rich text editor (TipTap), search/filter, bulk actions
-- **Realtime Chat**: Text and voice modes via OpenAI Realtime API
-- **Google Calendar**: Two-way sync, drag tasks to schedule events
-- **Transcriptions**: Record audio, upload to Firebase, transcribe via Cloud Functions
-- **Health Tracking**: Personal health entries and statistics
+Recording paths:
+- In-app recording (browser and mobile PWA): `MiniRecorder` → `useTranscriptionUpload`
+- Google Meet: Chrome extension in `meet-transcriber-extension/` (stereo: left = me, right = others), handed to the app via `?import=meet` → `MeetImport`
+
+The earlier full app (planner, tasks, calendar, health, success, realtime chat, MCP) was removed on 2026-10-19 and is preserved at git tag `archive/taskbuddy-full-2026-10`.
 
 ## Quick Start
 
 ```bash
-npm install        # Install dependencies
-npm run dev        # Start dev server (http://localhost:5173)
-npm run build      # Production build
-npm run lint       # Run ESLint
-npm run format     # Format with Prettier
-npm run format:check  # Check formatting
+npm install
+npm run dev
+npm run build
+npm run lint
 ```
 
 ## Project Structure
 
 ```
 src/
-├── components/          # React components
-│   ├── health/          # Health tracking feature
-│   ├── settings/        # Settings pages
-│   └── success/         # Success tracking
-├── hooks/               # Custom React hooks
-│   ├── useAuth.js       # Firebase authentication
-│   ├── useTasks.js      # Task CRUD operations
-│   ├── useGoogleCalendar.js  # Calendar integration
-│   ├── useRealtimeChat.js    # OpenAI Realtime chat
-│   └── useTranscriptions.js  # Audio transcription
-├── services/
-│   ├── googleCalendar.js     # Google Calendar API
-│   └── realtime/             # OpenAI Realtime client
-│       ├── client.js         # WebSocket connection
-│       ├── audio.js          # Audio processing
-│       └── functions.js      # Tool definitions
-├── utils/
-│   ├── debug.js              # Debug logging (use debugLog, not console.log)
-│   ├── bigCalendarUtils.js   # Calendar helpers
-│   └── taskEventUtils.js     # Task-event utilities
-├── styles/              # CSS files
-├── firebase.js          # Firebase initialization
-└── App.jsx              # Main app component
-
-functions/               # Firebase Cloud Functions v2 (transcription)
-meet-transcriber-extension/  # Chrome extension for Google Meet
+├── App.jsx                     # Header + transcription view, extension bridge
+├── SignIn.jsx
+├── firebase.js
+├── components/
+│   ├── TranscriptionTab.jsx    # List + record button
+│   ├── TranscriptionList.jsx   # List, detail, retry, downloads
+│   ├── TranscriptionAIActions.jsx  # Calls runTranscriptionAIAction
+│   ├── MiniRecorder.jsx / QuickRecordButton.jsx
+│   └── MeetImport.jsx          # Receives audio from the extension
+├── hooks/                      # useAuth, useAudioRecording, useTranscriptions,
+│                               # useTranscriptionUpload, useTranscriptionRealtime
+└── utils/debug.js              # Use debugLog, not console.log
+functions/index.js              # Cloud Functions
+firestore.rules, storage.rules  # Deployed with firebase deploy
+meet-transcriber-extension/     # Chrome extension
 ```
-
-## Key Patterns
-
-### State Management
-- **Firebase Firestore** for persistent data (tasks, lists, transcriptions)
-- **React hooks** for local state and Firebase subscriptions
-- **localStorage** for user preferences (planner columns, calendar settings)
-
-### Drag-and-Drop
-Uses `react-beautiful-dnd` in two contexts:
-1. **PlannerBoard.jsx**: Reorder columns and tasks across lists
-2. **BigCalendarView.jsx**: Drag tasks onto calendar to create events
-
-### Debug Logging
-Use the debug utilities instead of `console.log`:
-```javascript
-import { debugLog, debugError, debugWarn } from '../utils/debug';
-
-debugLog('Development-only log');  // Only logs in DEV mode
-debugError('Always logged');       // Errors always show
-```
-
-### Google Calendar Integration
-- OAuth handled in `useGoogleCalendar.js`
-- Event CRUD in `services/googleCalendar.js`
-- Smart deduplication by iCalUID for shared calendars
 
 ## Cloud Functions
 
-Cloud Functions v2 run in **europe-west4** (same region as Storage bucket). Defined in `functions/index.js`.
+Region **europe-west4**, Node 22, all in `functions/index.js`.
 
-| Function | Trigger | Timeout | Purpose |
-|----------|---------|---------|---------|
-| `onAudioUploaded` | Storage (onObjectFinalized) | 540s | Auto-transcribe uploaded audio |
-| `retryTranscription` | Callable (onCall) | 3600s | Manual retry for failed/stuck transcriptions |
-
-Key features:
-- **Parallel Whisper calls**: 5 concurrent by default (`PARALLEL_TRANSCRIPTIONS` env var)
-- **VAD**: FFmpeg silence detection to skip silent segments
-- **Stereo support**: Separate channel transcription for Google Meet recordings
-- **Hallucination filter**: Removes common Whisper artifacts
-
-Deploy: `npx firebase deploy --only functions`
-
-## Environment Variables
-
-All variables prefixed with `VITE_` are exposed to the client.
-
-| Variable | Purpose |
-|----------|---------|
-| `VITE_FIREBASE_*` | Firebase project configuration |
-| `VITE_GOOGLE_CLIENT_ID` | Google OAuth client ID |
-| `VITE_GOOGLE_API_KEY` | Google Calendar API key |
-| `VITE_GOOGLE_CLIENT_SECRET` | Google OAuth secret |
-
-Cloud Functions env vars (set via Firebase CLI or GCP console):
-
-| Variable | Default | Purpose |
+| Function | Trigger | Purpose |
 |----------|---------|---------|
-| `OPENAI_API_KEY` | (secret) | All OpenAI calls: Whisper transcription, Realtime tokens, AI actions. Never put it in a `VITE_` variable. |
+| `onAudioUploaded` | Storage finalize | Transcribe an uploaded recording |
+| `retryTranscription` | Callable | Retry a failed or stuck transcription |
+| `runTranscriptionAIAction` | Callable | Summary, action items, email, etc. (`gpt-4.1-mini`) |
+
+Transcription: FFmpeg silence detection → speech chunks → Whisper, 5 in parallel, 90 s timeout with retries; a chunk that keeps failing becomes a `[…]` gap. Exhausted OpenAI credits (`insufficient_quota`) fail the whole run with a clear error instead.
+
+Retrigger a transcription without the UI: rewrite the Storage object onto itself (new generation → finalize event).
+
+## Access and secrets
+
+- Invite-only: Firestore `config/access { emails: [...] }`, lowercase. Read by `firestore.rules` and the functions. Not in this repo (public).
+- `OPENAI_API_KEY` is a functions secret. It must never be in a `VITE_` variable. Functions pin the secret version at deploy, so redeploy after rotating it.
+
+| Functions env var | Default | Purpose |
+|-------------------|---------|---------|
 | `FUNCTION_REGION` | `europe-west4` | Deploy region |
-| `PARALLEL_TRANSCRIPTIONS` | `5` | Concurrent Whisper API calls |
-| `CHUNK_SECONDS` | `120` | Max audio chunk length |
-| `SILENCE_THRESHOLD_DB` | `-35` | VAD silence threshold |
+| `PARALLEL_TRANSCRIPTIONS` | `5` | Concurrent Whisper calls |
+| `CHUNK_SECONDS` | `120` | Max chunk length |
+| `SILENCE_THRESHOLD_DB` | `-35` | VAD threshold |
+| `AI_ACTION_MODEL` | `gpt-4.1-mini` | Model for AI actions |
 
-See `.env.example` for the full list.
+## Deploy
 
-## Pre-PR Checklist
-
-1. Run `npm run lint` - fix any errors
-2. Run `npm run format:check` - ensure formatting is correct
-3. Test manually:
-   - Create/edit/delete tasks
-   - Drag tasks in Planner Board
-   - Chat assistant (text + voice if possible)
-   - Calendar sync and event creation
-4. Check mobile responsiveness (iPad behaves as mobile)
-5. No `console.log` statements (use `debugLog` from `utils/debug.js`)
-
-## Related Repositories
-
-- **TaskBuddy MCP**: `C:\Projects\taskbuddy-mcp\` - MCP server for Claude Desktop
-- **RAG MCP**: `C:\Projects\rag-mcp\` - Knowledge base semantic search
-
-## Common Tasks
-
-### Adding a new task field
-1. Update Firestore schema in `useTasks.js`
-2. Add UI in `TaskEditorModal.jsx`
-3. Update `TaskItem.jsx` for display
-
-### Adding a new settings option
-1. Add to `components/settings/Settings.jsx`
-2. Store in localStorage or Firestore user preferences
-
-### Modifying calendar behavior
-1. Calendar rendering: `BigCalendarView.jsx`
-2. Google API calls: `services/googleCalendar.js`
-3. State management: `hooks/useGoogleCalendar.js`
-
-### Modifying transcription processing
-1. Processing logic: `functions/index.js` → `processTranscription()`
-2. Client retry/upload: `hooks/useTranscriptions.js`, `hooks/useTranscriptionUpload.js`
-3. Real-time status: `hooks/useTranscriptionRealtime.js`
-4. UI (list, retry, detail): `components/TranscriptionList.jsx`
-5. Deploy changes: `npx firebase deploy --only functions`
+`firebase deploy --only functions,firestore:rules,storage --project voik-c5246`. The frontend deploys on Netlify from `main`.
