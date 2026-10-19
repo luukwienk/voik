@@ -1,5 +1,6 @@
 // src/hooks/useRealtimeChat.js
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { RealtimeClient } from '../services/realtime';
 import { addEventToCalendar } from '../services/googleCalendar';
 
@@ -50,14 +51,9 @@ export function useRealtimeChat({
   }, [currentModality]);
 
   useEffect(() => {
-    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-    if (!apiKey) {
-      console.error('VITE_OPENAI_API_KEY not found');
-      setError('OpenAI API key niet gevonden');
-      return;
-    }
-    
-    const client = new RealtimeClient(apiKey);
+    // Realtime tokens are minted server-side; the OpenAI key never reaches the browser
+    const createRealtimeSession = httpsCallable(getFunctions(undefined, 'europe-west4'), 'createRealtimeSession');
+    const client = new RealtimeClient(async () => (await createRealtimeSession()).data);
     clientRef.current = client;
     unsubscribersRef.current = [];
 

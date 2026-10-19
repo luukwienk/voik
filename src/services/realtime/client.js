@@ -4,12 +4,14 @@ import { realtimeFunctions } from './functions';
 import { debugLog, debugError, debugWarn } from '../../utils/debug';
 
 export class RealtimeClient {
-  constructor(apiKey) {
-    if (!apiKey) {
-      throw new Error('OpenAI API key is required');
+  // getClientSecret: async () => ({ clientSecret, model }). The secret is a
+  // short-lived Realtime token minted server-side; the API key stays there.
+  constructor(getClientSecret) {
+    if (!getClientSecret) {
+      throw new Error('getClientSecret is required');
     }
     
-    this.apiKey = apiKey;
+    this.getClientSecret = getClientSecret;
     this.ws = null;
     this.audioProcessor = new AudioProcessor();
     this.eventHandlers = {};
@@ -24,7 +26,6 @@ export class RealtimeClient {
     this.audioDataSent = false;
     
     this.sessionConfig = {
-      model: 'gpt-4o-realtime-preview-2024-12-17',
       voice: 'alloy',
       instructions: `Je bent TaskBuddy, een behulpzame AI-assistent die helpt met taken en calendar planning. 
       Reageer altijd in het Nederlands. Wees vriendelijk, beknopt en actiegericht. 
@@ -42,8 +43,7 @@ export class RealtimeClient {
         prefix_padding_ms: 300,
         silence_duration_ms: 500
       },
-      input_audio_format: 'pcm16',
-      output_audio_format: 'pcm16'
+      audio_format: { type: 'audio/pcm', rate: 24000 }
     };
   }
 
@@ -59,13 +59,14 @@ export class RealtimeClient {
     try {
       debugLog('Connecting to OpenAI Realtime API...');
       
-      const wsUrl = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17`;
+      // A fresh token per connect: they expire within minutes
+      const { clientSecret, model } = await this.getClientSecret();
+      const wsUrl = `wss://api.openai.com/v1/realtime?model=${model}`;
       
       debugLog('Connecting to WebSocket:', wsUrl);
       this.ws = new WebSocket(wsUrl, [
         'realtime',
-        `openai-insecure-api-key.${this.apiKey}`,
-        'openai-beta.realtime-v1'
+        `openai-insecure-api-key.${clientSecret}`
       ]);
       
       this.setupEventHandlers();
@@ -125,15 +126,21 @@ export class RealtimeClient {
       this.send({
         type: 'session.update',
         session: {
+          type: 'realtime',
           instructions: this.sessionConfig.instructions,
           tools: this.sessionConfig.tools,
           tool_choice: this.sessionConfig.tool_choice,
-          turn_detection: this.sessionConfig.turn_detection,
-          input_audio_format: this.sessionConfig.input_audio_format,
-          output_audio_format: this.sessionConfig.output_audio_format,
-          temperature: 0.8,
-          modalities: ['text', 'audio'],
-          voice: this.sessionConfig.voice
+          output_modalities: ['audio'],
+          audio: {
+            input: {
+              format: this.sessionConfig.audio_format,
+              turn_detection: this.sessionConfig.turn_detection
+            },
+            output: {
+              format: this.sessionConfig.audio_format,
+              voice: this.sessionConfig.voice
+            }
+          }
         }
       });
       
@@ -213,7 +220,7 @@ export class RealtimeClient {
         }
         break;
 
-      case 'response.audio_transcript.delta':
+      case 'response.output_audio_transcript.delta':
         // Another possible transcription event
         if (event.transcript) {
           this.emit('conversation.item.input_audio_transcription.completed', {
@@ -223,7 +230,7 @@ export class RealtimeClient {
         }
         break;
         
-      case 'response.audio_transcript.done':
+      case 'response.output_audio_transcript.done':
         // Dit is het transcriptie event voor de ASSISTANT (niet de user)
         if (event.transcript) {
           debugLog('Assistant audio transcript:', event.transcript);
@@ -235,7 +242,7 @@ export class RealtimeClient {
         }
         break;
         
-      case 'conversation.item.created':
+      case 'conversation.item.added':
         debugLog('FULL conversation item:', event.item);
         
         // Check voor user audio transcripties in conversation items
@@ -259,7 +266,7 @@ export class RealtimeClient {
         }
         break;
         
-      case 'response.audio.delta':
+      case 'response.output_audio.delta':
         if (event.delta) {
           // Always emit the event, let the hook decide what to do
           this.emit('response.audio.delta', event.delta);
@@ -267,16 +274,16 @@ export class RealtimeClient {
         }
         break;
         
-      case 'response.audio.done':
+      case 'response.output_audio.done':
         this.emit('audio.done');
         this.emit('response.complete', event);
         break;
         
-      case 'response.text.delta':
+      case 'response.output_text.delta':
         this.emit('text.delta', event.delta);
         break;
         
-      case 'response.text.done':
+      case 'response.output_text.done':
         this.emit('text.done', event.text);
         break;
         
@@ -385,12 +392,13 @@ export class RealtimeClient {
     });
   }
 
-  // Create a response
-  createResponse(config = {}) {
+  // Create a response. The GA API takes a single output modality; audio
+  // responses also stream a transcript, so 'audio' covers voice mode.
+  createResponse({ modalities = ['text', 'audio'], ...config } = {}) {
     this.send({
       type: 'response.create',
       response: {
-        modalities: ['text', 'audio'],
+        output_modalities: modalities.includes('audio') ? ['audio'] : ['text'],
         ...config
       }
     });

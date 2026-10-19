@@ -1,5 +1,6 @@
 // components/TranscriptionAIActions.jsx
 import React, { useState } from 'react';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import '../styles/TranscriptionAIActions.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -51,6 +52,8 @@ const AI_ACTIONS = [
   }
 ];
 
+const runAIAction = httpsCallable(getFunctions(undefined, 'europe-west4'), 'runTranscriptionAIAction');
+
 function TranscriptionAIActions({ transcription, onTasksExtracted }) {
   const [showActions, setShowActions] = useState(false);
   const [selectedAction, setSelectedAction] = useState(null);
@@ -72,32 +75,9 @@ function TranscriptionAIActions({ transcription, onTasksExtracted }) {
     try {
       const prompt = getPromptForAction(action.id, transcription.text);
       
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-4-turbo-preview',
-          messages: [
-            { 
-              role: 'system', 
-              content: 'Je bent een behulpzame AI-assistent. Reageer altijd in het Nederlands, tenzij anders gevraagd. Wees beknopt en to-the-point.'
-            },
-            { role: 'user', content: prompt }
-          ],
-          temperature: 0.7,
-          max_tokens: 1000
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('AI verwerking mislukt');
-      }
-
-      const data = await response.json();
-      const aiResult = data.choices[0].message.content;
+      // Runs server-side so the OpenAI key never reaches the browser
+      const { data } = await runAIAction({ prompt });
+      const aiResult = data.content;
       
       setResult({
         action: action,

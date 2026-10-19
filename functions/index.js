@@ -264,6 +264,15 @@ function filterHallucinations(text) {
   return filtered;
 }
 
+// Out of OpenAI credits is not transient: fail the whole transcription loudly
+// instead of retrying and silently filling every chunk with a gap marker.
+class OpenAIQuotaError extends Error {
+  constructor() {
+    super('OpenAI credits exhausted: top up the OpenAI balance, then retry this transcription.');
+    this.name = 'OpenAIQuotaError';
+  }
+}
+
 async function transcribeChunk(filePath, apiKey, { language } = {}) {
   // Verify chunk duration before sending to API
   const actualDuration = await probeDuration(filePath);
@@ -294,9 +303,15 @@ async function transcribeChunk(filePath, apiKey, { language } = {}) {
         body: form,
         signal: AbortSignal.timeout(CHUNK_TIMEOUT_MS)
       });
-      if (res.status >= 500 || res.status === 429) throw new Error(`HTTP ${res.status}`);
+      if (res.status === 429) {
+        const errBody = await res.text();
+        if (errBody.includes('insufficient_quota')) throw new OpenAIQuotaError();
+        throw new Error(`HTTP 429`);
+      }
+      if (res.status >= 500) throw new Error(`HTTP ${res.status}`);
       break;
     } catch (err) {
+      if (err instanceof OpenAIQuotaError) throw err;
       if (attempt >= CHUNK_MAX_ATTEMPTS) {
         console.error(`[Transcription] Chunk ${filePath} failed after ${attempt} attempts, leaving a gap: ${err.message}`);
         return { text: '[…]', segments: [{ start: 0, end: actualDuration, text: '[…]' }] };
@@ -634,4 +649,90 @@ export const retryTranscription = onCall({
     await docRef.set({ processingStatus: 'error', errorMessage: String(err), updatedAt: new Date() }, { merge: true });
     throw new HttpsError('internal', `Transcription failed: ${err.message}`);
   }
+});
+
+// The OpenAI key must never reach the browser (it was baked into the Vite bundle
+// and abused). Browser features call these functions instead.
+
+const REALTIME_MODEL = process.env.REALTIME_MODEL || 'gpt-realtime';
+const AI_ACTION_MODEL = process.env.AI_ACTION_MODEL || 'gpt-4.1-mini';
+const AI_ACTION_MAX_PROMPT_CHARS = 400000;
+
+// Mints a short-lived Realtime client secret so the browser can open the
+// Realtime WebSocket without ever seeing the API key.
+export const createRealtimeSession = onCall({
+  region: FUNCTION_REGION,
+  secrets: [OPENAI_API_KEY],
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'User must be authenticated');
+  }
+
+  const res = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${OPENAI_API_KEY.value()}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ session: { type: 'realtime', model: REALTIME_MODEL } })
+  });
+
+  if (!res.ok) {
+    const errBody = await res.text();
+    console.error(`[Realtime] client secret failed: ${res.status} ${errBody}`);
+    throw new HttpsError('internal', 'Could not start a Realtime session');
+  }
+
+  const data = await res.json();
+  return { clientSecret: data.value, expiresAt: data.expires_at, model: REALTIME_MODEL };
+});
+
+// Runs one AI action (summary, tasks, email, ...) on a transcription.
+export const runTranscriptionAIAction = onCall({
+  region: FUNCTION_REGION,
+  secrets: [OPENAI_API_KEY],
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'User must be authenticated');
+  }
+
+  const { prompt } = request.data || {};
+  if (typeof prompt !== 'string' || !prompt.trim()) {
+    throw new HttpsError('invalid-argument', 'prompt is required');
+  }
+  if (prompt.length > AI_ACTION_MAX_PROMPT_CHARS) {
+    throw new HttpsError('invalid-argument', 'prompt is too long');
+  }
+
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${OPENAI_API_KEY.value()}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: AI_ACTION_MODEL,
+      messages: [
+        {
+          role: 'system',
+          content: 'Je bent een behulpzame AI-assistent. Reageer altijd in het Nederlands, tenzij anders gevraagd. Wees beknopt en to-the-point.'
+        },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 1000
+    })
+  });
+
+  if (!res.ok) {
+    const errBody = await res.text();
+    console.error(`[AI action] failed: ${res.status} ${errBody}`);
+    if (errBody.includes('insufficient_quota')) {
+      throw new HttpsError('resource-exhausted', 'OpenAI credits exhausted');
+    }
+    throw new HttpsError('internal', 'AI processing failed');
+  }
+
+  const data = await res.json();
+  return { content: data.choices[0].message.content };
 });

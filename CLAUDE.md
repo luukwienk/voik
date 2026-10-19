@@ -107,7 +107,6 @@ All variables prefixed with `VITE_` are exposed to the client.
 | Variable | Purpose |
 |----------|---------|
 | `VITE_FIREBASE_*` | Firebase project configuration |
-| `VITE_OPENAI_API_KEY` | OpenAI Realtime API (voice chat) |
 | `VITE_GOOGLE_CLIENT_ID` | Google OAuth client ID |
 | `VITE_GOOGLE_API_KEY` | Google Calendar API key |
 | `VITE_GOOGLE_CLIENT_SECRET` | Google OAuth secret |
@@ -116,7 +115,7 @@ Cloud Functions env vars (set via Firebase CLI or GCP console):
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `OPENAI_API_KEY` | (secret) | Whisper API for transcription |
+| `OPENAI_API_KEY` | (secret) | All OpenAI calls: Whisper transcription, Realtime tokens, AI actions. Never put it in a `VITE_` variable. |
 | `FUNCTION_REGION` | `europe-west4` | Deploy region |
 | `PARALLEL_TRANSCRIPTIONS` | `5` | Concurrent Whisper API calls |
 | `CHUNK_SECONDS` | `120` | Max audio chunk length |
