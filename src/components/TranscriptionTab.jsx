@@ -1,12 +1,12 @@
 // components/TranscriptionTab.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import TranscriptionList from './TranscriptionList';
 import QuickRecordButton from './QuickRecordButton';
 import MiniRecorder from './MiniRecorder';
 import '../styles/TranscriptionTab.css';
 
-function TranscriptionTab({ user, pendingTranscriptionId, onNavigateToTranscription, onClearPendingTranscription }) {
-  const [showMiniRecorder, setShowMiniRecorder] = useState(false);
+// The recorder overlay state lives in the parent so the start screen can open it too
+function TranscriptionTab({ user, showRecorder, onShowRecorder, pendingTranscriptionId, onNavigateToTranscription, onClearPendingTranscription }) {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const handleUploadComplete = () => {
@@ -25,15 +25,15 @@ function TranscriptionTab({ user, pendingTranscriptionId, onNavigateToTranscript
 
       {/* Quick Record Button */}
       <QuickRecordButton
-        onClick={() => setShowMiniRecorder(true)}
-        isActive={showMiniRecorder}
+        onClick={() => onShowRecorder(true)}
+        isActive={showRecorder}
       />
 
       {/* Mini Recorder Overlay */}
-      {showMiniRecorder && (
+      {showRecorder && (
         <MiniRecorder
           user={user}
-          onClose={() => setShowMiniRecorder(false)}
+          onClose={() => onShowRecorder(false)}
           onUploadComplete={handleUploadComplete}
           onNavigateToTranscription={onNavigateToTranscription}
         />

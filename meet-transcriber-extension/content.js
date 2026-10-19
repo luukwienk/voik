@@ -138,7 +138,7 @@ function showRecordingIndicator() {
       }
     </style>
     <span class="dot"></span>
-    <span>Voik recording</span>
+    <span>TaskBuddy recording</span>
   `;
 
   document.body.appendChild(recordingIndicator);

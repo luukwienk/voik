@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Voik Meet Transcriber",
-  "version": "1.0.0",
-  "description": "Capture Google Meet audio and transcribe via Voik",
-  "author": "Voik",
+  "name": "TaskBuddy for Google Meet",
+  "version": "1.1.0",
+  "description": "Record Google Meet calls and transcribe them in TaskBuddy",
+  "author": "TaskBuddy",
 
   "permissions": [
     "tabCapture",
@@ -25,7 +25,7 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
-    "default_title": "Voik Meet Transcriber"
+    "default_title": "TaskBuddy for Google Meet"
   },
 
   "icons": {

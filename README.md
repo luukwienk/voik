@@ -5,7 +5,7 @@ Record conversations and get a transcript, also in Dutch (Google Meet's built-in
 Three ways to record:
 - **Browser**: record in the web app.
 - **Mobile**: install the web app as a PWA and record on your phone.
-- **Google Meet**: the Chrome extension in `meet-transcriber-extension/` records both sides of a call (left channel = you, right channel = the others) and uploads it to Voik.
+- **Google Meet**: the Chrome extension in `meet-transcriber-extension/` records both sides of a call (left channel = you, right channel = the others) and uploads it to Voik. Users install it from `/extensie`: the build packs the folder into `/taskbuddy-meet-extension.zip` (`scripts/extension-zip.js`), so the download always matches the code.
 
 Recordings upload to Firebase Storage. A Cloud Function cuts them into speech chunks, transcribes them with OpenAI Whisper and writes the text back. In the app you can retry failed transcriptions and run AI actions (summary, action items, follow-up email, key points, translation).
 
