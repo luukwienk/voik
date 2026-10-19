@@ -10,8 +10,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'Voik',
-        short_name: 'Voik',
+        name: 'TaskBuddy',
+        short_name: 'TaskBuddy',
         description: 'Record and transcribe conversations',
         theme_color: '#ffffff',
         icons: [

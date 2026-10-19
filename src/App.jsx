@@ -72,7 +72,7 @@ function App() {
   return (
     <div className="App">
       <header className="app-header">
-        <span className="app-title">Voik</span>
+        <span className="app-title">TaskBuddy</span>
         <button className="app-signout" onClick={signOut} title="Uitloggen" aria-label="Uitloggen">
           <FontAwesomeIcon icon={faSignOutAlt} />
         </button>
