@@ -48,7 +48,6 @@ To install Voik, follow these steps:
    VITE_FIREBASE_MESSAGING_SENDER_ID=your-firebase-messaging-sender-id
    VITE_FIREBASE_APP_ID=your-firebase-app-id
    VITE_FIREBASE_MEASUREMENT_ID=your-firebase-measurement-id
-   VITE_OPENAI_API_KEY=your-openai-api-key
    VITE_GOOGLE_CLIENT_ID=your-google-client-id
    VITE_GOOGLE_API_KEY=your-google-api-key
    VITE_GOOGLE_CLIENT_SECRET=your-google-client-secret
@@ -72,7 +71,7 @@ To use Voik, follow these steps:
 
 ### Chat Assistant
 - Click the floating chat button to open the assistant.
-- Type a message or click the mic to start/stop voice. Allow mic permission and set `VITE_OPENAI_API_KEY` in `.env`.
+- Type a message or click the mic to start/stop voice. Allow mic permission. The chat gets a short-lived Realtime token from the `createRealtimeSession` Cloud Function; the OpenAI key only lives in the functions secret.
 
 ### Calendar
 - Desktop split view: on desktop, the Task List appears on the left and the Google Calendar on the right. On mobile, you’ll see just one surface at a time.
