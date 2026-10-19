@@ -2,7 +2,7 @@
   "name": "voik-functions",
   "private": true,
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "type": "module",
   "dependencies": {
